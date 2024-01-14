@@ -84,5 +84,8 @@
 **blx.bib
 **comment.cut
 
+# virtual environments
+**.venv/
+
 # Specific
 !**requirements.txt

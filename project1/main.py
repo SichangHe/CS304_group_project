@@ -2,6 +2,7 @@ import wave
 from contextlib import contextmanager
 from queue import Queue
 from typing import Mapping
+import numpy as np
 
 from pyaudio import PyAudio, paContinue, paInt16
 
@@ -9,7 +10,7 @@ CHUNK = 1024
 FORMAT = paInt16
 CHANNELS = 1
 RATE = 16000
-RECORD_SECONDS = 1
+RECORD_SECONDS = 999
 
 
 def main():
@@ -41,16 +42,44 @@ def main():
         frames_left = RATE * RECORD_SECONDS
         print("Recording...")
 
+        break_condition = get_break_condition()
+
         while frames_left > 0:
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= CHUNK
 
             # TODO: @Luyao: Calculate intensity for endpointing.
+            audio_array = np.frombuffer(data, dtype=np.int16)
+            if break_condition(audio_array):
+                break
             file.writeframes(data)
             frames_left -= n_frame
 
         print("Done")
         stream.close()
+
+
+def get_break_condition():
+    level = -1
+    threshhold = 1000000000
+
+    def energy_per_sample_in_decibel(arr: np.ndarray[np.int16]):
+        arr_int32 = arr.astype(np.int32)
+        return np.sum(arr_int32**2)
+
+    def break_condition(arr: np.ndarray[np.int16]) -> bool:
+        nonlocal level
+
+        if level == -1:
+            # initial case
+            level = energy_per_sample_in_decibel(arr)
+
+        level = level / 2 + energy_per_sample_in_decibel(arr) / 2
+        print("current level: " + str(level))
+
+        return True if level < threshhold else False
+
+    return break_condition
 
 
 @contextmanager
