@@ -61,23 +61,37 @@ def main():
 
 def get_break_condition():
     level = -1
-    threshhold = 1000000000
+    threshhold = 30000000
+    background = -1
+    adjustment = 0.05
+    forgetfactor = 2
+    init_background_adjustment = 0.65
 
     def energy_per_sample_in_decibel(arr: np.ndarray[np.int16]):
         arr_int32 = arr.astype(np.int32)
         return np.sum(arr_int32**2)
 
     def break_condition(arr: np.ndarray[np.int16]) -> bool:
-        nonlocal level
-
+        nonlocal level, background
         if level == -1:
             # initial case
             level = energy_per_sample_in_decibel(arr)
+        if background == -1:
+            background = energy_per_sample_in_decibel(arr) * init_background_adjustment
 
-        level = level / 2 + energy_per_sample_in_decibel(arr) / 2
+        current = energy_per_sample_in_decibel(arr)
+        level = ((level * forgetfactor) + current) / (forgetfactor + 1)
+
+        if current < background:
+            background = current
+        else:
+            background += (current - background) * adjustment
+
+        print("background level: " + str(background))
         print("current level: " + str(level))
+        print("level - background: " + str(level - background))
 
-        return True if level < threshhold else False
+        return True if level - background < threshhold else False
 
     return break_condition
 
