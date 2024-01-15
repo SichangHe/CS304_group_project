@@ -53,7 +53,6 @@ def main():
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= CHUNK
 
-            # TODO: @Luyao: Calculate intensity for endpointing.
             audio_array = np.frombuffer(data, dtype=np.int16)
             if break_condition(audio_array):
                 break
@@ -72,19 +71,15 @@ def get_break_condition():
     forgetfactor = 2
     init_background_adjustment = 0.65
 
-    def energy_per_sample_in_decibel(arr: NDArray[np.int16]):
-        arr_int32 = arr.astype(np.int32)
-        return np.sum(arr_int32**2)
-
     def break_condition(arr: NDArray[np.int16]) -> bool:
         nonlocal level, background
+        current = energy_of_sample_in_decibel(arr)
         if level == -1:
             # initial case
-            level = energy_per_sample_in_decibel(arr)
+            level = current
         if background == -1:
-            background = energy_per_sample_in_decibel(arr) * init_background_adjustment
+            background = current * init_background_adjustment
 
-        current = energy_per_sample_in_decibel(arr)
         level = ((level * forgetfactor) + current) / (forgetfactor + 1)
 
         if current < background:
@@ -99,6 +94,11 @@ def get_break_condition():
         return True if level - background < threshhold else False
 
     return break_condition
+
+
+def energy_of_sample_in_decibel(arr: NDArray[np.int16]):
+    arr_int32 = arr.astype(np.int32)  # avoid overflow
+    return arr_int32.dot(arr_int32)
 
 
 @contextmanager
