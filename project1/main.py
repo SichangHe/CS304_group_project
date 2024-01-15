@@ -63,19 +63,22 @@ def main():
         stream.close()
 
 
-STARTING_DECIBEL_THRESHHOLD = 20.0
-CONTINUING_DECIBEL_THRESHHOLD = 5.0
+STARTING_DECIBEL_THRESHHOLD = 15.0
+CONTINUING_DECIBEL_THRESHHOLD = 2.0
+STOPPING_DECIBEL_THRESHHOLD = -20.0
+WEAK_ADJUSTMENT = 0.1
+STRONG_ADJUSTMENT = 0.6
 
 
 def get_break_condition():
     level: np.float64 | None = None
     background: np.float64 | None = None
+    foreground = 0.0
     speaking = False
-    adjustment = 0.05
     forgetfactor = 1.2
 
     def break_condition(arr: NDArray[np.int16]) -> bool:
-        nonlocal level, background, speaking
+        nonlocal level, background, foreground, speaking
 
         current = sample_decibel_energy(arr)
         if level is None:
@@ -85,27 +88,40 @@ def get_break_condition():
 
         level = ((level * forgetfactor) + current) / (forgetfactor + 1.0)
 
-        if speaking and level - background < CONTINUING_DECIBEL_THRESHHOLD:
-            speaking = False
-            background = background if background < level else level
-            return True
-        if not speaking:
-            if current - background >= STARTING_DECIBEL_THRESHHOLD:
-                speaking = True
-            else:
-                # FIXME: Disrupted by sudden silence.
-                if background < level:
-                    background += (current - background) * adjustment
-                else:
-                    background = level
-
         print(
-            f"speaking: {speaking}, current: {current:.1f}, background: {background:.1f}, level: {level:.1f}."
+            f"speaking: {speaking}, current: {current:.1f}, background: {background:.1f}, foreground: {foreground:.1f}, level: {level:.1f}."
         )
+
+        if speaking:
+            if (
+                level - background < CONTINUING_DECIBEL_THRESHHOLD
+                or level - foreground < STOPPING_DECIBEL_THRESHHOLD
+            ):
+                speaking = False
+                background = background if background < level else level
+                return True
+            foreground = adjust_conditionally_on_change(
+                foreground, level, STRONG_ADJUSTMENT, WEAK_ADJUSTMENT
+            )
+        if not speaking:
+            if level - background >= STARTING_DECIBEL_THRESHHOLD:
+                speaking = True
+                foreground = level
+            else:
+                background = adjust_conditionally_on_change(
+                    background, level, WEAK_ADJUSTMENT, STRONG_ADJUSTMENT
+                )
 
         return False
 
     return break_condition
+
+
+def adjust_conditionally_on_change(
+    original, updated, adjustment_if_inc, adjustment_if_dec
+):
+    diff = updated - original
+    return (adjustment_if_inc if diff > 0 else adjustment_if_dec) * diff + original
 
 
 def sample_decibel_energy(arr: NDArray[np.int16]) -> np.float64:
