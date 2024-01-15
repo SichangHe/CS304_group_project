@@ -2,8 +2,9 @@ import wave
 from contextlib import contextmanager
 from queue import Queue
 from typing import Mapping
-import numpy as np
 
+import numpy as np
+from numpy.typing import NDArray
 from pyaudio import PyAudio, paContinue, paInt16
 
 CHUNK = 1024
@@ -18,7 +19,10 @@ def main():
     audio_queue: Queue[tuple[bytes, int]] = Queue()
 
     def stream_callback(
-        in_data: bytes | None, n_frame: int, time_info: Mapping[str, float], status: int
+        in_data: bytes | None,
+        n_frame: int,
+        time_info: Mapping[str, float],  # pyright: ignore reportUnusedVariable
+        status: int,  # pyright: ignore reportUnusedVariable
     ):
         """Send input audio data to `audio_queue`."""
         assert in_data is not None
@@ -67,11 +71,11 @@ def get_break_condition():
     forgetfactor = 2
     init_background_adjustment = 0.65
 
-    def energy_per_sample_in_decibel(arr: np.ndarray[np.int16]):
+    def energy_per_sample_in_decibel(arr: NDArray[np.int16]):
         arr_int32 = arr.astype(np.int32)
         return np.sum(arr_int32**2)
 
-    def break_condition(arr: np.ndarray[np.int16]) -> bool:
+    def break_condition(arr: NDArray[np.int16]) -> bool:
         nonlocal level, background
         if level == -1:
             # initial case
