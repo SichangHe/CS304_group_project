@@ -63,45 +63,55 @@ def main():
         stream.close()
 
 
-DECIBEL_THRESHHOLD = 20
+STARTING_DECIBEL_THRESHHOLD = 20.0
+CONTINUING_DECIBEL_THRESHHOLD = 5.0
 
 
 def get_break_condition():
-    level = -1
-    background = -1
+    level: np.float64 | None = None
+    background: np.float64 | None = None
+    speaking = False
     adjustment = 0.05
-    forgetfactor = 2
-    init_background_adjustment = 0.65
+    forgetfactor = 1.2
 
     def break_condition(arr: NDArray[np.int16]) -> bool:
-        nonlocal level, background
+        nonlocal level, background, speaking
+
         current = sample_decibel_energy(arr)
-        if level == -1:
-            # initial case
+        if level is None:
             level = current
-        if background == -1:
-            background = current * init_background_adjustment
-
-        level = ((level * forgetfactor) + current) / (forgetfactor + 1)
-
-        if current < background:
+        if background is None:
             background = current
-        else:
-            background += (current - background) * adjustment
 
-        print("background level: " + str(background))
-        print("current level: " + str(level))
-        print("level - background: " + str(level - background))
+        level = ((level * forgetfactor) + current) / (forgetfactor + 1.0)
 
-        return True if level - background < DECIBEL_THRESHHOLD else False
+        if speaking and level - background < CONTINUING_DECIBEL_THRESHHOLD:
+            speaking = False
+            background = background if background < level else level
+            return True
+        if not speaking:
+            if current - background >= STARTING_DECIBEL_THRESHHOLD:
+                speaking = True
+            else:
+                # FIXME: Disrupted by sudden silence.
+                if background < level:
+                    background += (current - background) * adjustment
+                else:
+                    background = level
+
+        print(
+            f"speaking: {speaking}, current: {current:.1f}, background: {background:.1f}, level: {level:.1f}."
+        )
+
+        return False
 
     return break_condition
 
 
 def sample_decibel_energy(arr: NDArray[np.int16]) -> np.float64:
     """Calculate the energy in decibel of an audio sample."""
-    arr_int32 = arr.astype(np.int32)  # avoid overflow
-    power: np.int32 = arr_int32.dot(arr_int32)
+    arr = arr.astype(np.int64)  # avoid overflow
+    power = arr.dot(arr) / arr.size
     return np.log10(power) * 10.0
 
 
