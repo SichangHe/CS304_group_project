@@ -59,8 +59,7 @@ def main():
 
             audio_array = np.frombuffer(data, dtype=np.int16)
             if break_condition(audio_array):
-                # break
-                None
+                break
             file.writeframes(data)
             frames_left -= n_frame
 
