@@ -7,10 +7,11 @@ import numpy as np
 from numpy.typing import NDArray
 from pyaudio import PyAudio, paContinue, paInt16
 
-CHUNK = 1024
 FORMAT = paInt16
 CHANNELS = 1
 RATE = 16000
+CHUNK = RATE * 20 // 1000
+"""Number of frames for 20ms."""
 RECORD_SECONDS = 999
 
 
