@@ -59,7 +59,8 @@ def main():
 
             audio_array = np.frombuffer(data, dtype=np.int16)
             if break_condition(audio_array):
-                break
+                # break
+                None
             file.writeframes(data)
             frames_left -= n_frame
 
@@ -75,15 +76,31 @@ STRONG_ADJUSTMENT = 0.6
 
 
 def get_break_condition():
+    was_speaking = False
+    classify_frame = get_classify_frame()
+
+    def break_condition(arr: NDArray[np.int16]) -> bool:
+        nonlocal was_speaking
+
+        is_speaking = classify_frame(arr)
+        if was_speaking and not is_speaking:
+            return True
+        was_speaking = is_speaking
+
+        return False
+
+    return break_condition
+
+
+def get_classify_frame():
     level: np.float64 | None = None
     background: np.float64 | None = None
     foreground = 0.0
     speaking = False
     forgetfactor = 1.2
 
-    def break_condition(arr: NDArray[np.int16]) -> bool:
+    def classify_frame(arr: NDArray[np.int16]) -> bool:
         nonlocal level, background, foreground, speaking
-
         current = sample_decibel_energy(arr)
         if level is None:
             level = current
@@ -103,10 +120,10 @@ def get_break_condition():
             ):
                 speaking = False
                 background = background if background < level else level
-                return True
-            foreground = adjust_conditionally_on_change(
-                foreground, level, STRONG_ADJUSTMENT, WEAK_ADJUSTMENT
-            )
+            else:
+                foreground = adjust_conditionally_on_change(
+                    foreground, level, STRONG_ADJUSTMENT, WEAK_ADJUSTMENT
+                )
         if not speaking:
             if level - background >= STARTING_DECIBEL_THRESHHOLD:
                 speaking = True
@@ -116,9 +133,9 @@ def get_break_condition():
                     background, level, WEAK_ADJUSTMENT, STRONG_ADJUSTMENT
                 )
 
-        return False
+        return speaking
 
-    return break_condition
+    return classify_frame
 
 
 def adjust_conditionally_on_change(
