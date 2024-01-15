@@ -49,6 +49,10 @@ def main():
 
         break_condition = get_break_condition()
 
+        # Discard first 5 chunks.
+        for _ in range(5):
+            _ = audio_queue.get(timeout=0.1)
+
         while frames_left > 0:
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= CHUNK
