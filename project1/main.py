@@ -63,9 +63,11 @@ def main():
         stream.close()
 
 
+DECIBEL_THRESHHOLD = 20
+
+
 def get_break_condition():
     level = -1
-    threshhold = 30000000
     background = -1
     adjustment = 0.05
     forgetfactor = 2
@@ -73,7 +75,7 @@ def get_break_condition():
 
     def break_condition(arr: NDArray[np.int16]) -> bool:
         nonlocal level, background
-        current = energy_of_sample_in_decibel(arr)
+        current = sample_decibel_energy(arr)
         if level == -1:
             # initial case
             level = current
@@ -91,14 +93,16 @@ def get_break_condition():
         print("current level: " + str(level))
         print("level - background: " + str(level - background))
 
-        return True if level - background < threshhold else False
+        return True if level - background < DECIBEL_THRESHHOLD else False
 
     return break_condition
 
 
-def energy_of_sample_in_decibel(arr: NDArray[np.int16]):
+def sample_decibel_energy(arr: NDArray[np.int16]) -> np.float64:
+    """Calculate the energy in decibel of an audio sample."""
     arr_int32 = arr.astype(np.int32)  # avoid overflow
-    return arr_int32.dot(arr_int32)
+    power: np.int32 = arr_int32.dot(arr_int32)
+    return np.log10(power) * 10.0
 
 
 @contextmanager
