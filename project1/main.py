@@ -27,22 +27,10 @@ MAX_PAUSE_MS = 2000
 def main(out_file_name="output.wav"):
     """Record 5sec into `output.wav`"""
     audio_queue: Queue[tuple[bytes, int]] = Queue()
+    stream_callback = get_stream_callback(audio_queue)
 
     buffer = b""
     buffer_size = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // 1000
-
-    def stream_callback(
-        in_data: bytes | None,
-        n_frame: int,
-        time_info: Mapping[str, float],  # pyright: ignore reportUnusedVariable
-        status: int,  # pyright: ignore reportUnusedVariable
-    ):
-        """Callback for `PyAudio.open`. Send input audio data to `audio_queue`."""
-        nonlocal audio_queue
-
-        assert in_data is not None
-        audio_queue.put((in_data, n_frame))
-        return None, paContinue
 
     with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
         # Configure output file.
@@ -84,6 +72,25 @@ def main(out_file_name="output.wav"):
                     break
         print("Stopping recording.")
         stream.close()
+
+
+def get_stream_callback(audio_queue: Queue[tuple[bytes, int]]):
+    """Get a callback for `PyAudio.open`, which sends input audio data to
+    `audio_queue`."""
+
+    def stream_callback(
+        in_data: bytes | None,
+        n_frame: int,
+        time_info: Mapping[str, float],  # pyright: ignore reportUnusedVariable
+        status: int,  # pyright: ignore reportUnusedVariable
+    ):
+        nonlocal audio_queue
+
+        assert in_data is not None
+        audio_queue.put((in_data, n_frame))
+        return None, paContinue
+
+    return stream_callback
 
 
 def discard_first_at_least(audio_queue: Queue[tuple[bytes, int]], n_discard=5):
