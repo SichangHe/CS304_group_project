@@ -30,6 +30,8 @@ def main():
         audio_queue.put((in_data, n_frame))
         return None, paContinue
 
+    input("Press Enter to start recording...")
+
     with wave.open("output.wav", "wb") as file, open_pyaudio() as py_audio:
         file.setnchannels(CHANNELS)
         file.setsampwidth(py_audio.get_sample_size(FORMAT))
