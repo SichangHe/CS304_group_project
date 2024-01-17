@@ -10,7 +10,8 @@ from pyaudio import PyAudio, paContinue, paInt16
 FORMAT = paInt16
 CHANNELS = 1
 RATE = 16000
-CHUNK = RATE * 20 // 1000
+CHUNK_MS = 20
+CHUNK = RATE * CHUNK_MS // 1000
 """Number of frames for 20ms."""
 RECORD_SECONDS = 999
 
@@ -74,19 +75,23 @@ CONTINUING_DECIBEL_THRESHHOLD = 2.0
 STOPPING_DECIBEL_THRESHHOLD = -20.0
 WEAK_ADJUSTMENT = 0.05
 STRONG_ADJUSTMENT = 0.8
+MAX_OFF_TIME = 2000
 
 
 def get_break_condition():
-    was_speaking = False
     classify_frame = get_classify_frame()
+    off_time = 0
 
     def break_condition(arr: NDArray[np.int16]) -> bool:
-        nonlocal was_speaking
+        nonlocal off_time
 
         is_speaking = classify_frame(arr)
-        if was_speaking and not is_speaking:
+        if is_speaking:
+            off_time = CHUNK_MS
+        else:
+            off_time += CHUNK_MS
+        if off_time > MAX_OFF_TIME:
             return True
-        was_speaking = is_speaking
 
         return False
 
