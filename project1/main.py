@@ -85,9 +85,8 @@ def get_break_condition():
     def break_condition(arr: NDArray[np.int16]) -> bool:
         nonlocal off_time
 
-        is_speaking = classify_frame(arr)
-        if is_speaking:
-            off_time = CHUNK_MS
+        if classify_frame(arr):
+            off_time = 0
         else:
             off_time += CHUNK_MS
         if off_time > MAX_OFF_TIME:
