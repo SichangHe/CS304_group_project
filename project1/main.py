@@ -41,8 +41,6 @@ def main(out_file_name="output.wav"):
         audio_queue.put((in_data, n_frame))
         return None, paContinue
 
-    input("Press Enter to start recording...")
-
     with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
         # Configure output file.
         out_file.setnchannels(N_CHANNEL)
@@ -58,14 +56,12 @@ def main(out_file_name="output.wav"):
             stream_callback=stream_callback,
         )
 
+        input("Press Enter to start recording...")
         print("Recording...")
 
+        discard_first_at_least(audio_queue)
+
         recording_status = get_recording_status()
-
-        # Discard first 5 chunks.
-        for _ in range(5):
-            _ = audio_queue.get(timeout=0.1)
-
         while True:
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= N_FRAME_PER_CHUNK
@@ -83,6 +79,16 @@ def main(out_file_name="output.wav"):
                 break
         print("Stopping recording.")
         stream.close()
+
+
+def discard_first_at_least(audio_queue: Queue[tuple[bytes, int]], n_discard=5):
+    """Discard first `n_discard` samples in `audio_queue` to avoid initial
+    unstable samples. Then, discard all previous samples."""
+    if audio_queue.qsize() < n_discard:
+        for _ in range(n_discard):
+            audio_queue.get(timeout=0.1)
+    with audio_queue.mutex:
+        audio_queue.queue.clear()
 
 
 STARTING_THRESHOLD_DB = 15.0
