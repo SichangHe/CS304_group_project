@@ -8,17 +8,22 @@ from numpy.typing import NDArray
 from pyaudio import PyAudio, paContinue, paInt16
 
 FORMAT = paInt16
+SIZEOF_FORMAT = 2  # bytes
 CHANNELS = 1
 RATE = 16000
 CHUNK_MS = 20
 CHUNK = RATE * CHUNK_MS // 1000
 """Number of frames for 20ms."""
 RECORD_SECONDS = 999
+MAX_OFF_TIME = 20000
 
 
 def main():
     """Record 5sec into `output.wav`"""
     audio_queue: Queue[tuple[bytes, int]] = Queue()
+
+    buffer = b""
+    buffer_size = RATE * MAX_OFF_TIME * SIZEOF_FORMAT // 1000
 
     def stream_callback(
         in_data: bytes | None,
@@ -60,10 +65,13 @@ def main():
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= CHUNK
 
+            buffer += data
             audio_array = np.frombuffer(data, dtype=np.int16)
             if break_condition(audio_array):
                 break
-            file.writeframes(data)
+            if len(buffer) > buffer_size:
+                file.writeframes(buffer[:-buffer_size])
+                buffer = buffer[-buffer_size:]
             frames_left -= n_frame
 
         print("Done")
@@ -75,20 +83,23 @@ CONTINUING_DECIBEL_THRESHHOLD = 2.0
 STOPPING_DECIBEL_THRESHHOLD = -20.0
 WEAK_ADJUSTMENT = 0.05
 STRONG_ADJUSTMENT = 0.8
-MAX_OFF_TIME = 2000
 
 
 def get_break_condition():
     classify_frame = get_classify_frame()
     off_time = 0
+    started = False
 
     def break_condition(arr: NDArray[np.int16]) -> bool:
-        nonlocal off_time
+        nonlocal off_time, started
 
-        if classify_frame(arr):
-            off_time = 0
+        if not started:
+            started = classify_frame(arr)
         else:
-            off_time += CHUNK_MS
+            if classify_frame(arr):
+                off_time = 0
+            else:
+                off_time += CHUNK_MS
         if off_time > MAX_OFF_TIME:
             return True
 
