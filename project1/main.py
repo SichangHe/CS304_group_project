@@ -15,7 +15,7 @@ CHUNK_MS = 20
 CHUNK = RATE * CHUNK_MS // 1000
 """Number of frames for 20ms."""
 RECORD_SECONDS = 999
-MAX_OFF_TIME = 20000
+MAX_OFF_TIME = 2000
 
 
 def main():
@@ -55,7 +55,7 @@ def main():
         frames_left = RATE * RECORD_SECONDS
         print("Recording...")
 
-        break_condition = get_break_condition()
+        recording_status = get_recording_status()
 
         # Discard first 5 chunks.
         for _ in range(5):
@@ -65,14 +65,18 @@ def main():
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= CHUNK
 
-            buffer += data
             audio_array = np.frombuffer(data, dtype=np.int16)
-            if break_condition(audio_array):
+            status = recording_status(audio_array)
+            if status == -1:
+                continue
+            elif status == 0:
+                buffer += data
+                if len(buffer) > buffer_size:
+                    file.writeframes(buffer[:-buffer_size])
+                    buffer = buffer[-buffer_size:]
+                frames_left -= n_frame
+            elif status == 1:
                 break
-            if len(buffer) > buffer_size:
-                file.writeframes(buffer[:-buffer_size])
-                buffer = buffer[-buffer_size:]
-            frames_left -= n_frame
 
         print("Done")
         stream.close()
@@ -85,27 +89,37 @@ WEAK_ADJUSTMENT = 0.05
 STRONG_ADJUSTMENT = 0.8
 
 
-def get_break_condition():
+def get_recording_status():
+    """
+    Get current recording status
+
+    Returns:
+        int: The status code indicating the current state of the task.
+            -1: The recording has not started yet.
+             0: The recording is currently in progress.
+             1: The recording has been completed and should be stopped.
+    """
     classify_frame = get_classify_frame()
     off_time = 0
     started = False
 
-    def break_condition(arr: NDArray[np.int16]) -> bool:
+    def recording_status(arr: NDArray[np.int16]) -> bool:
         nonlocal off_time, started
 
         if not started:
             started = classify_frame(arr)
+            return -1
         else:
             if classify_frame(arr):
                 off_time = 0
             else:
                 off_time += CHUNK_MS
         if off_time > MAX_OFF_TIME:
-            return True
+            return 1
 
-        return False
+        return 0
 
-    return break_condition
+    return recording_status
 
 
 def get_classify_frame():
