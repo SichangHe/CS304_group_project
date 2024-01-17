@@ -54,8 +54,7 @@ def main(out_file_name="output.wav"):
         classify_sample = get_classify_sample()
         recording_status = get_recording_status()
         while True:
-            data, n_frame = audio_queue.get(timeout=0.1)
-            assert n_frame <= N_FRAME_PER_CHUNK
+            data, _ = audio_queue.get(timeout=0.1)
 
             audio_array = np.frombuffer(data, dtype=np.int16)
             is_speech = classify_sample(audio_array)
