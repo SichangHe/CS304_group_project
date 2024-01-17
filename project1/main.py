@@ -1,5 +1,6 @@
 import wave
 from contextlib import contextmanager
+from enum import Enum
 from queue import Queue
 from typing import Mapping
 
@@ -9,6 +10,8 @@ from pyaudio import PyAudio, paContinue, paInt16
 
 RESOLUTION_FORMAT = paInt16
 """Bit resolution per frame."""
+SIZEOF_FRAME = 2
+"""Size of each frame in bytes."""
 N_CHANNEL = 1
 """Number of audio channels."""
 SAMPLING_RATE = 16000
@@ -26,7 +29,7 @@ def main(out_file_name="output.wav"):
     audio_queue: Queue[tuple[bytes, int]] = Queue()
 
     buffer = b""
-    buffer_size = SAMPLING_RATE * MAX_PAUSE_MS * RESOLUTION_FORMAT // 1000
+    buffer_size = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // 1000
 
     def stream_callback(
         in_data: bytes | None,
@@ -57,26 +60,28 @@ def main(out_file_name="output.wav"):
         )
 
         input("Press Enter to start recording...")
+        discard_first_at_least(audio_queue)
         print("Recording...")
 
-        discard_first_at_least(audio_queue)
-
+        classify_sample = get_classify_sample()
         recording_status = get_recording_status()
         while True:
             data, n_frame = audio_queue.get(timeout=0.1)
             assert n_frame <= N_FRAME_PER_CHUNK
 
             audio_array = np.frombuffer(data, dtype=np.int16)
-            status = recording_status(audio_array)
-            if status == -1:
-                continue
-            elif status == 0:
-                buffer += data
-                if len(buffer) > buffer_size:
-                    out_file.writeframes(buffer[:-buffer_size])
-                    buffer = buffer[-buffer_size:]
-            elif status == 1:
-                break
+            is_speech = classify_sample(audio_array)
+            status = recording_status(is_speech)
+            match status:
+                case RecordingStatus.PENDING:
+                    continue
+                case RecordingStatus.GOING:
+                    buffer += data
+                    if len(buffer) > buffer_size:
+                        out_file.writeframes(buffer[:-buffer_size])
+                        buffer = buffer[-buffer_size:]
+                case RecordingStatus.STOPPING:
+                    break
         print("Stopping recording.")
         stream.close()
 
@@ -103,33 +108,41 @@ STRONG_ADJUSTMENT = 0.8
 
 def get_recording_status():
     """Get a closure that determines the current recording status based on
-    whether a sample is classified as speech:
-    - -1: The recording has not started yet.
-    - 0: The recording is currently in progress.
-    - 1: The recording has been completed and should be stopped.
+    whether a sample is classified as speech.
     Stopping condition: `MAX_PAUSE_MS` ms after speech stops.
     """
-    classify_sample = get_classify_sample()
     off_time = 0
     started = False
 
-    def recording_status(arr: NDArray[np.int16]) -> int:
+    def recording_status(is_speech: bool) -> RecordingStatus:
         nonlocal off_time, started
 
         if not started:
-            started = classify_sample(arr)
-            return -1
+            if is_speech:
+                started = True
+                return RecordingStatus.GOING
+            return RecordingStatus.PENDING
         else:
-            if classify_sample(arr):
+            if is_speech:
                 off_time = 0
             else:
                 off_time += CHUNK_MS
         if off_time > MAX_PAUSE_MS:
-            return 1
+            return RecordingStatus.STOPPING
 
-        return 0
+        return RecordingStatus.GOING
 
     return recording_status
+
+
+class RecordingStatus(Enum):
+    """- `PENDING`: The recording has not started yet.
+    - `GOING`: The recording is currently in progress.
+    - `STOPPING`: The recording has been completed and should be stopped."""
+
+    PENDING = -1
+    GOING = 0
+    STOPPING = 1
 
 
 FORGET_FACTOR = 1.2
