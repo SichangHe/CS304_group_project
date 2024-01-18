@@ -64,6 +64,8 @@ We track `background` energy level and smoothened `level` energy level
 ### Implementation
 
 - Detect speech
+  - Classify a frame
+  - Recording states
 - IO, recording and writing raw wav file
 
 <!-- slide -->
@@ -78,7 +80,7 @@ We track `background` energy level and smoothened `level` energy level
 
 <!-- slide -->
 
-### classify a frame
+### Classify a frame
 
 ```python
 def classify_frame(arr: NDArray[np.int16]) -> bool:
