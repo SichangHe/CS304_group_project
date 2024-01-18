@@ -29,7 +29,7 @@ SIZE_OF_BACKTRACK = SAMPLING_RATE * BACKTRACK_MS // MS_IN_SECOND
 """Size of the buffer in bytes for backtracking when speech starts."""
 MAX_PAUSE_MS = 2000
 """Maximum pause duration in milliseconds during speech."""
-SIZE_OF_SILENT_END = N_FRAME_PER_CHUNK = SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND
+SIZE_OF_SILENT_END = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // MS_IN_SECOND
 """Size of the buffer in bytes at the silent end."""
 
 
@@ -81,7 +81,7 @@ def main(out_file_name="output.wav"):
                         break
                     case RecordingStatus.STARTING:
                         # Backtrack previous sample before recording starts.
-                        buffer += pending_samples[-SIZE_OF_BACKTRACK:]
+                        write_queue.put(pending_samples[-SIZE_OF_BACKTRACK:])
                         pending_samples = b""
                 buffer += data
                 if len(buffer) > SIZE_OF_SILENT_END:
