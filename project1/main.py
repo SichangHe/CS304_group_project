@@ -8,6 +8,8 @@ from typing import Mapping
 import numpy as np
 from numpy.typing import NDArray
 from pyaudio import PyAudio, paContinue, paInt16
+import matplotlib.pyplot as plt
+import argparse
 
 RESOLUTION_FORMAT = paInt16
 """Bit resolution per frame."""
@@ -33,7 +35,7 @@ SIZE_OF_SILENT_END = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // MS_IN_SECOND
 """Size of the buffer in bytes at the silent end."""
 
 
-def main(out_file_name="output.wav"):
+def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="output.wav"):
     """Endpoint speech and record into `out_file_name`."""
     audio_queue: Queue[tuple[bytes, int]] = Queue()
     stream_callback = get_stream_callback(audio_queue)
@@ -69,7 +71,7 @@ def main(out_file_name="output.wav"):
             recording_status = get_recording_status()
             while True:
                 data, _ = audio_queue.get(timeout=0.1)
-
+                byte_queue.put(data)
                 audio_array = np.frombuffer(data, dtype=np.int16)
                 is_speech = classify_sample(audio_array)
                 status = recording_status(is_speech)
@@ -258,6 +260,49 @@ def open_pyaudio():
         yield (py_audio := PyAudio())
     finally:
         py_audio.terminate() if py_audio else None
+
+
+MAXIMUM_DRAWING_TIME = 10
+"""Maximum duration of the spectrum plot"""
+MAX_DRAWING_SAMPLES = SAMPLING_RATE * MAXIMUM_DRAWING_TIME
+"""Maximum number of samples drawn"""
+
+
+def main():
+    """Run GUI from main thread."""
+    parser = argparse.ArgumentParser(description="Recorder")
+    parser.add_argument("-g", "--gui", action="store_true", help="Show spectrum GUI.")
+    args = parser.parse_args()
+    show_gui = False
+    if args.gui:
+        show_gui = True
+
+    byte_queue: Queue[bytes] = Queue()
+    audio_thread = Thread(target=audio_recording_thread, args=(byte_queue,))
+    audio_thread.start()
+
+    _, ax = plt.subplots()
+
+    if show_gui:
+        plot_array = np.array([])
+        i = 0
+        while data := byte_queue.get():
+            input_arr = np.frombuffer(data, dtype=np.int16)
+            plot_array = np.append(plot_array, input_arr)
+            i += 1
+            if i % 5 == 0:
+                # draw every 5 chunks to avoid gui latency
+                num_samples = plot_array.shape[0]
+                length = num_samples / SAMPLING_RATE
+                lspace = np.linspace(0, length, plot_array.shape[0])
+                ax.clear()
+                ax.scatter(lspace, plot_array, 0.05)
+                plt.draw()
+                plt.pause(0.01)
+            if plot_array.shape[0] > MAX_DRAWING_SAMPLES:
+                plot_array = plot_array[-MAX_DRAWING_SAMPLES:]
+
+    audio_thread.join()
 
 
 main() if __name__ == "__main__" else None
