@@ -16,6 +16,14 @@ Duke Kunshan University
 
 <!-- slide -->
 
+### Contents
+
+- Assumptions
+- Implementation
+- Demo
+
+<!-- slide -->
+
 ### Assumptions
 
 - Energy level $L$ is calculated as
@@ -24,61 +32,49 @@ Duke Kunshan University
   L:=10\log_{10}\left(\frac{1}{N}\sum_{i=1}^N x_i^2\right)\mathrm{dB}.
   $$
 
-- the energy $L_s$ level when speaking is
+- The energy $L_s$ level when speaking is
   much higher than the energy level $L_b$ when not speaking
 
 <!-- slide -->
 
-we track `background` energy level and smoothened `level` energy level
+We track `background` energy level and smoothened `level` energy level
 
-- speech off
-  - adjust `background` upwards weakly when the new energy level is higher,
-    and adjust it downwards strongly when the new energy level is lower.
+- Speech off
+  - Adjust `background` upwards weakly when the new energy level is higher,
+  - Adjust it downwards strongly when the new energy level is lower.
 - speech starts
-  - we do not adjust `background` because we assume the high energy level cannot
+  - We do not adjust `background` because we assume the high energy level cannot
     represent background noise.
-  - we assume that `level` would be at least 15dB higher than `background` to **enter speech**
+  - Assume that `level` would be at least 15dB higher than `background` to **enter speech**
   - `level` would be at least 2dB higher than `background` **during speech**.
-  - energy measurement $L$ is relative
+  - Energy measurement $L$ is relative
 
 <!-- slide -->
 
-- problem: If the background noise increases over 15dB during speech,
-  the algorithm would not be able to detect when the speech stops.
+### refinements
+
+- Problem: If the environment is becomes noisy and background noise increases over 15dB during speech, the algorithm would not be able to detect when the speech stops.
 
 - To combat this, we also track a `foreground` energy level, opposite to how `background` is measured and adjusted.
 - Assumption: speech would become louder when background noise increases,
-- we assume it stops when `level` is at least 20dB lower than `foreground`.
-- This mechanism can trigger can sound energy has a very sharp drop
+- Speech stops when `level` is at least 20dB lower than `foreground`.
 
 <!-- slide -->
 
-### recording using callback function
+### Implementation
 
-```python
-audio_queue: Queue[tuple[bytes, int]] = Queue()
+- Detect speech
+- IO, recording and writing raw wav file
 
-def stream_callback(
-        in_data: bytes | None,
-        n_frame: int,
-        time_info: Mapping[str, float],
-        status: int,
-    ):
-    """Callback for `PyAudio.open`. Send input audio data to `audio_queue`."""
-    audio_queue.put((in_data, n_frame))
+<!-- slide -->
 
-    return None, paContinue
+### Detect speech
 
-with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
-    # Configure output file.
-    # ...
-    stream = py_audio.open(
-        # ...
-        stream_callback=stream_callback,
-    )
-```
-
-</br>
+- Two tasks
+  - classify a frame: speech/non-speech
+    `def classify_frame(arr: NDArray[np.int16]) -> bool:`
+  - recording states: `PENDING`, `GOING`, `STOPPING`, `STARTING`
+    `def recording_status(is_speech: bool) -> RecordingStatus:`
 
 <!-- slide -->
 
@@ -115,9 +111,29 @@ def classify_frame(arr: NDArray[np.int16]) -> bool:
 
 <!-- slide -->
 
-### recording status
+### Recording states
 
 ```python
+class RecordingStatus(Enum):
+    """- `PENDING`: The recording has not started yet.
+    - `GOING`: The recording is currently in progress.
+    - `STOPPING`: The recording has been completed and should be stopped.
+    - `STARTING`: The recording has just started."""
+
+    PENDING = -1
+    GOING = 0
+    STOPPING = 1
+    STARTING = 2
+```
+
+- We start in the `PENDING` state
+- Switch to `STARTING` when the speech just starts.
+  - Backtrack 100ms of audio to capture the potential consonant of the first word said
+- Maintain the `GOING` state if the speech continues and keep recording
+- Allow for at most 2s of non-speech audio before switching to `STOPPING` to accommodate for pauses during speech
+  - The last 2s of silence in the recording is cut away.
+
+<!-- ```python
 def recording_status(is_speech: bool) -> RecordingStatus:
     if not started:
         if is_speech:
@@ -133,32 +149,49 @@ def recording_status(is_speech: bool) -> RecordingStatus:
         return RecordingStatus.STOPPING
 
     return RecordingStatus.GOING
-```
-
-</br>
+``` -->
 
 <!-- slide -->
 
-### clipping
+### Recording using callback function
+
+We use a callback function from `get_stream_callback` to
+send input audio samples to the main thread through a `Queue`.
 
 ```python
-class RecordingStatus(Enum):
-    """- `PENDING`: The recording has not started yet.
-    - `GOING`: The recording is currently in progress.
-    - `STOPPING`: The recording has been completed and should be stopped.
-    - `STARTING`: The recording has just started."""
+audio_queue: Queue[tuple[bytes, int]] = Queue()
 
-    PENDING = -1
-    GOING = 0
-    STOPPING = 1
-    STARTING = 2
+def stream_callback(
+        in_data: bytes | None,
+        n_frame: int,
+        time_info: Mapping[str, float],
+        status: int,
+    ):
+    """Callback for `PyAudio.open`. Send input audio data to `audio_queue`."""
+    audio_queue.put((in_data, n_frame))
+
+    return None, paContinue
+
+with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
+    # Configure output file.
+    # ...
+    stream = py_audio.open(
+        # ...
+        stream_callback=stream_callback,
+    )
 ```
 
 </br>
 
 <!-- slide -->
 
-### put it together
+### conclusion
+
+- This project provided valuable insights into audio processing, raw file encoding, and speech detection techniques.
+- The implementation of endpointing and the use of energy levels and thresholds proved to be effective in accurately identifying speech segments.
+- Foundation for further exploration and development in the field of speech analysis and recognition
+
+<!-- ### put it together
 
 ```python
 audio_queue: Queue[tuple[bytes, int]] = Queue()
@@ -190,3 +223,4 @@ while True:
         buffer = buffer[-SIZE_OF_SILENT_END:]
 print("Stopping recording.")
 ```
+-->
