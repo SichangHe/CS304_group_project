@@ -18,19 +18,27 @@ SAMPLING_RATE = 16000
 """Audio sampling rate in frames per second."""
 CHUNK_MS = 20
 """Audio sample chunk duration in milliseconds."""
-N_FRAME_PER_CHUNK = SAMPLING_RATE * CHUNK_MS // 1000
+MS_IN_SECOND = 1000
+"""Number of milliseconds in a second."""
+N_FRAME_PER_CHUNK = SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND
 """Number of frames per audio sample chunk."""
+BACKTRACK_MS = 200
+"""Duration in milliseconds to backtrack when speech starts."""
+SIZE_OF_BACKTRACK = SAMPLING_RATE * BACKTRACK_MS // MS_IN_SECOND
+"""Size of the buffer in bytes for backtracking when speech starts."""
 MAX_PAUSE_MS = 2000
 """Maximum pause duration in milliseconds during speech."""
+SIZE_OF_SILENT_END = N_FRAME_PER_CHUNK = SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND
+"""Size of the buffer in bytes at the silent end."""
 
 
 def main(out_file_name="output.wav"):
-    """Record 5sec into `output.wav`"""
+    """Endpoint speech and record into `out_file_name`."""
     audio_queue: Queue[tuple[bytes, int]] = Queue()
     stream_callback = get_stream_callback(audio_queue)
 
     buffer = b""
-    buffer_size = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // 1000
+    pending_samples = b""
 
     with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
         # Configure output file.
@@ -61,14 +69,18 @@ def main(out_file_name="output.wav"):
             status = recording_status(is_speech)
             match status:
                 case RecordingStatus.PENDING:
+                    pending_samples += data
                     continue
-                case RecordingStatus.GOING:
-                    buffer += data
-                    if len(buffer) > buffer_size:
-                        out_file.writeframes(buffer[:-buffer_size])
-                        buffer = buffer[-buffer_size:]
                 case RecordingStatus.STOPPING:
                     break
+                case RecordingStatus.STARTING:
+                    # Backtrack previous sample before recording starts.
+                    buffer += pending_samples[-SIZE_OF_BACKTRACK:]
+                    pending_samples = b""
+            buffer += data
+            if len(buffer) > SIZE_OF_SILENT_END:
+                out_file.writeframes(buffer[:-SIZE_OF_SILENT_END])
+                buffer = buffer[-SIZE_OF_SILENT_END:]
         print("Stopping recording.")
         stream.close()
 
@@ -126,7 +138,7 @@ def get_recording_status():
         if not started:
             if is_speech:
                 started = True
-                return RecordingStatus.GOING
+                return RecordingStatus.STARTING
             return RecordingStatus.PENDING
         else:
             if is_speech:
@@ -144,11 +156,13 @@ def get_recording_status():
 class RecordingStatus(Enum):
     """- `PENDING`: The recording has not started yet.
     - `GOING`: The recording is currently in progress.
-    - `STOPPING`: The recording has been completed and should be stopped."""
+    - `STOPPING`: The recording has been completed and should be stopped.
+    - `STARTING`: The recording has just started."""
 
     PENDING = -1
     GOING = 0
     STOPPING = 1
+    STARTING = 2
 
 
 FORGET_FACTOR = 1.2
