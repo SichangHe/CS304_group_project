@@ -155,8 +155,9 @@ def recording_status(is_speech: bool) -> RecordingStatus:
 
 ### Recording using callback function
 
-We use a callback function from `get_stream_callback` to
-send input audio samples to the main thread through a `Queue`.
+- We use a callback function from `get_stream_callback` to
+  send input audio samples to the main thread through a `Queue`.
+- Avoid audio input from blocking the main thread
 
 ```python
 audio_queue: Queue[tuple[bytes, int]] = Queue()
@@ -185,7 +186,18 @@ with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
 
 <!-- slide -->
 
-### conclusion
+### Writing to file
+
+We use another thread to write to file
+
+- Avoid file operations blocking the main thread
+- Ready to write data is pushed to `write_queue`
+  - Audio frames is pushed to `write_queue` according to recording states
+- Another thread writes data in `write_queue` to wav file to avoid
+
+<!-- slide -->
+
+### Conclusion
 
 - This project provided valuable insights into audio processing, raw file encoding, and speech detection techniques.
 - The implementation of endpointing and the use of energy levels and thresholds proved to be effective in accurately identifying speech segments.
