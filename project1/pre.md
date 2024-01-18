@@ -6,7 +6,13 @@ presentation:
 
 <!-- slide -->
 
-COMPSCI304 group project 1
+# COMPSCI 304 group project 1: Speech Endpointing
+
+Steven Hé (Sīchàng), Luyao Wang
+
+Instructor: Prof. Ming Li, Haoxu Wang
+
+Duke Kunshan University
 
 <!-- slide -->
 
