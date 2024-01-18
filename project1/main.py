@@ -2,6 +2,7 @@ import wave
 from contextlib import contextmanager
 from enum import Enum
 from queue import Queue
+from threading import Thread
 from typing import Mapping
 
 import numpy as np
@@ -36,6 +37,7 @@ def main(out_file_name="output.wav"):
     """Endpoint speech and record into `out_file_name`."""
     audio_queue: Queue[tuple[bytes, int]] = Queue()
     stream_callback = get_stream_callback(audio_queue)
+    write_queue: Queue[bytes | None] = Queue()
 
     buffer = b""
     pending_samples = b""
@@ -45,7 +47,10 @@ def main(out_file_name="output.wav"):
         out_file.setnchannels(N_CHANNEL)
         out_file.setsampwidth(py_audio.get_sample_size(RESOLUTION_FORMAT))
         out_file.setframerate(SAMPLING_RATE)
-
+        writer_thread = Thread(
+            target=frame_writing_thread, args=(out_file, write_queue)
+        )
+        writer_thread.start()
         stream = py_audio.open(
             format=RESOLUTION_FORMAT,
             channels=N_CHANNEL,
@@ -55,34 +60,44 @@ def main(out_file_name="output.wav"):
             stream_callback=stream_callback,
         )
 
-        input("Press Enter to start recording...")
-        discard_first_at_least(audio_queue)
-        print("Recording...")
+        try:
+            input("Press Enter to start recording...")
+            discard_first_at_least(audio_queue)
+            print("Recording...")
 
-        classify_sample = get_classify_sample()
-        recording_status = get_recording_status()
-        while True:
-            data, _ = audio_queue.get(timeout=0.1)
+            classify_sample = get_classify_sample()
+            recording_status = get_recording_status()
+            while True:
+                data, _ = audio_queue.get(timeout=0.1)
 
-            audio_array = np.frombuffer(data, dtype=np.int16)
-            is_speech = classify_sample(audio_array)
-            status = recording_status(is_speech)
-            match status:
-                case RecordingStatus.PENDING:
-                    pending_samples += data
-                    continue
-                case RecordingStatus.STOPPING:
-                    break
-                case RecordingStatus.STARTING:
-                    # Backtrack previous sample before recording starts.
-                    buffer += pending_samples[-SIZE_OF_BACKTRACK:]
-                    pending_samples = b""
-            buffer += data
-            if len(buffer) > SIZE_OF_SILENT_END:
-                out_file.writeframes(buffer[:-SIZE_OF_SILENT_END])
-                buffer = buffer[-SIZE_OF_SILENT_END:]
-        print("Stopping recording.")
-        stream.close()
+                audio_array = np.frombuffer(data, dtype=np.int16)
+                is_speech = classify_sample(audio_array)
+                status = recording_status(is_speech)
+                match status:
+                    case RecordingStatus.PENDING:
+                        pending_samples += data
+                        continue
+                    case RecordingStatus.STOPPING:
+                        break
+                    case RecordingStatus.STARTING:
+                        # Backtrack previous sample before recording starts.
+                        buffer += pending_samples[-SIZE_OF_BACKTRACK:]
+                        pending_samples = b""
+                buffer += data
+                if len(buffer) > SIZE_OF_SILENT_END:
+                    write_queue.put(buffer[:-SIZE_OF_SILENT_END])
+                    buffer = buffer[-SIZE_OF_SILENT_END:]
+            print("Stopping recording.")
+        finally:
+            write_queue.put(None)
+            stream.close()
+            writer_thread.join(timeout=0.1)
+
+
+def frame_writing_thread(out_file: wave.Wave_write, byte_queue: Queue[bytes | None]):
+    """A thread that writes frames from `byte_queue` to `out_file`."""
+    while data := byte_queue.get():
+        out_file.writeframes(data)
 
 
 def get_stream_callback(audio_queue: Queue[tuple[bytes, int]]):
