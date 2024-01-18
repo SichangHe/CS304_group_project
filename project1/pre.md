@@ -16,6 +16,43 @@ Duke Kunshan University
 
 <!-- slide -->
 
+### Assumptions
+
+- Energy level $L$ is calculated as
+
+  $$
+  L:=10\log_{10}\left(\frac{1}{N}\sum_{i=1}^N x_i^2\right)\mathrm{dB}.
+  $$
+
+- the energy $L_s$ level when speaking is
+  much higher than the energy level $L_b$ when not speaking
+
+<!-- slide -->
+
+we track `background` energy level and smoothened `level` energy level
+
+- speech off
+  - adjust `background` upwards weakly when the new energy level is higher,
+    and adjust it downwards strongly when the new energy level is lower.
+- speech starts
+  - we do not adjust `background` because we assume the high energy level cannot
+    represent background noise.
+  - we assume that `level` would be at least 15dB higher than `background` to **enter speech**
+  - `level` would be at least 2dB higher than `background` **during speech**.
+  - energy measurement $L$ is relative
+
+<!-- slide -->
+
+- problem: If the background noise increases over 15dB during speech,
+  the algorithm would not be able to detect when the speech stops.
+
+- To combat this, we also track a `foreground` energy level, opposite to how `background` is measured and adjusted.
+- Assumption: speech would become louder when background noise increases,
+- we assume it stops when `level` is at least 20dB lower than `foreground`.
+- This mechanism can trigger can sound energy has a very sharp drop
+
+<!-- slide -->
+
 ### recording using callback function
 
 ```python
@@ -29,7 +66,7 @@ def stream_callback(
     ):
     """Callback for `PyAudio.open`. Send input audio data to `audio_queue`."""
     audio_queue.put((in_data, n_frame))
-        
+
     return None, paContinue
 
 with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
@@ -40,10 +77,13 @@ with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
         stream_callback=stream_callback,
     )
 ```
+
 </br>
 
 <!-- slide -->
+
 ### classify a frame
+
 ```python
 def classify_frame(arr: NDArray[np.int16]) -> bool:
     current = sample_decibel_energy(arr)
@@ -70,6 +110,7 @@ def classify_frame(arr: NDArray[np.int16]) -> bool:
 
     return speaking
 ```
+
 </br>
 
 <!-- slide -->
@@ -93,6 +134,7 @@ def recording_status(is_speech: bool) -> RecordingStatus:
 
     return RecordingStatus.GOING
 ```
+
 </br>
 
 <!-- slide -->
@@ -111,6 +153,7 @@ class RecordingStatus(Enum):
     STOPPING = 1
     STARTING = 2
 ```
+
 </br>
 
 <!-- slide -->
