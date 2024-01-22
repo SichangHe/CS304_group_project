@@ -1,7 +1,11 @@
 import numpy as np
+import scipy
+from scipy.signal import spectrogram
 
 
-def pre_emphasis(signal: np.ndarray[np.int16], alpha: float) -> np.ndarray[np.float64]:
+def pre_emphasis(
+    signal: np.ndarray[np.int16], alpha: float = 0.97
+) -> np.ndarray[np.float64]:
     """Apply pre-emphasis to the input signal."""
 
     preemphasized_signal = np.zeros_like(signal)
@@ -17,14 +21,28 @@ def window(samples: np.ndarray[np.float64], win_size: int) -> np.ndarray[np.floa
     pass
 
 
-def powspec(samples: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
+def powspec(
+    samples: np.ndarray[np.float64], sr=8000, wintime=0.025, steptime=0.010
+) -> np.ndarray[np.float64]:
     """
     Compute the powerspectrum and frame energy of the input signal.
 
     Each column represents a power spectrum for a given frame.
     Each row represents a frequency.
     """
-    pass
+    winpts = round(wintime * sr)
+    steppts = round(steptime * sr)
+
+    NFFT = 2 ** np.ceil(np.log2(winpts))
+    WINDOW = scipy.signal.windows.hann(winpts, sym=False)
+    NOVERLAP = winpts - steppts
+    SAMPRATE = sr
+
+    _, _, Sxx = spectrogram(
+        samples, nfft=NFFT, fs=SAMPRATE, window=WINDOW, noverlap=NOVERLAP
+    )
+
+    return Sxx
 
 
 def mel_spectrum(pspectrum: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
