@@ -30,9 +30,15 @@ class Segmenter:
         return result
 
 
-def window(samples: NDArray[np.float32], win_size: int) -> NDArray[np.float32]:
-    """Applies a window function to the given audio signal."""
-    pass
+def window(samples: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Applies the Hanning window function to the given audio signal."""
+    m = len(samples)
+    return samples * hanning(np.arange(m), m)
+
+
+def hanning(ns: NDArray, m: int):
+    """The Hanning window function."""
+    return 0.5 - 0.5 * np.cos(2 * np.pi * ns / m)
 
 
 def powspec(
