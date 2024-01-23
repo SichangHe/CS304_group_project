@@ -1,6 +1,10 @@
+import math
+from functools import lru_cache
+
 import numpy as np
 import scipy
 from numpy.typing import NDArray
+from scipy import fft
 from scipy.signal import spectrogram
 
 
@@ -31,14 +35,26 @@ class Segmenter:
 
 
 def window(samples: NDArray[np.float32]) -> NDArray[np.float32]:
-    """Applies the Hanning window function to the given audio signal."""
+    """Applies the Hanning window function to the given audio samples."""
     m = len(samples)
-    return samples * hanning(np.arange(m), m)
+    return samples * hanning(m)
 
 
-def hanning(ns: NDArray, m: int):
-    """The Hanning window function."""
-    return 0.5 - 0.5 * np.cos(2 * np.pi * ns / m)
+@lru_cache(maxsize=8)
+def hanning(m: int):
+    """The Hanning window function for the first `m` points."""
+    return 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(m) / m)
+
+
+def fast_fourier_transform(samples: NDArray[np.float32]) -> NDArray[np.complex_]:
+    """Fast Fourier Transform (FFT) of the given audio samples.
+    Overwrites the input `samples` for FFT speed.
+    Outputs `m` numbers. `m` is a 2's power.
+    The first `m` >> 1 - 1 output numbers are useful."""
+    original_len = len(samples)
+    m: int = 1 << math.ceil(math.log2(original_len))
+    transformed: NDArray[np.complex_] = fft.fft(samples, n=m, overwrite_x=True)  # type: ignore
+    return transformed
 
 
 def powspec(
