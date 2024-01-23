@@ -1,11 +1,10 @@
 import numpy as np
 import scipy
-from scipy.signal import spectrogram
 from numpy.typing import NDArray
+from scipy.signal import spectrogram
 
-def pre_emphasis(
-    signal: np.ndarray[np.int16], alpha: float = 0.97
-) -> NDArray[np.float32]:
+
+def pre_emphasis(signal: NDArray[np.int16], alpha: float = 0.97) -> NDArray[np.float32]:
     """Apply pre-emphasis to the input signal."""
     pre_emphasized_signal = signal.astype(np.float32, copy=True)
     pre_emphasized_signal[1:] -= alpha * pre_emphasized_signal[:-1]
@@ -18,7 +17,7 @@ def window(samples: NDArray[np.float32], win_size: int) -> NDArray[np.float32]:
 
 
 def powspec(
-    samples: np.ndarray[np.float64], sr=8000, wintime=0.025, steptime=0.010
+    samples: NDArray[np.float64], sr=8000, wintime=0.025, steptime=0.010
 ) -> NDArray[np.float32]:
     """
     Compute the powerspectrum and frame energy of the input signal.
