@@ -4,11 +4,30 @@ from numpy.typing import NDArray
 from scipy.signal import spectrogram
 
 
-def pre_emphasis(signal: NDArray[np.int16], alpha: float = 0.97) -> NDArray[np.float32]:
+def pre_emphasis(signal: NDArray[np.int16], alpha: float = 0.95) -> NDArray[np.float32]:
     """Apply pre-emphasis to the input signal."""
     pre_emphasized_signal = signal.astype(np.float32, copy=True)
     pre_emphasized_signal[1:] -= alpha * pre_emphasized_signal[:-1]
     return pre_emphasized_signal
+
+
+class Segmenter:
+    def __init__(self, window_size: int):
+        self.window_size = window_size
+        self.half_window_size = window_size // 2
+        self.buffer: NDArray[np.float32] = np.array([], dtype=np.float32)
+
+    def add_sample(self, sample: NDArray[np.float32]):
+        """Add a sample to be segmented."""
+        self.buffer = np.concatenate((self.buffer, sample))
+
+    def next(self) -> NDArray[np.float32] | None:
+        """Segment the collected audio signal into frames."""
+        if len(self.buffer) < self.window_size:
+            return None
+        result = self.buffer[: self.window_size]
+        self.buffer = self.buffer[self.half_window_size :]
+        return result
 
 
 def window(samples: NDArray[np.float32], win_size: int) -> NDArray[np.float32]:
