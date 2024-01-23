@@ -50,11 +50,30 @@ def fast_fourier_transform(samples: NDArray[np.float32]) -> NDArray[np.complex_]
     """Fast Fourier Transform (FFT) of the given audio samples.
     Overwrites the input `samples` for FFT speed.
     Outputs `m` numbers. `m` is a 2's power.
-    The first `m` >> 1 - 1 output numbers are useful."""
+    The first (`m` >> 1) + 1 output numbers are useful."""
     original_len = len(samples)
     m: int = 1 << math.ceil(math.log2(original_len))
     transformed: NDArray[np.complex_] = fft.fft(samples, n=m, overwrite_x=True)  # type: ignore
     return transformed
+
+
+def frequencies_n_power_spectrum(
+    transformed: NDArray[np.complex_], sampling_rate: int
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+    """Frequencies and power spectrum of FFT output `transformed`,
+    Assuming `transformed` has length `m` that is a 2's power."""
+    m = len(transformed)
+    n_useful_point = (m >> 1) + 1
+    frequencies: NDArray[np.float32] = (
+        np.linspace(0, 1 / m, n_useful_point, endpoint=True, dtype=np.float32)
+        * sampling_rate
+    )
+
+    useful_transformed = transformed[:n_useful_point]
+    powers: NDArray[np.float32] = np.square(  # type: ignore
+        useful_transformed.real, dtype=np.float32
+    ) + np.square(useful_transformed.imag, dtype=np.float32)
+    return frequencies, powers
 
 
 def powspec(
