@@ -1,29 +1,25 @@
 import numpy as np
 import scipy
 from scipy.signal import spectrogram
-
+from numpy.typing import NDArray
 
 def pre_emphasis(
     signal: np.ndarray[np.int16], alpha: float = 0.97
-) -> np.ndarray[np.float64]:
+) -> NDArray[np.float32]:
     """Apply pre-emphasis to the input signal."""
-
-    preemphasized_signal = np.zeros_like(signal)
-    preemphasized_signal[0] = signal[0]
-    for i in range(1, len(signal)):
-        preemphasized_signal[i] = signal[i] - alpha * signal[i - 1]
-
-    return preemphasized_signal
+    pre_emphasized_signal = signal.astype(np.float32, copy=True)
+    pre_emphasized_signal[1:] -= alpha * pre_emphasized_signal[:-1]
+    return pre_emphasized_signal
 
 
-def window(samples: np.ndarray[np.float64], win_size: int) -> np.ndarray[np.float64]:
+def window(samples: NDArray[np.float32], win_size: int) -> NDArray[np.float32]:
     """Applies a window function to the given audio signal."""
     pass
 
 
 def powspec(
     samples: np.ndarray[np.float64], sr=8000, wintime=0.025, steptime=0.010
-) -> np.ndarray[np.float64]:
+) -> NDArray[np.float32]:
     """
     Compute the powerspectrum and frame energy of the input signal.
 
@@ -45,7 +41,7 @@ def powspec(
     return Sxx
 
 
-def mel_spectrum(pspectrum: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
+def mel_spectrum(pspectrum: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Perform critical band analysis.
     Takes power spectrogram as input.
@@ -55,7 +51,7 @@ def mel_spectrum(pspectrum: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
     pass
 
 
-def spec2cep(aspectrum: np.ndarray[np.float64]) -> np.ndarray[np.float64]:
+def spec2cep(aspectrum: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Calculate cepstra from spectral samples via DCT.
 
