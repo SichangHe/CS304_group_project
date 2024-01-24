@@ -167,10 +167,9 @@ def filter_banks_from_frequencies(
         )
         banks_matrix[i] = np.maximum(0, np.minimum(loslope, hislope))
 
-    banks_matrix = (
-        np.diag(2 / (mel_frequencies[2 : n_bank + 2] - mel_frequencies[:n_bank]))
-        @ banks_matrix
-    )
+    # Normalize each row
+    row_sums = banks_matrix.sum(axis=1)
+    banks_matrix = banks_matrix / row_sums[:, np.newaxis]
 
     return banks_matrix, mel_frequencies
 
