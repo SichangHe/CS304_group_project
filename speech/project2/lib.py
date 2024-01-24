@@ -1,9 +1,10 @@
 import math
 from functools import lru_cache
-from matplotlib import pyplot as plt
 
 import numpy as np
 import scipy
+from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from numpy.typing import NDArray
 from scipy import fft
 from scipy.signal import spectrogram
@@ -11,7 +12,7 @@ from scipy.signal import spectrogram
 from ..project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
 
 
-def pre_emphasis(signal: NDArray[np.int16], alpha: float = 0.95) -> NDArray[np.float32]:
+def pre_emphasis(signal: NDArray, alpha: float = 0.95) -> NDArray[np.float32]:
     """Apply pre-emphasis to the input signal."""
     pre_emphasized_signal = signal.astype(np.float32, copy=True)
     pre_emphasized_signal[1:] -= alpha * pre_emphasized_signal[:-1]
@@ -60,14 +61,11 @@ def fast_fourier_transform(samples: NDArray[np.float32]) -> NDArray[np.complex_]
     return transformed
 
 
-def frequencies_after_fft(m: int, sampling_rate: int) -> NDArray[np.float32]:
-    """Frequencies of FFT output of length `m`, a 2's power."""
-    n_useful_point = (m >> 1) + 1
-    frequencies: NDArray[np.float32] = (
-        np.linspace(0, 1 / m, n_useful_point, endpoint=True, dtype=np.float32)
-        * sampling_rate
-    )
-    return frequencies
+@lru_cache(maxsize=2)
+def frequencies_after_fft(fft_size: int, sampling_rate: int) -> NDArray[np.float32]:
+    """Frequencies of FFT output of length `fft_size`, a 2's power."""
+    n_useful_point = (fft_size >> 1) + 1
+    return sampling_rate / fft_size * np.arange(n_useful_point, dtype=np.float32)
 
 
 def power_spectrum_after_fft(transformed: NDArray[np.complex_]) -> NDArray[np.float32]:
@@ -83,7 +81,7 @@ def power_spectrum_after_fft(transformed: NDArray[np.complex_]) -> NDArray[np.fl
 
 
 def powspec(
-    samples: NDArray[np.float64], sr=8000, wintime=0.025, steptime=0.010
+    samples: NDArray, sr=8000, wintime=0.025, steptime=0.010
 ) -> NDArray[np.float32]:
     """
     Compute the powerspectrum and frame energy of the input signal.
@@ -115,9 +113,7 @@ def filter_banks_from_frequencies(
 ):
     """Filter banks matrix for converting power spectrum into Mel spectrum."""
 
-    # FIXME:
-    # frequencies = frequencies_after_fft(fft_size, sampling_rate)
-    frequencies = np.arange(fft_size // 2 + 1) / fft_size * sampling_rate
+    frequencies = frequencies_after_fft(fft_size, sampling_rate)
     maxfrq = sampling_rate / 2
 
     banks_matrix = np.zeros((n_bank, n_useful_point))
@@ -139,7 +135,7 @@ def filter_banks_from_frequencies(
     row_sums = banks_matrix.sum(axis=1)
     banks_matrix = banks_matrix / row_sums[:, np.newaxis]
 
-    return banks_matrix, mel_frequencies
+    return banks_matrix
 
 
 def mel2hz(z):
@@ -182,7 +178,7 @@ def spec2cep(spec, ncep=13):
     Each column represents a set of cepstral coefficients derived from a particular frame.
     Each row represents an individual cepstral coefficient.
     """
-    nrow, ncol = spec.shape
+    nrow, _ = spec.shape
 
     dctm = np.zeros((ncep, nrow))
     for i in range(ncep):
@@ -198,9 +194,8 @@ def spec2cep(spec, ncep=13):
 
 
 def cep2spec(cep, nfreq=21):
-    ncep, ncol = cep.shape
+    ncep, _ = cep.shape
 
-    dctm = np.zeros((ncep, nfreq))
     idctm = np.zeros((nfreq, ncep))
 
     for i in range(ncep):
@@ -218,17 +213,17 @@ def mel_spectrum_from_powers(
     power_spectrum: NDArray[np.float32],
     sampling_rate=SAMPLING_RATE,
     n_bank=40,
-) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+) -> NDArray[np.float32]:
     """
     Returns frequencies at filter bank center and Mel spectrum.
     """
     n_useful_point = len(power_spectrum)
     nfreqs = power_spectrum.shape[0]
-    banks_matrix, mel_frequencies = filter_banks_from_frequencies(
+    banks_matrix = filter_banks_from_frequencies(
         fft_size, n_useful_point, sampling_rate, n_bank
     )
 
-    return mel_frequencies[1:-1], banks_matrix[:, :nfreqs] @ power_spectrum
+    return banks_matrix[:, :nfreqs] @ power_spectrum
 
 
 def mel_spectrum(
@@ -247,42 +242,33 @@ def mel_spectrum(
 
 
 # TODO:
-def mfcc_homebrew(
-    audio_array: NDArray[np.int16],
-    n_banks=40,
-) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+def mfcc_homebrew(audio_array: NDArray, n_banks=40):
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
-    mel_spectra = np.array([]).reshape(n_banks, 0)
+    mel_spectra = np.array([], dtype=np.float32).reshape(n_banks, 0)
     while (frame := segmenter.next()) is not None:
         windowed = window(frame)
         transformed = fast_fourier_transform(windowed)
         m = len(transformed)
         power_spectrum = power_spectrum_after_fft(transformed)
-        mel_frequencies, mel_spectrum = mel_spectrum_from_powers(
-            m, power_spectrum, n_bank=n_banks
-        )
-        # TODO: use frequencies
+        mel_spectrum = mel_spectrum_from_powers(m, power_spectrum, n_bank=n_banks)
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
-    assert len(mel_spectra) != 0
     cep, _ = spec2cep(mel_spectra, ncep=13)
-    return cep, mel_spectra, mel_frequencies
+    return cep, mel_spectra
 
 
 # TODO:
-def mfcc(
-    audio_array: NDArray[np.float32], sr=8000
-) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
-    audio_array = pre_emphasis(audio_array)
-    pspec = powspec(audio_array, sr=sr)
+def mfcc(audio_array: NDArray, sr=8000):
+    pre_emphasized = pre_emphasis(audio_array)
+    pspec = powspec(pre_emphasized, sr=sr)
     mspec = mel_spectrum(pspec, sr=sr)
     cep, _ = spec2cep(mspec, ncep=13)
     return cep, mspec, pspec
 
 
 def plot_log_mel_spectra(
-    mel_spectrum_matrix: NDArray[np.float32],
-) -> plt.Figure:
+    mel_spectrum_matrix: NDArray[np.float32], title="Log Mel Spectra"
+) -> Figure:
     """
     Plot log mel spectra.
 
@@ -291,17 +277,15 @@ def plot_log_mel_spectra(
     """
     log_mel_spectrum_matrix = np.log(mel_spectrum_matrix)
     fig, ax = plt.subplots()
-    im = ax.imshow(log_mel_spectrum_matrix, cmap="Greys")
-    ax.set_xlabel("Frame")
-    ax.set_ylabel("Frequency")
-    ax.set_title("Log Mel Spectra")
+    ax.imshow(log_mel_spectrum_matrix, cmap="hsv")
+    ax.set_xlabel("Sample")
+    ax.set_ylabel("Dimension")
+    ax.set_title(title)
 
     return fig
 
 
-def plot_cepstra(
-    ceptra_matrix: NDArray[np.float32],
-) -> plt.Figure:
+def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstra") -> Figure:
     """
     Plot cepstra.
 
@@ -309,10 +293,10 @@ def plot_cepstra(
     Each row of input matrix corresponds to a feature after applying DCT.
     """
     fig, ax = plt.subplots()
-    im = ax.imshow(ceptra_matrix, cmap="Greys")
-    ax.set_xlabel("Frame")
-    ax.set_ylabel("Features")
-    ax.set_title("Cpectra")
+    ax.imshow(ceptra_matrix, cmap="hsv")
+    ax.set_xlabel("Sample")
+    ax.set_ylabel("Dimension")
+    ax.set_title(title)
 
     return fig
 

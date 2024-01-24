@@ -2,6 +2,7 @@
 Run as `python3 -m speech.project2.main`."""
 
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
@@ -41,7 +42,7 @@ def plot_audio_file(number: str, i: int, n_filter_banks: int):
     audio_array = np.frombuffer(frames, dtype=np.int16)
     assert len(audio_array) == n_frames
 
-    cep, mspec, mel_frequencies = mfcc_homebrew(audio_array=audio_array)
+    cep, mspec = mfcc_homebrew(audio_array=audio_array)
     try:
         os.mkdir(f"log_spectra{n_filter_banks}")
     except:
