@@ -101,34 +101,31 @@ def powspec(
     return Sxx
 
 
-def fft2melmx(nfft, sr, nfilts=0, width=1.0, minfrq=0, maxfrq=None):
+def filter_banks(nfft, sr, n_filter_bank=40, width=1.0, minfrq=0, maxfrq=None):
     """Generate a matrix of weights to combine FFT bins into Mel bins."""
 
     if maxfrq is None:
         maxfrq = sr / 2
 
-    if nfilts == 0:
-        nfilts = np.ceil(hz2mel(maxfrq) / 2)
+    banks_matrix = np.zeros((n_filter_bank, nfft))
 
-    wts = np.zeros((nfilts, nfft))
-
-    fftfrqs = np.arange(nfft // 2 + 1) / nfft * sr
+    frequencies = np.arange(nfft // 2 + 1) / nfft * sr
     minmel = hz2mel(minfrq)
     maxmel = hz2mel(maxfrq)
-    binfrqs = mel2hz(minmel + np.arange(nfilts + 2) / (nfilts + 1) * (maxmel - minmel))
+    binfrqs = mel2hz(minmel + np.arange(n_filter_bank + 2) / (n_filter_bank + 1) * (maxmel - minmel))
 
-    for i in range(nfilts):
+    for i in range(n_filter_bank):
         fs = binfrqs[i : i + 3]
         fs = fs[1] + width * (fs - fs[1])
-        loslope = (fftfrqs - fs[0]) / (fs[1] - fs[0])
-        hislope = (fs[2] - fftfrqs) / (fs[2] - fs[1])
-        wts[i, : nfft // 2 + 1] = np.maximum(0, np.minimum(loslope, hislope))
+        loslope = (frequencies - fs[0]) / (fs[1] - fs[0])
+        hislope = (fs[2] - frequencies) / (fs[2] - fs[1])
+        banks_matrix[i, : nfft // 2 + 1] = np.maximum(0, np.minimum(loslope, hislope))
 
-    wts = np.diag(2 / (binfrqs[2 : nfilts + 2] - binfrqs[:nfilts])) @ wts
+    banks_matrix = np.diag(2 / (binfrqs[2 : n_filter_bank + 2] - binfrqs[:n_filter_bank])) @ banks_matrix
 
-    wts[:, nfft // 2 + 1 :] = 0
+    banks_matrix[:, nfft // 2 + 1 :] = 0
 
-    return wts, binfrqs
+    return banks_matrix, binfrqs
 
 
 def mel2hz(z):
@@ -211,7 +208,7 @@ def mel_spectrum(
     Each column corresponds to a frame, and each row represents a critical band.
     """
     nfreqs = pspectrum.shape[0]
-    m, _ = fft2melmx(512, sr, n_banks, 1, 0, sr / 2)
+    m, _ = filter_banks(512, sr, n_banks, 1, 0, sr / 2)
 
     return m[:, :nfreqs] @ pspectrum
 

@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from queue import Queue
 from typing import Mapping
 
@@ -51,13 +50,3 @@ class AudioIn:
     def __exit__(self, *_):
         self.stream.close()
         self.py_audio.terminate() if self.py_audio else None
-
-
-@contextmanager
-def open_pyaudio():
-    """Provide a self-cleaning-up `PyAudio` instance for a `with` statement."""
-    py_audio = None
-    try:
-        yield (py_audio := PyAudio())
-    finally:
-        py_audio.terminate() if py_audio else None
