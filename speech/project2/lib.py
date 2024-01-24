@@ -1,14 +1,13 @@
 import math
 from functools import lru_cache
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from numpy.typing import NDArray
 from scipy import fft
 from scipy.signal import spectrogram
 
-from speech.project1 import CHUNK_MS, SAMPLING_RATE
+from ..project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
 
 
 def pre_emphasis(signal: NDArray[np.int16], alpha: float = 0.95) -> NDArray[np.float32]:
@@ -250,10 +249,10 @@ def mel_spectrum(
 def mfcc_homebrew(
     audio_array: NDArray[np.int16],
 ) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
-    segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS)
+    segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
     mel_spectra = []
-    while frame := segmenter.next():
+    while (frame := segmenter.next()) is not None:
         windowed = window(frame)
         transformed = fast_fourier_transform(windowed)
         m = len(transformed)
@@ -261,7 +260,9 @@ def mfcc_homebrew(
         mel_frequencies, mel_spectrum = mel_spectrum_from_powers(m, power_spectrum)
         # TODO: use frequencies
         mel_spectra.append(mel_spectrum)
+    assert len(mel_spectra) != 0
     mel_spectra_np = np.asarray(mel_spectra)
+    # TODO: This is transposed.
     cep = spec2cep(mel_spectra_np, ncep=13)
     return cep, mel_spectra
 
