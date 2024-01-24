@@ -147,7 +147,9 @@ def filter_banks_from_frequencies(
 ):
     """Filter banks matrix for converting power spectrum into Mel spectrum."""
 
-    frequencies = frequencies_after_fft(fft_size, sampling_rate)
+    # FIXME:
+    # frequencies = frequencies_after_fft(fft_size, sampling_rate)
+    frequencies = np.arange(fft_size // 2 + 1) / fft_size * sampling_rate
     maxfrq = sampling_rate / 2
 
     banks_matrix = np.zeros((n_bank, n_useful_point))
@@ -156,9 +158,13 @@ def filter_banks_from_frequencies(
     mel_frequencies = mel2hz(np.arange(n_bank + 2) / (n_bank + 1) * maxmel)
 
     for i in range(n_bank):
-        frequencies = mel_frequencies[i : i + 3]
-        loslope = (frequencies - frequencies[0]) / (frequencies[1] - frequencies[0])
-        hislope = (frequencies[2] - frequencies) / (frequencies[2] - frequencies[1])
+        local_frequences = mel_frequencies[i : i + 3]
+        loslope = (frequencies - local_frequences[0]) / (
+            local_frequences[1] - local_frequences[0]
+        )
+        hislope = (local_frequences[2] - frequencies) / (
+            local_frequences[2] - local_frequences[1]
+        )
         banks_matrix[i] = np.maximum(0, np.minimum(loslope, hislope))
 
     banks_matrix = (
@@ -258,7 +264,7 @@ def mel_spectrum_from_powers(
 
 
 def mel_spectrum(
-    pspectrum: NDArray[np.float32], sr=8000, n_banks=40
+    pspectrum: NDArray[np.float32], sr=8000, n_banks=40, fft_size=512
 ) -> NDArray[np.float32]:
     """
     Perform critical band analysis.
@@ -267,9 +273,9 @@ def mel_spectrum(
     Each column corresponds to a frame, and each row represents a critical band.
     """
     nfreqs = pspectrum.shape[0]
-    m, _ = filter_banks_from_frequencies(512, sr, n_banks, 1, 0, sr / 2)
+    m, _ = filter_banks_from_frequencies(fft_size, nfreqs, sr, n_banks)
 
-    return m[:, :nfreqs] @ pspectrum
+    return m @ pspectrum
 
 
 # TODO:
@@ -298,5 +304,5 @@ def mfcc(
     audio_array = pre_emphasis(audio_array)
     pspec = powspec(audio_array, sr=sr)
     mspec = mel_spectrum(pspec, sr=sr)
-    cep = spec2cep(mspec, ncep=13)
+    cep, _ = spec2cep(mspec, ncep=13)
     return cep, mspec
