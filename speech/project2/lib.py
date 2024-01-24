@@ -192,7 +192,6 @@ def mel2hz(z):
 
 def hz2mel(f):
     """Convert frequencies f (in Hz) to mel 'scale'."""
-    f = np.asarray(f)
     f_0 = 0
     f_sp = 200 / 3
     brkfrq = 1000
@@ -200,8 +199,10 @@ def hz2mel(f):
     logstep = np.exp(np.log(6.4) / 27)
     linpts = f < brkfrq
     z = np.zeros_like(f).astype(np.float32)
-    z[linpts] = (f[linpts] - f_0) / f_sp
-    z[~linpts] = brkpt + (np.log(f[~linpts] / brkfrq)) / np.log(logstep)
+    if linpts:
+        z = (f - f_0) / f_sp
+    else:
+        z = brkpt + (np.log(f / brkfrq)) / np.log(logstep)
 
     return z
 
