@@ -1,5 +1,6 @@
 import math
 from functools import lru_cache
+from matplotlib import pyplot as plt
 
 import numpy as np
 import scipy
@@ -264,8 +265,8 @@ def mfcc_homebrew(
         # TODO: use frequencies
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
     assert len(mel_spectra) != 0
-    cep = spec2cep(mel_spectra, ncep=13)
-    return cep, mel_spectra
+    cep, _ = spec2cep(mel_spectra, ncep=13)
+    return cep, mel_spectra, mel_frequencies
 
 
 # TODO:
@@ -276,4 +277,41 @@ def mfcc(
     pspec = powspec(audio_array, sr=sr)
     mspec = mel_spectrum(pspec, sr=sr)
     cep, _ = spec2cep(mspec, ncep=13)
-    return cep, mspec
+    return cep, mspec, pspec
+
+
+def plot_log_mel_spectra(
+    mel_spectrum_matrix: NDArray[np.float32],
+) -> plt.Figure:
+    """
+    Plot log mel spectra.
+
+    Each column of input matrix represents a feature vector of size equal to the number of mel filter banks of a frame.
+    Each row of input matrix corresponds to a frequency.
+    """
+    log_mel_spectrum_matrix = np.log(mel_spectrum_matrix)
+    fig, ax = plt.subplots()
+    im = ax.imshow(log_mel_spectrum_matrix, cmap="Greys")
+    ax.set_xlabel("Frame")
+    ax.set_ylabel("Frequency")
+    ax.set_title("Log Mel Spectra")
+
+    return fig
+
+
+def plot_ceptra(
+    ceptra_matrix: NDArray[np.float32],
+) -> plt.Figure:
+    """
+    Plot ceptra.
+
+    Each column of input matrix represents a feature vector of size equal to the number of features for cepstra (typically 13).
+    Each row of input matrix corresponds to a feature after applying DCT.
+    """
+    fig, ax = plt.subplots()
+    im = ax.imshow(ceptra_matrix, cmap="Greys")
+    ax.set_xlabel("Frame")
+    ax.set_ylabel("Features")
+    ax.set_title("Cpectra")
+
+    return fig
