@@ -242,16 +242,16 @@ def mel_spectrum(
 
 
 # TODO:
-def mfcc_homebrew(audio_array: NDArray, n_banks=40):
+def mfcc_homebrew(audio_array: NDArray, n_filter_banks=40):
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
-    mel_spectra = np.array([], dtype=np.float32).reshape(n_banks, 0)
+    mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
     while (frame := segmenter.next()) is not None:
         windowed = window(frame)
         transformed = fast_fourier_transform(windowed)
         m = len(transformed)
         power_spectrum = power_spectrum_after_fft(transformed)
-        mel_spectrum = mel_spectrum_from_powers(m, power_spectrum, n_bank=n_banks)
+        mel_spectrum = mel_spectrum_from_powers(m, power_spectrum, n_bank=n_filter_banks)
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
     cep, _ = spec2cep(mel_spectra, ncep=13)
     return cep, mel_spectra
@@ -267,7 +267,7 @@ def mfcc(audio_array: NDArray, sr=8000):
 
 
 def plot_log_mel_spectra(
-    mel_spectrum_matrix: NDArray[np.float32], title="Log Mel Spectra"
+    mel_spectrum_matrix: NDArray[np.float32], title="Log Mel Spectrum"
 ) -> Figure:
     """
     Plot log mel spectra.
@@ -285,7 +285,7 @@ def plot_log_mel_spectra(
     return fig
 
 
-def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstra") -> Figure:
+def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstrum") -> Figure:
     """
     Plot cepstra.
 

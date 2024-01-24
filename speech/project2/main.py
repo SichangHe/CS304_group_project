@@ -43,30 +43,24 @@ def plot_audio_file(number: str, i: int, n_filter_banks: int):
     audio_array = np.frombuffer(frames, dtype=np.int16)
     assert len(audio_array) == n_frames
 
-    cep, mspec = mfcc_homebrew(audio_array=audio_array)
-    try:
-        os.mkdir(f"log_spectra{n_filter_banks}")
-    except:
-        pass
-    log_spec_file_name = f"log_spectra{n_filter_banks}/{number}{i}.png"
-    log_spec_fig: Figure = plot_log_mel_spectra(mspec)
+    dir_name = f"project2_plot/{number}/"
+    os.makedirs(dir_name, exist_ok=True)
+    cep, mspec = mfcc_homebrew(audio_array=audio_array, n_filter_banks=n_filter_banks)
+
+    log_spec_file_name = f"{dir_name}{number}{i}log_spectra{n_filter_banks}.png"
+    title = f"Log Mel Spectrum of `{number}`\n(#{i}, {n_filter_banks} Filter Banks)"
+    log_spec_fig: Figure = plot_log_mel_spectra(mspec, title=title)
     log_spec_fig.savefig(log_spec_file_name, bbox_inches="tight")
 
-    try:
-        os.mkdir(f"cepstra{n_filter_banks}")
-    except:
-        pass
-    ceps_file_name = f"cepstra{n_filter_banks}/{number}{i}.png"
-    ceps_fig: Figure = plot_cepstra(lifting(cep))
+    ceps_file_name = f"{dir_name}{number}{i}cepstra{n_filter_banks}.png"
+    title = f"Mel Cepstrum of `{number}`\n(#{i}, {n_filter_banks} Filter Banks)"
+    ceps_fig: Figure = plot_cepstra(lifting(cep), title=title)
     ceps_fig.savefig(ceps_file_name, bbox_inches="tight")
 
-    try:
-        os.mkdir(f"log_spectra_idct{n_filter_banks}")
-    except:
-        pass
-    log_spec_idct_file_name = f"log_spectra_idct{n_filter_banks}/{number}{i}.png"
-    log_spec_fig_idct: Figure = plot_log_mel_spectra(cep2spec(cep)[0])
-    log_spec_fig_idct.savefig(log_spec_idct_file_name, bbox_inches="tight")
+    idct_file_name = f"{dir_name}{number}{i}idct{n_filter_banks}.png"
+    title = f"IDCT-Derived Log Spectrum of `{number}`\n(#{i}, {n_filter_banks} Filter Banks)"
+    idct_fig: Figure = plot_log_mel_spectra(cep2spec(cep)[0], title=title)
+    idct_fig.savefig(idct_file_name, bbox_inches="tight")
 
 
 def main():
@@ -74,6 +68,7 @@ def main():
         for i in range(4):
             for n_filter_banks in NS_FILTER_BANKS:
                 plot_audio_file(number, i, n_filter_banks)
+                plt.close("all")
 
 
 main() if __name__ == "__main__" else None
