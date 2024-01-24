@@ -1,12 +1,14 @@
 import math
 from functools import lru_cache
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from numpy.typing import NDArray
 from scipy import fft
 from scipy.signal import spectrogram
-import matplotlib.pyplot as plt
+
+from speech.project1 import CHUNK_MS, SAMPLING_RATE
 
 
 def pre_emphasis(signal: NDArray[np.int16], alpha: float = 0.95) -> NDArray[np.float32]:
@@ -58,23 +60,26 @@ def fast_fourier_transform(samples: NDArray[np.float32]) -> NDArray[np.complex_]
     return transformed
 
 
-def frequencies_n_power_spectrum(
-    transformed: NDArray[np.complex_], sampling_rate: int
-) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
-    """Frequencies and power spectrum of FFT output `transformed`,
-    Assuming `transformed` has length `m` that is a 2's power."""
-    m = len(transformed)
+def frequencies_after_fft(m: int, sampling_rate: int) -> NDArray[np.float32]:
+    """Frequencies of FFT output of length `m`, a 2's power."""
     n_useful_point = (m >> 1) + 1
     frequencies: NDArray[np.float32] = (
         np.linspace(0, 1 / m, n_useful_point, endpoint=True, dtype=np.float32)
         * sampling_rate
     )
+    return frequencies
 
+
+def power_spectrum_after_fft(transformed: NDArray[np.complex_]) -> NDArray[np.float32]:
+    """Power spectrum of FFT output `transformed`,
+    Assuming `transformed` has length `m` that is a 2's power."""
+    m = len(transformed)
+    n_useful_point = (m >> 1) + 1
     useful_transformed = transformed[:n_useful_point]
     powers: NDArray[np.float32] = np.square(  # type: ignore
         useful_transformed.real, dtype=np.float32
     ) + np.square(useful_transformed.imag, dtype=np.float32)
-    return frequencies, powers
+    return powers
 
 
 def powspec(
@@ -112,7 +117,9 @@ def filter_banks(nfft, sr, n_filter_bank=40, width=1.0, minfrq=0, maxfrq=None):
     frequencies = np.arange(nfft // 2 + 1) / nfft * sr
     minmel = hz2mel(minfrq)
     maxmel = hz2mel(maxfrq)
-    binfrqs = mel2hz(minmel + np.arange(n_filter_bank + 2) / (n_filter_bank + 1) * (maxmel - minmel))
+    binfrqs = mel2hz(
+        minmel + np.arange(n_filter_bank + 2) / (n_filter_bank + 1) * (maxmel - minmel)
+    )
 
     for i in range(n_filter_bank):
         fs = binfrqs[i : i + 3]
@@ -121,11 +128,45 @@ def filter_banks(nfft, sr, n_filter_bank=40, width=1.0, minfrq=0, maxfrq=None):
         hislope = (fs[2] - frequencies) / (fs[2] - fs[1])
         banks_matrix[i, : nfft // 2 + 1] = np.maximum(0, np.minimum(loslope, hislope))
 
-    banks_matrix = np.diag(2 / (binfrqs[2 : n_filter_bank + 2] - binfrqs[:n_filter_bank])) @ banks_matrix
+    banks_matrix = (
+        np.diag(2 / (binfrqs[2 : n_filter_bank + 2] - binfrqs[:n_filter_bank]))
+        @ banks_matrix
+    )
 
     banks_matrix[:, nfft // 2 + 1 :] = 0
 
     return banks_matrix, binfrqs
+
+
+@lru_cache(maxsize=8)
+def filter_banks_from_frequencies(
+    fft_size: int,
+    n_useful_point: int,
+    sampling_rate: int,
+    n_bank: int,
+):
+    """Filter banks matrix for converting power spectrum into Mel spectrum."""
+
+    frequencies = frequencies_after_fft(fft_size, sampling_rate)
+    maxfrq = sampling_rate / 2
+
+    banks_matrix = np.zeros((n_bank, n_useful_point))
+
+    maxmel = hz2mel(maxfrq)
+    mel_frequencies = mel2hz(np.arange(n_bank + 2) / (n_bank + 1) * maxmel)
+
+    for i in range(n_bank):
+        frequencies = mel_frequencies[i : i + 3]
+        loslope = (frequencies - frequencies[0]) / (frequencies[1] - frequencies[0])
+        hislope = (frequencies[2] - frequencies) / (frequencies[2] - frequencies[1])
+        banks_matrix[i] = np.maximum(0, np.minimum(loslope, hislope))
+
+    banks_matrix = (
+        np.diag(2 / (mel_frequencies[2 : n_bank + 2] - mel_frequencies[:n_bank]))
+        @ banks_matrix
+    )
+
+    return banks_matrix, mel_frequencies
 
 
 def mel2hz(z):
@@ -198,6 +239,24 @@ def cep2spec(cep, nfreq=21):
     return spec, idctm
 
 
+def mel_spectrum_from_powers(
+    fft_size: int,
+    power_spectrum: NDArray[np.float32],
+    sampling_rate=SAMPLING_RATE,
+    n_bank=40,
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+    """
+    Returns frequencies at filter bank center and Mel spectrum.
+    """
+    n_useful_point = len(power_spectrum)
+    nfreqs = power_spectrum.shape[0]
+    banks_matrix, mel_frequencies = filter_banks_from_frequencies(
+        fft_size, n_useful_point, sampling_rate, n_bank
+    )
+
+    return mel_frequencies[1:-1], banks_matrix[:, :nfreqs] @ power_spectrum
+
+
 def mel_spectrum(
     pspectrum: NDArray[np.float32], sr=8000, n_banks=40
 ) -> NDArray[np.float32]:
@@ -208,9 +267,28 @@ def mel_spectrum(
     Each column corresponds to a frame, and each row represents a critical band.
     """
     nfreqs = pspectrum.shape[0]
-    m, _ = filter_banks(512, sr, n_banks, 1, 0, sr / 2)
+    m, _ = filter_banks_from_frequencies(512, sr, n_banks, 1, 0, sr / 2)
 
     return m[:, :nfreqs] @ pspectrum
+
+
+# TODO:
+def mfcc_homebrew(
+    audio_array: NDArray[np.int16],
+) -> (NDArray[np.float32], NDArray[np.float32]):
+    segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS)
+    segmenter.add_sample(pre_emphasis(audio_array))
+    mel_spectra = np.array([[]], dtype=np.float32)
+    while frame := segmenter.next():
+        windowed = window(frame)
+        transformed = fast_fourier_transform(windowed)
+        m = len(transformed)
+        power_spectrum = power_spectrum_after_fft(transformed)
+        mel_frequencies, mel_spectrum = mel_spectrum_from_powers(m, power_spectrum)
+        # TODO: use frequencies
+        mel_spectra = np.append(mel_spectra, mel_spectrum)
+    cep = spec2cep(mel_spectra, ncep=13)
+    return cep, mel_spectra
 
 
 # TODO:
