@@ -239,7 +239,7 @@ def mel_spectrum(
     Each column corresponds to a frame, and each row represents a critical band.
     """
     nfreqs = pspectrum.shape[0]
-    m, _ = filter_banks_from_frequencies(fft_size, nfreqs, sr, n_banks)
+    m = filter_banks_from_frequencies(fft_size, nfreqs, sr, n_banks)
 
     return m @ pspectrum
 

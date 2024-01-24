@@ -62,6 +62,7 @@ def plot_audio_file(number: str, i: int, n_filter_banks: int):
     title = f"IDCT-Derived Log Spectrum of `{number}`\n(#{i}, {n_filter_banks} Filter Banks)"
     idct_fig: Figure = plot_log_mel_spectra(cep2spec(cep)[0], title=title)
     idct_fig.savefig(idct_file_name, bbox_inches="tight")
+    plt.close("all")
 
 
 def main():
