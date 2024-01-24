@@ -106,38 +106,6 @@ def powspec(
     return Sxx
 
 
-def filter_banks(nfft, sr, n_filter_bank=40, width=1.0, minfrq=0, maxfrq=None):
-    """Generate a matrix of weights to combine FFT bins into Mel bins."""
-
-    if maxfrq is None:
-        maxfrq = sr / 2
-
-    banks_matrix = np.zeros((n_filter_bank, nfft))
-
-    frequencies = np.arange(nfft // 2 + 1) / nfft * sr
-    minmel = hz2mel(minfrq)
-    maxmel = hz2mel(maxfrq)
-    binfrqs = mel2hz(
-        minmel + np.arange(n_filter_bank + 2) / (n_filter_bank + 1) * (maxmel - minmel)
-    )
-
-    for i in range(n_filter_bank):
-        fs = binfrqs[i : i + 3]
-        fs = fs[1] + width * (fs - fs[1])
-        loslope = (frequencies - fs[0]) / (fs[1] - fs[0])
-        hislope = (fs[2] - frequencies) / (fs[2] - fs[1])
-        banks_matrix[i, : nfft // 2 + 1] = np.maximum(0, np.minimum(loslope, hislope))
-
-    banks_matrix = (
-        np.diag(2 / (binfrqs[2 : n_filter_bank + 2] - binfrqs[:n_filter_bank]))
-        @ banks_matrix
-    )
-
-    banks_matrix[:, nfft // 2 + 1 :] = 0
-
-    return banks_matrix, binfrqs
-
-
 @lru_cache(maxsize=8)
 def filter_banks_from_frequencies(
     fft_size: int,
