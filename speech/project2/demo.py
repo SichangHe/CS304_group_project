@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 
 from ..project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
 from ..project1.main import audio_recording_thread
-from ..project2.lib import (
+from .lib import (
     Segmenter,
     cep2spec,
     lifting,
@@ -21,11 +21,12 @@ from ..project2.lib import (
     pre_emphasis,
     spec2cep,
 )
+from .main import NS_FILTER_BANKS
 
 
 def plot_audio(
     cep: NDArray[np.float32],
-    mel_spectra: NDArray[np.float32],
+    mel_spectrum: NDArray[np.float32],
     out_plot_name: str,
     n_filter_banks: int,
 ):
@@ -34,7 +35,7 @@ def plot_audio(
 
     log_spec_file_name = f"{dir_name}log_spectra{n_filter_banks}_{out_plot_name}"
     title = f"Log Mel Spectrum ({n_filter_banks} Filter Banks)"
-    log_spec_fig = plot_log_mel_spectra(mel_spectra, title=title)
+    log_spec_fig = plot_log_mel_spectra(mel_spectrum, title=title)
     log_spec_fig.savefig(log_spec_file_name, bbox_inches="tight")
 
     ceps_file_name = f"{dir_name}cepstra{n_filter_banks}_{out_plot_name}"
@@ -52,12 +53,10 @@ def main():
     parser = argparse.ArgumentParser(description="Recorder")
     parser.add_argument("-o", "--output", help="Output audio file directory")
     parser.add_argument("-p", "--plot-output", help="Output plot files directory")
-    parser.add_argument("-b", "--n-filter-banks", help="Number of filter banks to use")
     args = parser.parse_args()
 
     out_file_name = args.output or "output.wav"
     out_plot_name = args.plot_output or "output.png"
-    n_filter_banks = int(args.n_filter_banks or 40)
 
     byte_queue: Queue[bytes | None] = Queue()
     audio_thread = Thread(
@@ -66,15 +65,22 @@ def main():
     audio_thread.start()
 
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
-    mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
+    mel_spectra = list(
+        np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
+        for n_filter_banks in NS_FILTER_BANKS
+    )
     while (data := byte_queue.get()) is not None:
         audio_array = np.frombuffer(data, dtype=np.int16)
         segmenter.add_sample(pre_emphasis(audio_array))
         while (frame := segmenter.next()) is not None:
-            mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
-            mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
-    cep, _ = spec2cep(mel_spectra, ncep=13)
-    plot_audio(cep, mel_spectra, out_plot_name, n_filter_banks)
+            for index, n_filter_banks in enumerate(NS_FILTER_BANKS):
+                mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
+                mel_spectra[index] = np.hstack(
+                    (mel_spectra[index], mel_spectrum[:, np.newaxis])
+                )
+    for mel_spectrum, n_filter_banks in zip(mel_spectra, NS_FILTER_BANKS):
+        cep, _ = spec2cep(mel_spectrum, ncep=13)
+        plot_audio(cep, mel_spectrum, out_plot_name, n_filter_banks)
 
     audio_thread.join()
 
