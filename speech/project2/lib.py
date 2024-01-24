@@ -275,7 +275,7 @@ def mel_spectrum(
 # TODO:
 def mfcc_homebrew(
     audio_array: NDArray[np.int16],
-) -> (NDArray[np.float32], NDArray[np.float32]):
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS)
     segmenter.add_sample(pre_emphasis(audio_array))
     mel_spectra = np.array([[]], dtype=np.float32)
@@ -294,7 +294,7 @@ def mfcc_homebrew(
 # TODO:
 def mfcc(
     audio_array: NDArray[np.float32], sr=8000
-) -> (NDArray[np.float32], NDArray[np.float32]):
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     audio_array = pre_emphasis(audio_array)
     pspec = powspec(audio_array, sr=sr)
     mspec = mel_spectrum(pspec, sr=sr)
