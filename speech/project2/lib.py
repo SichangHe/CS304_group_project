@@ -79,7 +79,7 @@ def power_spectrum_after_fft(transformed: NDArray[np.complex_]) -> NDArray[np.fl
     powers: NDArray[np.float32] = np.square(  # type: ignore
         useful_transformed.real, dtype=np.float32
     ) + np.square(useful_transformed.imag, dtype=np.float32)
-    return powers
+    return powers / m
 
 
 def powspec(
