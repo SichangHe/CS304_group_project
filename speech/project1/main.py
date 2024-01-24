@@ -11,7 +11,7 @@ from .audio_in import AudioIn
 from .endpoint import Endpointer
 
 
-def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="output.wav"):
+def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name: str):
     """Endpoint speech and record into `out_file_name`."""
     write_queue: Queue[bytes | None] = Queue()
     overlay_queue: Queue[bytes | None] = Queue()
@@ -59,10 +59,15 @@ def main():
     """Run GUI from main thread."""
     parser = argparse.ArgumentParser(description="Recorder")
     parser.add_argument("-g", "--gui", action="store_true", help="Show spectrum GUI.")
+    parser.add_argument("-o", "--output", help="Output file directory")
     args = parser.parse_args()
 
+    out_file_name = args.output or "output.wav"
+
     byte_queue: Queue[bytes] = Queue()
-    audio_thread = Thread(target=audio_recording_thread, args=(byte_queue,))
+    audio_thread = Thread(
+        target=audio_recording_thread, args=(byte_queue, out_file_name)
+    )
     audio_thread.start()
 
     if args.gui:
