@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from speech.project2.lib import (
+    cep2spec,
     lifting,
     mfcc_homebrew,
     plot_cepstra,
@@ -49,7 +50,6 @@ def plot_audio_file(number: str, i: int, n_filter_banks: int):
         pass
     log_spec_file_name = f"log_spectra{n_filter_banks}/{number}{i}.png"
     log_spec_fig: Figure = plot_log_mel_spectra(mspec)
-    # TODO: Generate `log_spec_fig`.
     log_spec_fig.savefig(log_spec_file_name, bbox_inches="tight")
 
     try:
@@ -58,8 +58,15 @@ def plot_audio_file(number: str, i: int, n_filter_banks: int):
         pass
     ceps_file_name = f"cepstra{n_filter_banks}/{number}{i}.png"
     ceps_fig: Figure = plot_cepstra(lifting(cep))
-    # TODO: Generate `ceps_fig`.
     ceps_fig.savefig(ceps_file_name, bbox_inches="tight")
+
+    try:
+        os.mkdir(f"log_spectra_idct{n_filter_banks}")
+    except:
+        pass
+    log_spec_idct_file_name = f"log_spectra_idct{n_filter_banks}/{number}{i}.png"
+    log_spec_fig_idct: Figure = plot_log_mel_spectra(cep2spec(cep)[0])
+    log_spec_fig_idct.savefig(log_spec_idct_file_name, bbox_inches="tight")
 
 
 def main():

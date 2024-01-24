@@ -193,7 +193,7 @@ def spec2cep(spec, ncep=13):
     return cep, dctm
 
 
-def cep2spec(cep, nfreq=21):
+def cep2spec(cep, nfreq=40):
     ncep, _ = cep.shape
 
     idctm = np.zeros((nfreq, ncep))
