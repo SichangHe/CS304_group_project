@@ -248,22 +248,23 @@ def mel_spectrum(
 # TODO:
 def mfcc_homebrew(
     audio_array: NDArray[np.int16],
+    n_banks=40,
 ) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
-    mel_spectra = []
+    mel_spectra = np.array([]).reshape(n_banks, 0)
     while (frame := segmenter.next()) is not None:
         windowed = window(frame)
         transformed = fast_fourier_transform(windowed)
         m = len(transformed)
         power_spectrum = power_spectrum_after_fft(transformed)
-        mel_frequencies, mel_spectrum = mel_spectrum_from_powers(m, power_spectrum)
+        mel_frequencies, mel_spectrum = mel_spectrum_from_powers(
+            m, power_spectrum, n_bank=n_banks
+        )
         # TODO: use frequencies
-        mel_spectra.append(mel_spectrum)
+        mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
     assert len(mel_spectra) != 0
-    mel_spectra_np = np.asarray(mel_spectra)
-    # TODO: This is transposed.
-    cep = spec2cep(mel_spectra_np, ncep=13)
+    cep = spec2cep(mel_spectra, ncep=13)
     return cep, mel_spectra
 
 
