@@ -252,7 +252,7 @@ def mfcc_homebrew(
 ) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS)
     segmenter.add_sample(pre_emphasis(audio_array))
-    mel_spectra = np.array([[]], dtype=np.float32)
+    mel_spectra = []
     while frame := segmenter.next():
         windowed = window(frame)
         transformed = fast_fourier_transform(windowed)
@@ -260,8 +260,9 @@ def mfcc_homebrew(
         power_spectrum = power_spectrum_after_fft(transformed)
         mel_frequencies, mel_spectrum = mel_spectrum_from_powers(m, power_spectrum)
         # TODO: use frequencies
-        mel_spectra = np.append(mel_spectra, mel_spectrum)
-    cep = spec2cep(mel_spectra, ncep=13)
+        mel_spectra.append(mel_spectrum)
+    mel_spectra_np = np.asarray(mel_spectra)
+    cep = spec2cep(mel_spectra_np, ncep=13)
     return cep, mel_spectra
 
 
