@@ -10,3 +10,5 @@ CHUNK_MS = 20
 """Audio sample chunk duration in milliseconds."""
 MS_IN_SECOND = 1000
 """Number of milliseconds in a second."""
+MAX_PAUSE_MS = 500
+"""Maximum pause duration in milliseconds during speech."""

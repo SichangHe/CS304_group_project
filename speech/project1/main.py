@@ -1,34 +1,20 @@
 import argparse
 import wave
-from enum import Enum
 from queue import Queue
 from threading import Thread
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray
 
-from . import CHUNK_MS, MS_IN_SECOND, N_CHANNEL, RESOLUTION_FORMAT, SAMPLING_RATE
+from . import N_CHANNEL, RESOLUTION_FORMAT, SAMPLING_RATE
 from .audio_in import AudioIn
-
-SIZEOF_FRAME = 2
-"""Size of each frame in bytes."""
-BACKTRACK_MS = 200
-"""Duration in milliseconds to backtrack when speech starts."""
-SIZE_OF_BACKTRACK = SAMPLING_RATE * BACKTRACK_MS // MS_IN_SECOND
-"""Size of the buffer in bytes for backtracking when speech starts."""
-MAX_PAUSE_MS = 2000
-"""Maximum pause duration in milliseconds during speech."""
-SIZE_OF_SILENT_END = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // MS_IN_SECOND
-"""Size of the buffer in bytes at the silent end."""
+from .endpoint import Endpointer
 
 
 def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="output.wav"):
     """Endpoint speech and record into `out_file_name`."""
     write_queue: Queue[bytes | None] = Queue()
-
-    buffer = b""
-    pending_samples = b""
+    overlay_queue: Queue[bytes | None] = Queue()
 
     with wave.open(out_file_name, "wb") as out_file, AudioIn() as audio_in:
         # Configure output file.
@@ -45,31 +31,15 @@ def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="outpu
             audio_in.discard_first_at_least()
             print("Recording...")
 
-            classify_sample = get_classify_sample()
-            recording_status = get_recording_status()
-            while True:
-                data, _ = audio_in.audio_queue.get(timeout=0.1)
+            endpointer = Endpointer(audio_in, overlay_queue)
+            while data := overlay_queue.get():
+                write_queue.put(data)
                 byte_queue.put(data)
-                audio_array = np.frombuffer(data, dtype=np.int16)
-                is_speech = classify_sample(audio_array)
-                status = recording_status(is_speech)
-                match status:
-                    case RecordingStatus.PENDING:
-                        pending_samples += data
-                        continue
-                    case RecordingStatus.STOPPING:
-                        break
-                    case RecordingStatus.STARTING:
-                        # Backtrack previous sample before recording starts.
-                        write_queue.put(pending_samples[-SIZE_OF_BACKTRACK:])
-                        pending_samples = b""
-                buffer += data
-                if len(buffer) > SIZE_OF_SILENT_END:
-                    write_queue.put(buffer[:-SIZE_OF_SILENT_END])
-                    buffer = buffer[-SIZE_OF_SILENT_END:]
             print("Stopping recording.")
+            endpointer.thread.join(timeout=0.1)
         finally:
             write_queue.put(None)
+            byte_queue.put(None)
             writer_thread.join(timeout=0.1)
 
 
@@ -77,127 +47,6 @@ def frame_writing_thread(out_file: wave.Wave_write, byte_queue: Queue[bytes | No
     """A thread that writes frames from `byte_queue` to `out_file`."""
     while data := byte_queue.get():
         out_file.writeframes(data)
-
-
-STARTING_THRESHOLD_DB = 15.0
-"""Threshold from background in decibels for starting to classify as speeches."""
-CONTINUING_THRESHOLD_DB = 2.0
-"""Threshold from background in decibels for continuing to classify as speeches."""
-STOPPING_THRESHOLD_DB = -20.0
-"""Threshold from foreground in decibels for stopping to classify as speeches."""
-WEAK_ADJUSTMENT = 0.05
-STRONG_ADJUSTMENT = 0.8
-
-
-def get_recording_status():
-    """Get a closure that determines the current recording status based on
-    whether a sample is classified as speech.
-    Stopping condition: `MAX_PAUSE_MS` ms after speech stops.
-    """
-    off_time = 0
-    started = False
-
-    def recording_status(is_speech: bool) -> RecordingStatus:
-        nonlocal off_time, started
-
-        if not started:
-            if is_speech:
-                started = True
-                return RecordingStatus.STARTING
-            return RecordingStatus.PENDING
-        else:
-            if is_speech:
-                off_time = 0
-            else:
-                off_time += CHUNK_MS
-        if off_time > MAX_PAUSE_MS:
-            return RecordingStatus.STOPPING
-
-        return RecordingStatus.GOING
-
-    return recording_status
-
-
-class RecordingStatus(Enum):
-    """- `PENDING`: The recording has not started yet.
-    - `GOING`: The recording is currently in progress.
-    - `STOPPING`: The recording has been completed and should be stopped.
-    - `STARTING`: The recording has just started."""
-
-    PENDING = -1
-    GOING = 0
-    STOPPING = 1
-    STARTING = 2
-
-
-FORGET_FACTOR = 1.2
-"""Forgetting factor for updating `level` energy in `get_classify_sample`."""
-
-
-def get_classify_sample():
-    """Get a closure that classifies whether each sample is speech.
-    Speech is considered to start when the `level` energy is at least
-    `STARTING_THRESHOLD_DB` higher than `background` energy;
-    speech is considered to continue when the `level` energy is
-    at least `CONTINUING_THRESHOLD_DB` higher than `background` energy and
-    at least `STOPPING_THRESHOLD_DB` higher than `foreground` energy."""
-    level: np.float64 | None = None
-    background: np.float64 | None = None
-    foreground = 0.0
-    speaking = False
-
-    def classify_frame(arr: NDArray[np.int16]) -> bool:
-        nonlocal level, background, foreground, speaking
-        current = sample_decibel_energy(arr)
-        if level is None:
-            level = current
-        if background is None:
-            background = current
-
-        level = ((level * FORGET_FACTOR) + current) / (FORGET_FACTOR + 1.0)
-
-        print(
-            f"speaking: {'Y' if speaking else 'N'}, current: {current:.1f}, bg: {background:.1f}, fg: {foreground:.1f}, level: {level:.1f}."
-        )
-
-        if speaking:
-            if (
-                level - background < CONTINUING_THRESHOLD_DB
-                or level - foreground < STOPPING_THRESHOLD_DB
-            ):
-                speaking = False
-                background = background if background < level else level
-            else:
-                foreground = adjust_conditionally_on_change(
-                    foreground, level, STRONG_ADJUSTMENT, WEAK_ADJUSTMENT
-                )
-        if not speaking:
-            if level - background >= STARTING_THRESHOLD_DB:
-                speaking = True
-                foreground = level
-            else:
-                background = adjust_conditionally_on_change(
-                    background, level, WEAK_ADJUSTMENT, STRONG_ADJUSTMENT
-                )
-
-        return speaking
-
-    return classify_frame
-
-
-def adjust_conditionally_on_change(
-    original, updated, adjustment_if_inc, adjustment_if_dec
-):
-    """Adjust `original` based on whether `updated` increased from it."""
-    diff = updated - original
-    return (adjustment_if_inc if diff > 0 else adjustment_if_dec) * diff + original
-
-
-def sample_decibel_energy(arr: NDArray[np.int16]) -> np.float64:
-    """Calculate the energy of an audio sample in decibel."""
-    arr = arr.astype(np.int64)  # avoid overflow
-    power = arr.dot(arr) / arr.size
-    return np.log10(power) * 10.0
 
 
 MAXIMUM_DRAWING_TIME = 10
@@ -211,17 +60,13 @@ def main():
     parser = argparse.ArgumentParser(description="Recorder")
     parser.add_argument("-g", "--gui", action="store_true", help="Show spectrum GUI.")
     args = parser.parse_args()
-    show_gui = False
-    if args.gui:
-        show_gui = True
 
     byte_queue: Queue[bytes] = Queue()
     audio_thread = Thread(target=audio_recording_thread, args=(byte_queue,))
     audio_thread.start()
 
-    _, ax = plt.subplots()
-
-    if show_gui:
+    if args.gui:
+        _, ax = plt.subplots()
         plot_array = np.array([])
         i = 0
         while data := byte_queue.get():
