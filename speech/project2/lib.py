@@ -299,11 +299,11 @@ def plot_log_mel_spectra(
     return fig
 
 
-def plot_ceptra(
+def plot_cepstra(
     ceptra_matrix: NDArray[np.float32],
 ) -> plt.Figure:
     """
-    Plot ceptra.
+    Plot cepstra.
 
     Each column of input matrix represents a feature vector of size equal to the number of features for cepstra (typically 13).
     Each row of input matrix corresponds to a feature after applying DCT.
@@ -315,3 +315,9 @@ def plot_ceptra(
     ax.set_title("Cpectra")
 
     return fig
+
+
+def lifting(cepstra, lift=0.6):
+    liftwts = np.concatenate(([1], np.arange(1, cepstra.shape[0]) ** lift))
+    y = np.diag(liftwts) @ cepstra
+    return y
