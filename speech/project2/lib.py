@@ -4,6 +4,7 @@ from functools import lru_cache
 import numpy as np
 import scipy
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from numpy.typing import NDArray
 from scipy import fft
@@ -243,17 +244,22 @@ def mel_spectrum(
     return m @ pspectrum
 
 
-# TODO:
-def mfcc_homebrew(audio_array: NDArray, n_banks=40):
+def mel_spectrum_from_frame(
+    frame: NDArray[np.float32], n_filter_banks: int
+) -> NDArray[np.float32]:
+    windowed = window(frame)
+    transformed = fast_fourier_transform(windowed)
+    m = len(transformed)
+    power_spectrum = power_spectrum_after_fft(transformed)
+    return mel_spectrum_from_powers(m, power_spectrum, n_bank=n_filter_banks)
+
+
+def mfcc_homebrew(audio_array: NDArray, n_filter_banks=40):
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
-    mel_spectra = np.array([], dtype=np.float32).reshape(n_banks, 0)
+    mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
     while (frame := segmenter.next()) is not None:
-        windowed = window(frame)
-        transformed = fast_fourier_transform(windowed)
-        m = len(transformed)
-        power_spectrum = power_spectrum_after_fft(transformed)
-        mel_spectrum = mel_spectrum_from_powers(m, power_spectrum, n_bank=n_banks)
+        mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
     cep, _ = spec2cep(mel_spectra, ncep=13)
     return cep, mel_spectra
@@ -269,7 +275,7 @@ def mfcc(audio_array: NDArray, sr=8000):
 
 
 def plot_log_mel_spectra(
-    mel_spectrum_matrix: NDArray[np.float32], title="Log Mel Spectra"
+    mel_spectrum_matrix: NDArray[np.float32], title="Log Mel Spectrum"
 ) -> Figure:
     """
     Plot log mel spectra.
@@ -278,16 +284,18 @@ def plot_log_mel_spectra(
     Each row of input matrix corresponds to a frequency.
     """
     log_mel_spectrum_matrix = np.log(mel_spectrum_matrix)
+    ax: Axes
     fig, ax = plt.subplots()
     ax.imshow(log_mel_spectrum_matrix, cmap="hsv")
     ax.set_xlabel("Sample")
     ax.set_ylabel("Dimension")
     ax.set_title(title)
+    ax.invert_yaxis()
 
     return fig
 
 
-def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstra") -> Figure:
+def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstrum") -> Figure:
     """
     Plot cepstra.
 
@@ -295,10 +303,12 @@ def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstra") -> Fig
     Each row of input matrix corresponds to a feature after applying DCT.
     """
     fig, ax = plt.subplots()
+    ax: Axes
     ax.imshow(ceptra_matrix, cmap="hsv")
     ax.set_xlabel("Sample")
     ax.set_ylabel("Dimension")
     ax.set_title(title)
+    ax.invert_yaxis()
 
     return fig
 
