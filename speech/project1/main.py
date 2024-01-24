@@ -65,7 +65,7 @@ def main():
 
     out_file_name = args.output or "output.wav"
 
-    byte_queue: Queue[bytes] = Queue()
+    byte_queue: Queue[bytes | None] = Queue()
     audio_thread = Thread(
         target=audio_recording_thread, args=(byte_queue, out_file_name)
     )
