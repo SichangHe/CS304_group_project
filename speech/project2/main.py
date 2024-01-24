@@ -37,6 +37,7 @@ NS_FILTER_BANKS = (40, 30, 25)
 
 def plot_audio_file(number: str, i: int, n_filter_banks: int):
     file_name = f"recordings/{number}{i}.wav"
+    print(f"Working on {file_name} using {n_filter_banks} filter banks.")
     with open_wave_file(file_name, "rb") as wave_file:
         n_frames = wave_file.getnframes()
         frames = wave_file.readframes(n_frames)
