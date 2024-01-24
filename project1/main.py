@@ -1,15 +1,16 @@
+import argparse
 import wave
-from contextlib import contextmanager
 from enum import Enum
 from queue import Queue
 from threading import Thread
 from typing import Mapping
 
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 from pyaudio import PyAudio, paContinue, paInt16
-import matplotlib.pyplot as plt
-import argparse
+
+from .audio_in import AudioIn
 
 RESOLUTION_FORMAT = paInt16
 """Bit resolution per frame."""
@@ -37,40 +38,30 @@ SIZE_OF_SILENT_END = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // MS_IN_SECOND
 
 def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="output.wav"):
     """Endpoint speech and record into `out_file_name`."""
-    audio_queue: Queue[tuple[bytes, int]] = Queue()
-    stream_callback = get_stream_callback(audio_queue)
     write_queue: Queue[bytes | None] = Queue()
 
     buffer = b""
     pending_samples = b""
 
-    with wave.open(out_file_name, "wb") as out_file, open_pyaudio() as py_audio:
+    with wave.open(out_file_name, "wb") as out_file, AudioIn() as audio_in:
         # Configure output file.
         out_file.setnchannels(N_CHANNEL)
-        out_file.setsampwidth(py_audio.get_sample_size(RESOLUTION_FORMAT))
+        out_file.setsampwidth(audio_in.py_audio.get_sample_size(RESOLUTION_FORMAT))
         out_file.setframerate(SAMPLING_RATE)
         writer_thread = Thread(
             target=frame_writing_thread, args=(out_file, write_queue)
         )
         writer_thread.start()
-        stream = py_audio.open(
-            format=RESOLUTION_FORMAT,
-            channels=N_CHANNEL,
-            rate=SAMPLING_RATE,
-            input=True,
-            frames_per_buffer=N_FRAME_PER_CHUNK,
-            stream_callback=stream_callback,
-        )
 
         try:
             input("Press Enter to start recording...")
-            discard_first_at_least(audio_queue)
+            audio_in.discard_first_at_least()
             print("Recording...")
 
             classify_sample = get_classify_sample()
             recording_status = get_recording_status()
             while True:
-                data, _ = audio_queue.get(timeout=0.1)
+                data, _ = audio_in.audio_queue.get(timeout=0.1)
                 byte_queue.put(data)
                 audio_array = np.frombuffer(data, dtype=np.int16)
                 is_speech = classify_sample(audio_array)
@@ -92,7 +83,6 @@ def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="outpu
             print("Stopping recording.")
         finally:
             write_queue.put(None)
-            stream.close()
             writer_thread.join(timeout=0.1)
 
 
@@ -100,35 +90,6 @@ def frame_writing_thread(out_file: wave.Wave_write, byte_queue: Queue[bytes | No
     """A thread that writes frames from `byte_queue` to `out_file`."""
     while data := byte_queue.get():
         out_file.writeframes(data)
-
-
-def get_stream_callback(audio_queue: Queue[tuple[bytes, int]]):
-    """Get a callback for `PyAudio.open`, which sends input audio data to
-    `audio_queue`."""
-
-    def stream_callback(
-        in_data: bytes | None,
-        n_frame: int,
-        time_info: Mapping[str, float],  # pyright: ignore reportUnusedVariable
-        status: int,  # pyright: ignore reportUnusedVariable
-    ):
-        nonlocal audio_queue
-
-        assert in_data is not None
-        audio_queue.put((in_data, n_frame))
-        return None, paContinue
-
-    return stream_callback
-
-
-def discard_first_at_least(audio_queue: Queue[tuple[bytes, int]], n_discard=5):
-    """Discard first `n_discard` samples in `audio_queue` to avoid initial
-    unstable samples. Then, discard all previous samples."""
-    if audio_queue.qsize() < n_discard:
-        for _ in range(n_discard):
-            audio_queue.get(timeout=0.1)
-    with audio_queue.mutex:
-        audio_queue.queue.clear()
 
 
 STARTING_THRESHOLD_DB = 15.0
@@ -250,16 +211,6 @@ def sample_decibel_energy(arr: NDArray[np.int16]) -> np.float64:
     arr = arr.astype(np.int64)  # avoid overflow
     power = arr.dot(arr) / arr.size
     return np.log10(power) * 10.0
-
-
-@contextmanager
-def open_pyaudio():
-    """Provide a self-cleaning-up `PyAudio` instance for a `with` statement."""
-    py_audio = None
-    try:
-        yield (py_audio := PyAudio())
-    finally:
-        py_audio.terminate() if py_audio else None
 
 
 MAXIMUM_DRAWING_TIME = 10
