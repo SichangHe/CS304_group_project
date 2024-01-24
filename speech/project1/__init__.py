@@ -1,3 +1,7 @@
+import wave
+from contextlib import contextmanager
+from typing import Iterator
+
 from pyaudio import paInt16
 
 RESOLUTION_FORMAT = paInt16
@@ -12,3 +16,12 @@ MS_IN_SECOND = 1000
 """Number of milliseconds in a second."""
 MAX_PAUSE_MS = 500
 """Maximum pause duration in milliseconds during speech."""
+
+
+@contextmanager
+def open_wave_file(filename, mode) -> Iterator[wave.Wave_read]:
+    wave_file = None
+    try:
+        yield (wave_file := wave.open(filename, mode))
+    finally:
+        wave_file.close() if wave_file else None

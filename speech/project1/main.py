@@ -1,3 +1,4 @@
+"""Run with `python3 -m speech.project1.main`."""
 import argparse
 import wave
 from queue import Queue
