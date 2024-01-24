@@ -36,7 +36,7 @@ def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name="outpu
                 write_queue.put(data)
                 byte_queue.put(data)
             print("Stopping recording.")
-            endpointer.thread.join(timeout=0.1)
+            del endpointer
         finally:
             write_queue.put(None)
             byte_queue.put(None)

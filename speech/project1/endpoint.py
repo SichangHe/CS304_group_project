@@ -1,4 +1,3 @@
-from enum import Enum
 from queue import Queue
 from threading import Thread
 
@@ -10,8 +9,6 @@ from .audio_in import AudioIn
 
 SIZEOF_FRAME = 2
 """Size of each frame in bytes."""
-SIZE_OF_SILENT_END = SAMPLING_RATE * MAX_PAUSE_MS * SIZEOF_FRAME // MS_IN_SECOND
-"""Size of the buffer in bytes at the silent end."""
 BACKTRACK_MS = 200
 """Duration in milliseconds to backtrack when speech starts."""
 SIZE_OF_BACKTRACK = SAMPLING_RATE * BACKTRACK_MS // MS_IN_SECOND
@@ -19,6 +16,10 @@ SIZE_OF_BACKTRACK = SAMPLING_RATE * BACKTRACK_MS // MS_IN_SECOND
 
 
 class Endpointer:
+    """Endpoint audio received from `audio_in` and write speech data to
+    `write_queue` in a background thread until speech stops.
+    Stopping condition: `MAX_PAUSE_MS` ms after speech stops."""
+
     def __init__(
         self, audio_in: AudioIn, write_queue: Queue[bytes | None], timeout=0.1
     ):
@@ -26,8 +27,9 @@ class Endpointer:
         self.write_queue = write_queue
         self.timeout = timeout
         self.classify_sample = get_classify_sample()
-        self.recording_status = get_recording_status()
-        self.buffer = b""
+        self.off_time = 0
+        self.started = False
+        self.paused = False
         self.pending_samples = b""
         self.thread = Thread(target=self.write_all, args=())
         self.thread.start()
@@ -37,70 +39,39 @@ class Endpointer:
         try:
             while True:
                 data, _ = self.audio_in.audio_queue.get(timeout=self.timeout)
-                # byte_queue.put(data)
                 audio_array = np.frombuffer(data, dtype=np.int16)
                 is_speech = self.classify_sample(audio_array)
-                status = self.recording_status(is_speech)
-                match status:
-                    case RecordingStatus.PENDING:
-                        self.pending_samples += data
-                        continue
-                    case RecordingStatus.STOPPING:
-                        break
-                    case RecordingStatus.STARTING:
+
+                if not self.started:
+                    if is_speech:
+                        self.started = True
                         # Backtrack previous sample before recording starts.
                         self.write_queue.put(self.pending_samples[-SIZE_OF_BACKTRACK:])
                         self.pending_samples = b""
-                self.buffer += data
-                if len(self.buffer) > SIZE_OF_SILENT_END:
-                    self.write_queue.put(self.buffer[:-SIZE_OF_SILENT_END])
-                    self.buffer = self.buffer[-SIZE_OF_SILENT_END:]
+                        self.write_queue.put(data)
+                    else:
+                        self.pending_samples += data
+                else:
+                    if is_speech:
+                        self.off_time = 0
+                        if self.paused:
+                            print("Writing samples received during pause.")
+                            self.paused = False
+                            # Backtrack previous sample during pause.
+                            self.write_queue.put(self.pending_samples)
+                            self.pending_samples = b""
+                        self.write_queue.put(data)
+                    else:
+                        self.paused = True
+                        self.off_time += CHUNK_MS
+                        if self.off_time > MAX_PAUSE_MS:
+                            break
+                        self.pending_samples += data
         finally:
             self.write_queue.put(None)
 
     def __del__(self):
         self.thread.join(timeout=0)
-
-
-def get_recording_status():
-    """Get a closure that determines the current recording status based on
-    whether a sample is classified as speech.
-    Stopping condition: `MAX_PAUSE_MS` ms after speech stops.
-    """
-    off_time = 0
-    started = False
-
-    def recording_status(is_speech: bool) -> RecordingStatus:
-        nonlocal off_time, started
-
-        if not started:
-            if is_speech:
-                started = True
-                return RecordingStatus.STARTING
-            return RecordingStatus.PENDING
-        else:
-            if is_speech:
-                off_time = 0
-            else:
-                off_time += CHUNK_MS
-        if off_time > MAX_PAUSE_MS:
-            return RecordingStatus.STOPPING
-
-        return RecordingStatus.GOING
-
-    return recording_status
-
-
-class RecordingStatus(Enum):
-    """- `PENDING`: The recording has not started yet.
-    - `GOING`: The recording is currently in progress.
-    - `STOPPING`: The recording has been completed and should be stopped.
-    - `STARTING`: The recording has just started."""
-
-    PENDING = -1
-    GOING = 0
-    STOPPING = 1
-    STARTING = 2
 
 
 FORGET_FACTOR = 1.2

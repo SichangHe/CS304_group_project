@@ -49,4 +49,4 @@ class AudioIn:
 
     def __exit__(self, *_):
         self.stream.close()
-        self.py_audio.terminate() if self.py_audio else None
+        self.py_audio.terminate()
