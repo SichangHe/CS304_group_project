@@ -179,15 +179,14 @@ def spec2cep(spec, ncep=13):
     Each row represents an individual cepstral coefficient.
     """
     nrow, _ = spec.shape
-
     dctm = np.zeros((ncep, nrow))
+
     for i in range(ncep):
-        dctm[i, :] = (
-            np.cos((i - 1) * np.arange(nrow) / (nrow - 1) * np.pi)
-            * 2
-            / (2 * (nrow - 1))
-        )
-    dctm[:, [0, nrow - 1]] /= 2
+        dctm[i, :] = np.cos(
+            (i - 1) * np.arange(1, 2 * nrow, 2) / (2 * nrow) * np.pi
+        ) * np.sqrt(2 / nrow)
+
+    dctm[0, :] = dctm[0, :] / np.sqrt(2)
 
     cep = np.dot(dctm, np.log(spec))
     return cep, dctm
@@ -195,13 +194,16 @@ def spec2cep(spec, ncep=13):
 
 def cep2spec(cep, nfreq=40):
     ncep, _ = cep.shape
-
+    dctm = np.zeros((ncep, nfreq))
     idctm = np.zeros((nfreq, ncep))
 
     for i in range(ncep):
-        idctm[:, i] = 2 * np.cos((i - 1) * np.arange(nfreq) / (nfreq - 1) * np.pi)
+        dctm[i, :] = np.cos(
+            (i - 1) * np.arange(1, 2 * nfreq, 2) / (2 * nfreq) * np.pi
+        ) * np.sqrt(2 / nfreq)
 
-    idctm[:, [0, ncep - 1]] = 0.5 * idctm[:, [0, ncep - 1]]
+    dctm[0, :] = dctm[0, :] / np.sqrt(2)
+    idctm = dctm.T
 
     spec = np.exp(np.matmul(idctm, cep))
 
