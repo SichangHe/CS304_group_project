@@ -3,29 +3,16 @@ import wave
 from enum import Enum
 from queue import Queue
 from threading import Thread
-from typing import Mapping
 
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
-from pyaudio import PyAudio, paContinue, paInt16
 
+from . import CHUNK_MS, MS_IN_SECOND, N_CHANNEL, RESOLUTION_FORMAT, SAMPLING_RATE
 from .audio_in import AudioIn
 
-RESOLUTION_FORMAT = paInt16
-"""Bit resolution per frame."""
 SIZEOF_FRAME = 2
 """Size of each frame in bytes."""
-N_CHANNEL = 1
-"""Number of audio channels."""
-SAMPLING_RATE = 16000
-"""Audio sampling rate in frames per second."""
-CHUNK_MS = 20
-"""Audio sample chunk duration in milliseconds."""
-MS_IN_SECOND = 1000
-"""Number of milliseconds in a second."""
-N_FRAME_PER_CHUNK = SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND
-"""Number of frames per audio sample chunk."""
 BACKTRACK_MS = 200
 """Duration in milliseconds to backtrack when speech starts."""
 SIZE_OF_BACKTRACK = SAMPLING_RATE * BACKTRACK_MS // MS_IN_SECOND
