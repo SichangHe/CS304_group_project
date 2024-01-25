@@ -36,7 +36,7 @@ $$
 {\displaystyle m(f)={\begin{cases}{\frac {3f}{200}}&f<1000\\15+27\log _{6.4}\left({\frac {f}{1000}}\right)&f\geq 1000\end{cases}}}
 $$
 
-![banks_matrix](banks_matrix.jpg "banks matrix")
+![banks_matrix](assets/banks_matrix.jpg "banks matrix")
 
 <p style="text-align: center;">Mel banks matrix for 40 filters.</p>
 
@@ -61,8 +61,8 @@ To obtain the dimension-reduced Mel cepstrum, we multiplied the DCT matrix with 
 To convert the Mel cepstrum back to the Mel spectrum, we can apply the inverse Discrete Cosine Transform (IDCT). The IDCT is the inverse operation of the DCT and enables us to transform the cepstral coefficients back into the original spectral domain. It's important to note that during this conversion, the reconstructed Mel spectrum may appear smoother compared to the original spectrum. This is because some information is lost during the dimension reduction process, but the overall trend of the spectrum is preserved.
 
 <div style="display: flex;">
-    <img src="seven2log_spectra40.png" alt="log mel spectrum of 'seven'" style="width: 46%;">
-    <img src="seven2idct40.png" alt="log mel spectrum of 'seven' reconstructed by IDCT" style="width: 54%;">
+    <img src="assets/seven2log_spectra40.png" alt="log mel spectrum of 'seven'" style="width: 46%;">
+    <img src="assets/seven2idct40.png" alt="log mel spectrum of 'seven' reconstructed by IDCT" style="width: 54%;">
 </div>
 
 In the provided images above, you can observe the process of converting the Mel cepstrum back to the Mel spectrum using the IDCT. The first image depicts the log mel spectrum of the word "seven," while the second image represents the log mel spectrum reconstructed by applying the IDCT to the Mel cepstrum. As you can see, the reconstructed spectrum closely resembles the original spectrum, albeit with a smoother appearance.

@@ -90,3 +90,4 @@
 # Specific
 !**requirements.txt
 **.crossnote
+**.html
