@@ -6,6 +6,7 @@ import scipy
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from numba import njit
 from numpy.typing import NDArray
 from scipy import fft
 from scipy.signal import spectrogram
@@ -39,13 +40,14 @@ class Segmenter:
         return result
 
 
+@njit(cache=True, parallel=True)
 def window(samples: NDArray[np.float32]) -> NDArray[np.float32]:
     """Applies the Hanning window function to the given audio samples."""
     m = len(samples)
     return samples * hanning(m)
 
 
-@lru_cache(maxsize=8)
+@njit(cache=True, parallel=True)
 def hanning(m: int):
     """The Hanning window function for the first `m` points."""
     return 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(m) / m)
@@ -62,13 +64,15 @@ def fast_fourier_transform(samples: NDArray[np.float32]) -> NDArray[np.complex_]
     return transformed
 
 
-@lru_cache(maxsize=2)
+# @lru_cache(maxsize=2)
+@njit(cache=True, parallel=True)
 def frequencies_after_fft(fft_size: int, sampling_rate: int) -> NDArray[np.float32]:
     """Frequencies of FFT output of length `fft_size`, a 2's power."""
     n_useful_point = (fft_size >> 1) + 1
-    return sampling_rate / fft_size * np.arange(n_useful_point, dtype=np.float32)
+    return sampling_rate / fft_size * np.arange(n_useful_point)
 
 
+@njit(cache=True, parallel=True)
 def power_spectrum_after_fft(transformed: NDArray[np.complex_]) -> NDArray[np.float32]:
     """Power spectrum of FFT output `transformed`,
     Assuming `transformed` has length `m` that is a 2's power."""
@@ -76,8 +80,8 @@ def power_spectrum_after_fft(transformed: NDArray[np.complex_]) -> NDArray[np.fl
     n_useful_point = (m >> 1) + 1
     useful_transformed = transformed[:n_useful_point]
     powers: NDArray[np.float32] = np.square(  # type: ignore
-        useful_transformed.real, dtype=np.float32
-    ) + np.square(useful_transformed.imag, dtype=np.float32)
+        useful_transformed.real
+    ) + np.square(useful_transformed.imag)
     return powers / m
 
 
@@ -105,7 +109,8 @@ def powspec(
     return Sxx
 
 
-@lru_cache(maxsize=8)
+# @lru_cache(maxsize=8)
+@njit(cache=True)
 def filter_banks_from_frequencies(
     fft_size: int,
     n_useful_point: int,
@@ -139,6 +144,7 @@ def filter_banks_from_frequencies(
     return banks_matrix
 
 
+@njit(cache=True, parallel=True)
 def mel2hz(z):
     """Convert 'mel scale' frequencies into Hz."""
     z = np.asarray(z)
@@ -155,6 +161,7 @@ def mel2hz(z):
     return f
 
 
+@njit(cache=True)
 def hz2mel(f):
     """Convert frequencies f (in Hz) to mel 'scale'."""
     f_0 = 0
@@ -172,6 +179,7 @@ def hz2mel(f):
     return z
 
 
+@njit(cache=True, parallel=True)
 def spec2cep(spec, ncep=13):
     """
     Calculate cepstra from spectral samples via DCT.
@@ -211,6 +219,7 @@ def cep2spec(cep, nfreq=40):
     return spec, idctm
 
 
+@njit(cache=True)
 def mel_spectrum_from_powers(
     fft_size: int,
     power_spectrum: NDArray[np.float32],
@@ -221,12 +230,11 @@ def mel_spectrum_from_powers(
     Returns frequencies at filter bank center and Mel spectrum.
     """
     n_useful_point = len(power_spectrum)
-    nfreqs = power_spectrum.shape[0]
     banks_matrix = filter_banks_from_frequencies(
         fft_size, n_useful_point, sampling_rate, n_bank
     )
 
-    return banks_matrix[:, :nfreqs] @ power_spectrum
+    return banks_matrix @ power_spectrum
 
 
 def mel_spectrum(

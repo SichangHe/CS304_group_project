@@ -20,6 +20,7 @@ from ..project1 import open_wave_file
 plt.rcParams["font.size"] = 24
 
 NUMBERS = (
+    "zero",
     "one",
     "two",
     "three",

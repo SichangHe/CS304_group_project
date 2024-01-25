@@ -2,6 +2,8 @@
 
 In this project, the goal is to develop a function for computing Mel-frequency Cepstral Coefficients (MFCC) from audio recordings of multiple instances of digits. The computed MFCC will be used to analyze and visualize the similarities between different instances of the same word.
 
+## Input audio
+
 ## Power spectrum calculation
 
 ### Preemphasis
