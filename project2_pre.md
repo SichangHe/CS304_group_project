@@ -86,11 +86,9 @@ We multiply the power spectrum by the Mel filter banks matrix (also cached) to w
 
 <!-- slide -->
 
-### Mel banks matrix for 40 filters
+### Mel banks matrix for 40 filters (0~8000Hz)
 
 ![banks_matrix](assets/banks_matrix.jpg "banks matrix")
-
-Spanning 0~8000Hz.
 
 <!-- slide -->
 
