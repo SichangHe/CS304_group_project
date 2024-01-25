@@ -2,7 +2,11 @@
 
 In this project, the goal is to develop a function for computing Mel-frequency Cepstral Coefficients (MFCC) from audio recordings of multiple instances of digits. The computed MFCC will be used to analyze and visualize the similarities between different instances of the same word.
 
-## Input audio
+## Input audio processing
+
+The input audio is processed in a streaming manner for online processing in the future. An endpointer is adopted from project 1, and its output is sent via a queue to the segmenter.
+
+To facilitate further analysis, we employ a segmenter to divide the collected audio signal into 20ms half-overlapping segments. The segmenter persists the audio signal not consumed so it can be used later.
 
 ## Power spectrum calculation
 
@@ -14,21 +18,19 @@ $$ s_{preemp}[n] = s[n] – \alpha s[n-1] $$
 
 In signals with high sampling rates, adjacent samples in low-frequency signals often exhibit similar values due to their slow variation over time. By subtracting the fraction, we remove the portion of the samples that remain unchanged compared to their adjacent samples. This operation isolates the rapidly changing portion of the signal, which represents its high-frequency components.
 
-### Segmenting audio and applying window function
-
-To facilitate further analysis, we employ a segmenter to divide the collected audio signal into frames. For our project, we have chosen a window size of 320. The segmenter moves by half the window size at each step, producing frames of size equal to the window size. This approach results in a 160-sample overlap between consecutive frames.
+### Windowing
 
 For windowing, the Hanning window function is utilized, defined by the formula:
 
 $$ w[n]= \frac{1}{2}\left[1-\cos \left({\frac {2\pi n}{N}}\right)\right], 0\leq n\leq N$$
 
-Window functions are important in signal processing as they mitigate the spectral leakage effect and improve the accuracy of frequency analysis. Overlapping frames, in conjunction with window functions, can enhance the frequency resolution of the analysis. By incorporating overlapping frames, the frequency components of the signal are captured more frequently, allowing for a more detailed analysis of rapidly changing frequencies.
+Window functions are important in signal processing as they mitigate the spectral leakage effect and improve the accuracy of frequency analysis. Overlapping segments, in conjunction with window functions, can enhance the frequency resolution of the analysis. By incorporating overlapping segments, the frequency components of the signal are captured more frequently, allowing for a more detailed analysis of rapidly changing frequencies.
+
+Since the windowing function used is usually the same, we cache it using `functools.lru_cache` to avoid repetitive computation.
 
 ### Fast Fourier transform
 
-Following preemphasis and the application of the window function to the overlapping frames, we employ the Fast Fourier Transform (FFT) algorithm. We utilize the FFT implementation from the `scipy.fft.fft` module to convert the time series into the frequency series. In accordance with the Nyquist theorem, we only consider the first $ \frac{N_{\text{FFT}}}{2} + 1 $ frequencies. From these frequencies, we calculate the power spectrum, which provides valuable information about the distribution of signal power across different frequencies.
-
-By applying these steps, we obtain the power spectrum, which represents the intensity or magnitude of the signal at various frequencies. The power spectrum analysis is widely used in numerous applications, including audio processing, speech recognition, and vibration analysis, enabling us to extract meaningful frequency-based features from the input signal.
+Following preemphasis and the application of the window function to the overlapping segments, we employ the Fast Fourier Transform (FFT) algorithm. We first pad the segment with zeros at the end so its length is the next power of 2, then utilize the FFT implementation from the `scipy.fft.fft` module to convert the time series into the frequency series. In accordance with the Nyquist theorem, we only consider the first $\frac{N_{\text{FFT}}}{2} + 1$ output data points. By taking the squares of the absolute values of these data points, we calculate the power spectrum, which represents the intensity or magnitude of the signal at various frequencies.
 
 ## Mel spectrum calculation
 
@@ -48,7 +50,7 @@ We multiply the power spectrum by the Mel filter banks matrix to weight each pow
 
 Furthermore, we normalize the filter banks matrix to ensure that the sum of each row is equal to 1. This normalization is performed to preserve the overall energy of the signal during the transformation.
 
-The provided image displays an example of a Mel banks matrix with 40 filters. Each row represents a mel filter, and the columns represent the spectral bins in the power spectrum.
+The provided image displays an example of a Mel banks matrix with 40 filters. Each row represents a mel filter, and the columns represent the spectral bins in the power spectrum. We also tried 30 and 25 filter banks.
 
 ## Mel cepstrum calculation
 
