@@ -50,7 +50,14 @@ We multiply the power spectrum by the Mel filter banks matrix to weight each pow
 
 Furthermore, we normalize the filter banks matrix to ensure that the sum of each row is equal to 1. This normalization is performed to preserve the overall energy of the signal during the transformation.
 
-The provided image displays an example of a Mel banks matrix with 40 filters. Each row represents a mel filter, and the columns represent the spectral bins in the power spectrum. We also tried 30 and 25 filter banks.
+The provided image displays an example of a Mel banks matrix with 40 filters. Each row represents a mel filter, and the columns represent the spectral bins in the power spectrum.
+
+We also tried using 30 and 25 filter banks. As shown below, the results are similar, except for the lower resolution.
+
+<div style="display: flex;">
+    <img src="assets/seven2log_spectra40.png" alt="log mel spectrum of 'seven'" style="width: 42%;">
+    <img src="assets/seven2log_spectra25.png" alt="log mel spectrum of 'seven'" style="width: 50%;">
+</div>
 
 ## Mel cepstrum calculation
 
@@ -70,6 +77,10 @@ To convert the Mel cepstrum back to the Mel spectrum, we can apply the inverse D
 </div>
 
 In the provided images above, you can observe the process of converting the Mel cepstrum back to the Mel spectrum using the IDCT. The first image depicts the log mel spectrum of the word "seven," while the second image represents the log mel spectrum reconstructed by applying the IDCT to the Mel cepstrum. As you can see, the reconstructed spectrum closely resembles the original spectrum, albeit with a smoother appearance.
+
+## Sample number processing
+
+We recorded numbers zero through ten, four sample each number, and plotted the log Mel spectrum, Mel cepstrum, and IDCT-derived spectrum of each sample. The images are attached in `./project2_plot/`.
 
 ## Conclusion
 
