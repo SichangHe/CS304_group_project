@@ -19,6 +19,7 @@ Duke Kunshan University
 ### Contents
 
 - Implementation
+  - Input audio processing
   - Power spectrum calculation
   - Mel spectrum calculation
   - Mel cepstrum calculation
@@ -26,10 +27,20 @@ Duke Kunshan University
 
 <!-- slide -->
 
+### Input audio processing
+
+- Endpointer
+- Segmenter: 20ms half-overlapping
+- Streaming fashion
+
+Everything is segmented from now on.
+
+<!-- slide -->
+
 ### Power spectrum calculation
 
 - Preemphasis
-- Segmenting audio and applying window function
+- Applying window function
 - Fast Fourier transform
 
 <!-- slide -->
@@ -43,25 +54,21 @@ $$ s_{preemp}[n] = s[n] – \alpha s[n-1] $$
 
 <!-- slide -->
 
-### Segmenting audio and applying window function
-
-- A segmenter to divide the collected audio signal into frames.
-- Window size of 320. The segmenter moves by half the window size at each step, producing frames of size equal to the window size.
-- This approach results in a 160-sample overlap between consecutive frames.
+### Applying window function
 
 For windowing, the Hanning window function is utilized, defined by the formula:
 
 $$ w[n]= \frac{1}{2}\left[1-\cos \left({\frac {2\pi n}{N}}\right)\right], 0\leq n\leq N$$
 
-Overlapping frames capture the frequency components of the signal more frequently, allowing for a more detailed analysis of rapidly changing frequencies.
+Values are cached using `functools.lru_cache`.
 
 <!-- slide -->
 
 ### Fast Fourier transform
 
-- Fast Fourier Transform (FFT) algorithm after preemphasis and the application of the window function to the overlapping frames.
+- Padding to the next power of 2, $N\_{\text{FFT}}$.
 - `scipy.fft.fft`
-- In accordance with the Nyquist theorem, we only consider the first $ \frac{N\_{\text{FFT}}}{2} + 1 $ frequencies.
+- By Nyquist theorem, throw away data points after the first $\frac{N\_{\text{FFT}}}{2} + 1$.
 - Calculate the power spectrum.
 
 <!-- slide -->
@@ -75,13 +82,15 @@ $$
 {\displaystyle m(f)={\begin{cases}{\frac {3f}{200}}&f<1000\\15+27\log _{6.4}\left({\frac {f}{1000}}\right)&f\geq 1000\end{cases}}}
 $$
 
-We multiply the power spectrum by the Mel filter banks matrix to weight each power spectral value by the corresponding filter's value at that frequency.
+We multiply the power spectrum by the Mel filter banks matrix (also cached) to weight each power spectral value by the corresponding filter's value at that frequency.
 
 <!-- slide -->
 
 ### Mel banks matrix for 40 filters
 
 ![banks_matrix](assets/banks_matrix.jpg "banks matrix")
+
+Spanning 0~8000Hz.
 
 <!-- slide -->
 
@@ -105,6 +114,10 @@ $$
     <img src="assets/seven2cepstra40.png" alt="log mel spectrum of 'seven'" style="width: 36%;">
     <img src="assets/seven2idct40.png" alt="log mel spectrum of 'seven' reconstructed by IDCT" style="width: 34%;">
 </div>
+
+<img src="assets/seven2log_spectra25.png" alt="log mel spectrum of 'seven'" style="width: 36%;">
+
+Extracted from $3\times 3\times 4\times 11$ generated plots for zero through ten.
 
 <!-- slide -->
 

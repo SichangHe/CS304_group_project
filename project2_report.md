@@ -6,7 +6,7 @@ In this project, the goal is to develop a function for computing Mel-frequency C
 
 The input audio is processed in a streaming manner for online processing in the future. An endpointer is adopted from project 1, and its output is sent via a queue to the segmenter.
 
-To facilitate further analysis, we employ a segmenter to divide the collected audio signal into 20ms half-overlapping segments. The segmenter persists the audio signal not consumed so it can be used later.
+To facilitate further analysis, we employ a segmenter to divide the collected audio signal into 20ms half-overlapping segments. The segmenter persists the audio signal not consumed so it can be used later. Each segment it produces is immediately sent to the next stage of processing in a streaming manner.
 
 ## Power spectrum calculation
 
