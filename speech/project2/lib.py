@@ -174,8 +174,10 @@ def hz2mel(f):
 
 INVERSE_ROOT_TWO = 1 / np.sqrt(2)
 
+N_MFCC_COEFFICIENTS = 13
 
-def spec2cep(spec, ncep=13):
+
+def spec2cep(spec, ncep=N_MFCC_COEFFICIENTS):
     """
     Calculate cepstra from spectral samples via DCT.
 
@@ -253,21 +255,43 @@ def mel_spectrum_from_frame(
 
 
 def mel_spectrum_and_cepstrum_from_frame(
-    frame: NDArray[np.float32], n_filter_banks: int
+    frame: NDArray[np.float32], n_filter_banks: int, ncep=N_MFCC_COEFFICIENTS
 ) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
-    cepstrum, _ = spec2cep(mel_spectrum, ncep=13)
+    cepstrum, _ = spec2cep(mel_spectrum, ncep=ncep)
+    cepstrum = normalize_cepstrum(cepstrum)
     return mel_spectrum, cepstrum
 
 
-def mfcc_homebrew(audio_array: NDArray, n_filter_banks=40):
+def normalize_cepstrum(cepstrum: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Normalize `cepstrum` to have 0 mean and 1 standard deviation."""
+    np.subtract(cepstrum, np.mean(cepstrum, axis=0), out=cepstrum)
+    np.divide(cepstrum, np.std(cepstrum, axis=0), out=cepstrum)
+    return cepstrum
+
+
+def derive_cepstrum_velocities(cepstrum: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Derive the delta and delta delta value of `cepstrum`."""
+    if cepstrum.ndim == 1:
+        cepstrum = cepstrum[:, np.newaxis]
+
+    padded_cepstrum = np.pad(cepstrum, ((1, 1), (0, 0)), mode="edge")
+    delta = padded_cepstrum[2:] - padded_cepstrum[:-2]
+    padded_delta = np.pad(delta, ((1, 1), (0, 0)), mode="edge")
+    delta_delta = padded_delta[2:] - padded_delta[:-2]
+
+    result = np.vstack((cepstrum, delta, delta_delta))
+    return result.squeeze()
+
+
+def mfcc_homebrew(audio_array: NDArray, n_filter_banks=40, ncep=N_MFCC_COEFFICIENTS):
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
     mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
-    cepstra = np.array([], dtype=np.float32).reshape(13, 0)
+    cepstra = np.array([], dtype=np.float32).reshape(ncep, 0)
     while (frame := segmenter.next()) is not None:
         mel_spectrum, cepstrum = mel_spectrum_and_cepstrum_from_frame(
-            frame, n_filter_banks
+            frame, n_filter_banks, ncep
         )
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
         cepstra = np.hstack((cepstra, cepstrum[:, np.newaxis]))
@@ -313,7 +337,7 @@ def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstrum") -> Fi
     """
     fig, ax = plt.subplots()
     ax: Axes
-    ax.imshow(ceptra_matrix, cmap="hsv")
+    ax.imshow(derive_cepstrum_velocities(ceptra_matrix), cmap="hsv")
     ax.set_xlabel("Sample")
     ax.set_ylabel("Dimension")
     ax.set_title(title)
