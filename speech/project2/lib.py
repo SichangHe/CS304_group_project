@@ -172,6 +172,9 @@ def hz2mel(f):
     return z
 
 
+INVERSE_ROOT_TWO = 1 / np.sqrt(2)
+
+
 def spec2cep(spec, ncep=13):
     """
     Calculate cepstra from spectral samples via DCT.
@@ -179,34 +182,30 @@ def spec2cep(spec, ncep=13):
     Each column represents a set of cepstral coefficients derived from a particular frame.
     Each row represents an individual cepstral coefficient.
     """
-    nrow, _ = spec.shape
-    dctm = np.zeros((ncep, nrow))
+    nrow = spec.shape[0]
 
-    for i in range(ncep):
-        dctm[i, :] = np.cos(
-            (i - 1) * np.arange(1, 2 * nrow, 2) / (2 * nrow) * np.pi
-        ) * np.sqrt(2 / nrow)
-
-    dctm[0, :] = dctm[0, :] / np.sqrt(2)
+    i = np.arange(ncep)
+    dctm = np.cos(
+        (i[:, np.newaxis] - 1) * np.arange(1, 2 * nrow, 2) / (2 * nrow) * np.pi
+    ) * np.sqrt(2 / nrow)
+    dctm[0, :] *= INVERSE_ROOT_TWO
 
     cep = np.dot(dctm, np.log(spec))
     return cep, dctm
 
 
 def cep2spec(cep, nfreq=40):
-    ncep, _ = cep.shape
-    dctm = np.zeros((ncep, nfreq))
-    idctm = np.zeros((nfreq, ncep))
+    ncep = cep.shape[0]
 
-    for i in range(ncep):
-        dctm[i, :] = np.cos(
-            (i - 1) * np.arange(1, 2 * nfreq, 2) / (2 * nfreq) * np.pi
-        ) * np.sqrt(2 / nfreq)
+    i = np.arange(ncep)
+    dctm = np.cos(
+        (i[:, np.newaxis] - 1) * np.arange(1, 2 * nfreq, 2) / (2 * nfreq) * np.pi
+    ) * np.sqrt(2 / nfreq)
 
-    dctm[0, :] = dctm[0, :] / np.sqrt(2)
+    dctm[0, :] *= INVERSE_ROOT_TWO
     idctm = dctm.T
 
-    spec = np.exp(np.matmul(idctm, cep))
+    spec = np.exp(np.dot(idctm, cep))
 
     return spec, idctm
 
@@ -253,15 +252,26 @@ def mel_spectrum_from_frame(
     return mel_spectrum_from_powers(m, power_spectrum, n_bank=n_filter_banks)
 
 
+def mel_spectrum_and_cepstrum_from_frame(
+    frame: NDArray[np.float32], n_filter_banks: int
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+    mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
+    cepstrum, _ = spec2cep(mel_spectrum, ncep=13)
+    return mel_spectrum, cepstrum
+
+
 def mfcc_homebrew(audio_array: NDArray, n_filter_banks=40):
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
     mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
+    cepstra = np.array([], dtype=np.float32).reshape(13, 0)
     while (frame := segmenter.next()) is not None:
-        mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
+        mel_spectrum, cepstrum = mel_spectrum_and_cepstrum_from_frame(
+            frame, n_filter_banks
+        )
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
-    cep, _ = spec2cep(mel_spectra, ncep=13)
-    return cep, mel_spectra
+        cepstra = np.hstack((cepstra, cepstrum[:, np.newaxis]))
+    return cepstra, mel_spectra
 
 
 # TODO:
