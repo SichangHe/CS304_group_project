@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 from functools import lru_cache
 
 import numpy as np
@@ -259,15 +260,33 @@ def mel_spectrum_and_cepstrum_from_frame(
 ) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     mel_spectrum = mel_spectrum_from_frame(frame, n_filter_banks)
     cepstrum, _ = spec2cep(mel_spectrum, ncep=ncep)
-    cepstrum = normalize_cepstrum(cepstrum)
     return mel_spectrum, cepstrum
 
 
-def normalize_cepstrum(cepstrum: NDArray[np.float32]) -> NDArray[np.float32]:
-    """Normalize `cepstrum` to have 0 mean and 1 standard deviation."""
-    np.subtract(cepstrum, np.mean(cepstrum, axis=0), out=cepstrum)
-    np.divide(cepstrum, np.std(cepstrum, axis=0), out=cepstrum)
-    return cepstrum
+@dataclass
+class RunningMeanVariance:
+    """For normalizing Mel cepstra on-the-fly using the current running mean
+    and variance."""
+
+    mean: NDArray[np.float32]
+    variance: NDArray[np.float32]
+    n: int = 0
+
+    def __init__(self, n_features: int):
+        self.mean = np.zeros(shape=(n_features,), dtype=np.float32)
+        self.variance = np.ones(shape=(n_features,), dtype=np.float32)
+
+    def normalize_and_update(self, new_sample: NDArray[np.float32]):
+        """Normalize `new_sample` in place so it has 0 mean and 1 standard
+        deviation, and update `self`'s mean and variance."""
+        assert new_sample.shape == self.mean.shape
+        self.mean = (self.n * self.mean + new_sample) / (self.n + 1)
+        np.subtract(new_sample, self.mean, out=new_sample)
+        self.variance = (self.n * self.variance + np.square(new_sample)) / (self.n + 1)
+        if self.variance.any() > 0:
+            np.divide(new_sample, np.sqrt(self.variance), out=new_sample)
+        self.n += 1
+        return new_sample
 
 
 def derive_cepstrum_velocities(cepstrum: NDArray[np.float32]) -> NDArray[np.float32]:
@@ -284,15 +303,19 @@ def derive_cepstrum_velocities(cepstrum: NDArray[np.float32]) -> NDArray[np.floa
     return result.squeeze()
 
 
-def mfcc_homebrew(audio_array: NDArray, n_filter_banks=40, ncep=N_MFCC_COEFFICIENTS):
+def mfcc_homebrew(
+    audio_array: NDArray, n_filter_banks=40, n_mfcc_coefficients=N_MFCC_COEFFICIENTS
+):
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
     mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
-    cepstra = np.array([], dtype=np.float32).reshape(ncep, 0)
+    cepstra = np.array([], dtype=np.float32).reshape(n_mfcc_coefficients, 0)
+    running_mean_variance = RunningMeanVariance(n_mfcc_coefficients)
     while (frame := segmenter.next()) is not None:
         mel_spectrum, cepstrum = mel_spectrum_and_cepstrum_from_frame(
-            frame, n_filter_banks, ncep
+            frame, n_filter_banks, n_mfcc_coefficients
         )
+        cepstrum = running_mean_variance.normalize_and_update(cepstrum)
         mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
         cepstra = np.hstack((cepstra, cepstrum[:, np.newaxis]))
     return cepstra, mel_spectra

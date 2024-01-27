@@ -14,7 +14,6 @@ from ..project1.main import audio_recording_thread
 from .lib import (
     Segmenter,
     cep2spec,
-    lifting,
     mel_spectrum_from_frame,
     plot_cepstra,
     plot_log_mel_spectra,
@@ -40,7 +39,7 @@ def plot_audio(
 
     ceps_file_name = f"{dir_name}cepstra{n_filter_banks}_{out_plot_name}"
     title = f"Mel Cepstrum ({n_filter_banks} Filter Banks)"
-    ceps_fig = plot_cepstra(lifting(cep), title=title)
+    ceps_fig = plot_cepstra(cep, title=title)
     ceps_fig.savefig(ceps_file_name, bbox_inches="tight")
 
     idct_file_name = f"{dir_name}idct{n_filter_banks}_{out_plot_name}"
