@@ -294,31 +294,33 @@ def derive_cepstrum_velocities(cepstrum: NDArray[np.float32]) -> NDArray[np.floa
     if cepstrum.ndim == 1:
         cepstrum = cepstrum[:, np.newaxis]
 
-    padded_cepstrum = np.pad(cepstrum, ((1, 1), (0, 0)), mode="edge")
-    delta = padded_cepstrum[2:] - padded_cepstrum[:-2]
-    padded_delta = np.pad(delta, ((1, 1), (0, 0)), mode="edge")
-    delta_delta = padded_delta[2:] - padded_delta[:-2]
+    padded_cepstrum = np.pad(cepstrum, ((0, 0), (1, 1)), mode="edge")
+    delta = padded_cepstrum[:, 2:] - padded_cepstrum[:, :-2]
+    padded_delta = np.pad(delta, ((0, 0), (1, 1)), mode="edge")
+    delta_delta = padded_delta[:, 2:] - padded_delta[:, :-2]
 
-    result = np.vstack((cepstrum, delta, delta_delta))
+    result = np.hstack((cepstrum, delta, delta_delta))
     return result.squeeze()
 
 
 def mfcc_homebrew(
     audio_array: NDArray, n_filter_banks=40, n_mfcc_coefficients=N_MFCC_COEFFICIENTS
 ):
+    """The Mel spectra and cepstra returned have each row corresponding to each
+    segment."""
     segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
     segmenter.add_sample(pre_emphasis(audio_array))
-    mel_spectra = np.array([], dtype=np.float32).reshape(n_filter_banks, 0)
-    cepstra = np.array([], dtype=np.float32).reshape(n_mfcc_coefficients, 0)
+    mel_spectra = []
+    cepstra = []
     running_mean_variance = RunningMeanVariance(n_mfcc_coefficients)
     while (frame := segmenter.next()) is not None:
         mel_spectrum, cepstrum = mel_spectrum_and_cepstrum_from_frame(
             frame, n_filter_banks, n_mfcc_coefficients
         )
         cepstrum = running_mean_variance.normalize_and_update(cepstrum)
-        mel_spectra = np.hstack((mel_spectra, mel_spectrum[:, np.newaxis]))
-        cepstra = np.hstack((cepstra, cepstrum[:, np.newaxis]))
-    return cepstra, mel_spectra
+        mel_spectra.append(mel_spectrum)
+        cepstra.append(cepstrum)
+    return np.asarray(cepstra), np.asarray(mel_spectra)
 
 
 # TODO:

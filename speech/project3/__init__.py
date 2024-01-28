@@ -1,10 +1,30 @@
 from abc import ABC
-from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
 
+from ..project2 import read_audio_file
+from ..project2.lib import (
+    N_MFCC_COEFFICIENTS,
+    derive_cepstrum_velocities,
+    mfcc_homebrew,
+)
+
 INF_FLOAT32 = np.float32(np.inf)
+
+
+def single_dtw_search(
+    template: NDArray[np.float32], input_frames: NDArray[np.float32]
+) -> np.float32 | None:
+    """Conduct a single dynamic time warping search on given `template` and
+    `input_frames`. Return the total cost if the search is done, otherwise
+    return `None`."""
+    node_cost_fn = DTWEnuclideanNodeCostFn(template=template)
+    costs = DTWCosts(len(template), node_cost_fn)
+    for input_frame in input_frames:
+        if total_cost := costs.add_input(input_frame):
+            return total_cost
+    return None
 
 
 class NodeCostFn(ABC):
@@ -26,18 +46,19 @@ class DTWEnuclideanNodeCostFn(NodeCostFn):
         return euclidean_distance(input_frame, self.template[template_frame_index])
 
 
-@dataclass
 class DTWCosts:
     """Growable costs matrix for dynamic time warping."""
 
     template_len: int
     node_cost: NodeCostFn
-    cost_columns: list[NDArray[np.float32]] = []
-    least_cost: np.float32 = INF_FLOAT32  # TODO: Beam Search.
+    cost_columns: list[NDArray[np.float32]]
+    least_cost: np.float32
 
     def __init__(self, template_len: int, node_cost: NodeCostFn):
         self.template_len = template_len
         self.node_cost = node_cost
+        self.cost_columns = []
+        self.least_cost = INF_FLOAT32  # TODO: Beam Search.
 
     def empty_column(self) -> NDArray[np.float32]:
         return np.full(
@@ -47,6 +68,7 @@ class DTWCosts:
     def add_input(self, input_frame: NDArray[np.float32]) -> np.float32 | None:
         """Add an input frame and return the total cost if the end of the
         template is reached."""
+        assert len(input_frame) == 39, input_frame.shape
         if len(self.cost_columns) == 0:  # First input frame.
             first_column = self.empty_column()
             first_cost = self.node_cost(input_frame, 0)
@@ -136,3 +158,13 @@ class HMM:
 
     def predict():
         pass
+
+
+def boosted_mfcc_from_file(
+    file_name: str, n_filter_banks=40, n_mfcc_coefficients=N_MFCC_COEFFICIENTS
+):
+    """Get the boosted MFCC features from `file_name`. Each column should have
+    `n_mfcc_coefficients` × 3 values."""
+    audio_array = read_audio_file(file_name)
+    cepstra, _ = mfcc_homebrew(audio_array, n_filter_banks, n_mfcc_coefficients)
+    return derive_cepstrum_velocities(cepstra)
