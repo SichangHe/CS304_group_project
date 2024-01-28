@@ -6,17 +6,22 @@ from ..project2.main import NUMBERS
 from . import INF_FLOAT32, boosted_mfcc_from_file, single_dtw_search
 
 
-def recognize_number(number: str, template_mfcc_s):
+def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
     n_correct = 0
     for i in range(1, 5, 2):  # TODO: Change to 1 through 10
         test_mfcc = boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
         least_cost = INF_FLOAT32
         prediction = None
         for template_mfcc, associated_number in template_mfcc_s:
-            current_cost = single_dtw_search(template_mfcc, test_mfcc)
-            if current_cost is None:
-                print(f"Search for `{number}` did not finish on `{associated_number}`.")
-            elif current_cost < least_cost:
+            current_costs = single_dtw_search(template_mfcc, test_mfcc)
+            if len(current_costs) == 0:
+                continue
+            if cost_interpretation == "last":
+                current_cost = current_costs[-1]
+            else:
+                current_cost = min(current_costs)
+
+            if current_cost < least_cost:
                 least_cost = current_cost
                 prediction = associated_number
                 print(

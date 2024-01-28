@@ -15,16 +15,16 @@ INF_FLOAT32 = np.float32(np.inf)
 
 def single_dtw_search(
     template: NDArray[np.float32], input_frames: NDArray[np.float32]
-) -> np.float32 | None:
+) -> list[np.float32]:
     """Conduct a single dynamic time warping search on given `template` and
-    `input_frames`. Return the total cost if the search is done, otherwise
-    return `None`."""
+    `input_frames`. Return the total cost if the search is done."""
     node_cost_fn = DTWEnuclideanNodeCostFn(template=template)
     costs = DTWCosts(len(template), node_cost_fn)
+    finish_costs = []
     for input_frame in input_frames:
         if total_cost := costs.add_input(input_frame):
-            return total_cost
-    return None
+            finish_costs.append(total_cost)
+    return finish_costs
 
 
 class NodeCostFn(ABC):
