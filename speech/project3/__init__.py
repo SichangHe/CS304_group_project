@@ -39,11 +39,13 @@ class NodeCostFn(ABC):
 class DTWEnuclideanNodeCostFn(NodeCostFn):
     def __init__(self, template: NDArray[np.float32]):
         self.template = template
+        self.template_len = len(template)
 
     def __call__(
         self, input_frame: NDArray[np.float32], template_frame_index: int
     ) -> np.float32:
-        return euclidean_distance(input_frame, self.template[template_frame_index])
+        distance = euclidean_distance(input_frame, self.template[template_frame_index])
+        return distance / self.template_len
 
 
 class DTWCosts:
