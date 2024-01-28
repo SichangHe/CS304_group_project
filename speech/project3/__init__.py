@@ -80,3 +80,59 @@ class DTWCosts:
 
 def euclidean_distance(x: NDArray[np.float32], y: NDArray[np.float32]) -> np.float32:
     return np.linalg.norm(x - y)
+
+
+class HMM:
+    def __init__(self):
+        self.means = np.array([])
+        self.variances = []
+        self.n_states = 0
+
+    def fit(self, data: list[NDArray[np.float32]], n_states=5):
+        """
+        Fits the model to the provided training data using segmental K-means.
+
+        Parameters:
+        data: The training data.
+            It should have the shape (N, l) or (N, l, d), where N is the number of training samples
+            and l is the length of each training sample.
+            Each training sample can be a scalar or a vector.
+        """
+        self._raw_data = data
+        self.n_states = n_states
+        self.n_samples = len(data)
+        self._init()
+
+    def _init(self):
+        self._raw_data = self._raw_data
+        ls = [_.shape[0] for _ in self._raw_data]
+        self.grouped_data = [
+            np.linspace(0, l, self.n_states + 1).astype(int) for l in ls
+        ]
+        self._calculate_mean_variance()
+
+    def _update(self):
+        for i in range(self.n_samples):
+            # TODO: alignment
+            pass
+        pass
+
+    def _calculate_mean_variance(self):
+        slice_array = np.array(
+            [
+                list(map(lambda x: slice(*x), zip(group, group[1:])))
+                for group in self.grouped_data
+            ]
+        )
+
+        for state in range(self.n_states):
+            state_slices = slice_array[:, state]
+            state_data = [d[s] for s, d in zip(state_slices, self._raw_data)]
+            flat_state_data = np.concatenate(state_data)
+            avg = np.average(flat_state_data)
+            var = np.cov(flat_state_data.T)
+            self.means = np.append(self.means, avg)
+            self.variances.append(var)
+
+    def predict():
+        pass
