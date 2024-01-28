@@ -111,6 +111,7 @@ class HMM:
         self.means = np.array([])
         self.variances = []
         self.n_states = 0
+        self.transition_matrix = None
 
     def fit(self, data: list[NDArray[np.float32]], n_states=5):
         """
@@ -125,15 +126,17 @@ class HMM:
         self._raw_data = data
         self.n_states = n_states
         self.n_samples = len(data)
+        self.transition_matrix = np.zeros((n_states, n_states))
         self._init()
 
     def _init(self):
         self._raw_data = self._raw_data
         ls = [_.shape[0] for _ in self._raw_data]
-        self.grouped_data = [
-            np.linspace(0, l, self.n_states + 1).astype(int) for l in ls
-        ]
+        self.grouped_data = np.array(
+            [np.linspace(0, l, self.n_states + 1).astype(int) for l in ls]
+        )
         self._calculate_mean_variance()
+        self._calculate_transition_matrix()
 
     def _update(self):
         for i in range(self.n_samples):
@@ -157,6 +160,19 @@ class HMM:
             var = np.cov(flat_state_data.T)
             self.means = np.append(self.means, avg)
             self.variances.append(var)
+
+    def _calculate_transition_matrix(self):
+        slice_array = np.array(
+            [
+                list(map(lambda x: slice(*x), zip(group, group[1:])))
+                for group in self.grouped_data
+            ]
+        )
+        for i in range(self.n_states):
+            total = sum([s.stop - s.start - 1 for s in slice_array[:, i]])
+            self.transition_matrix[i, i] = (total - self.n_samples) / total
+            if i + 1 < self.n_states:
+                self.transition_matrix[i, i + 1] = self.n_samples / total
 
     def predict():
         pass
