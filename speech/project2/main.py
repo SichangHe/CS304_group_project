@@ -44,7 +44,7 @@ def plot_audio_file(number: str, i: int, n_filter_banks: int):
 
     ceps_file_name = f"{dir_name}{number}{i}cepstra{n_filter_banks}.png"
     title = f"Mel Cepstrum of `{number}`\n(#{i}, {n_filter_banks} Filter Banks)"
-    ceps_fig: Figure = plot_cepstra(cep.T, title=title)
+    ceps_fig: Figure = plot_cepstra(cep, title=title)
     ceps_fig.savefig(ceps_file_name, bbox_inches="tight")
 
     idct_file_name = f"{dir_name}{number}{i}idct{n_filter_banks}.png"

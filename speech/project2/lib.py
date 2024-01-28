@@ -1,5 +1,4 @@
 import math
-from dataclasses import dataclass
 from functools import lru_cache
 
 import numpy as np
@@ -263,18 +262,18 @@ def mel_spectrum_and_cepstrum_from_frame(
     return mel_spectrum, cepstrum
 
 
-@dataclass
 class RunningMeanVariance:
     """For normalizing Mel cepstra on-the-fly using the current running mean
     and variance."""
 
     mean: NDArray[np.float32]
     variance: NDArray[np.float32]
-    n: int = 0
+    n: int
 
     def __init__(self, n_features: int):
         self.mean = np.zeros(shape=(n_features,), dtype=np.float32)
         self.variance = np.ones(shape=(n_features,), dtype=np.float32)
+        self.n = 0
 
     def normalize_and_update(self, new_sample: NDArray[np.float32]):
         """Normalize `new_sample` in place so it has 0 mean and 1 standard
@@ -291,8 +290,7 @@ class RunningMeanVariance:
 
 def derive_cepstrum_velocities(cepstrum: NDArray[np.float32]) -> NDArray[np.float32]:
     """Derive the delta and delta delta value of `cepstrum`."""
-    if cepstrum.ndim == 1:
-        cepstrum = cepstrum[:, np.newaxis]
+    cepstrum = np.atleast_2d(cepstrum)
 
     padded_cepstrum = np.pad(cepstrum, ((0, 0), (1, 1)), mode="edge")
     delta = padded_cepstrum[:, 2:] - padded_cepstrum[:, :-2]
@@ -301,6 +299,44 @@ def derive_cepstrum_velocities(cepstrum: NDArray[np.float32]) -> NDArray[np.floa
 
     result = np.hstack((cepstrum, delta, delta_delta))
     return result.squeeze()
+
+
+def normalize_cepstrum(cepstrum: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Normalize `cepstrum` in place to have 0 mean and 1 standard deviation in
+    each column."""
+    cepstrum_t = cepstrum.T
+    np.subtract(cepstrum_t, np.mean(cepstrum_t, axis=0), out=cepstrum_t)
+    np.divide(cepstrum_t, np.std(cepstrum_t, axis=0), out=cepstrum_t)
+    return cepstrum
+
+
+class RunningMFCC:
+    def __init__(self, n_filter_banks=40, n_mfcc_coefficients=N_MFCC_COEFFICIENTS):
+        self.n_filter_banks = n_filter_banks
+        self.n_mfcc_coefficients = n_mfcc_coefficients
+        self.segmenter = Segmenter(SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND)
+        self.mel_spectra = []
+        self.cepstra = []
+        self.running_mean_variance = RunningMeanVariance(n_mfcc_coefficients)
+
+    def add_sample(self, sample: NDArray[np.float32]):
+        """The Mel spectra and cepstra returned have each row corresponding to
+        each segment."""
+        mel_spectra = []
+        cepstra = []
+        self.segmenter.add_sample(pre_emphasis(sample))
+        while (frame := self.segmenter.next()) is not None:
+            mel_spectrum, cepstrum = mel_spectrum_and_cepstrum_from_frame(
+                frame, self.n_filter_banks, self.n_mfcc_coefficients
+            )
+            cepstrum = self.running_mean_variance.normalize_and_update(cepstrum)
+            mel_spectra.append(mel_spectrum)
+            cepstra.append(cepstrum)
+        self.mel_spectra.extend(mel_spectra)
+        self.cepstra.extend(cepstra)
+        return np.atleast_2d(np.asarray(cepstra)), np.atleast_2d(
+            np.asarray(mel_spectra)
+        )
 
 
 def mfcc_homebrew(
@@ -312,15 +348,14 @@ def mfcc_homebrew(
     segmenter.add_sample(pre_emphasis(audio_array))
     mel_spectra = []
     cepstra = []
-    running_mean_variance = RunningMeanVariance(n_mfcc_coefficients)
     while (frame := segmenter.next()) is not None:
         mel_spectrum, cepstrum = mel_spectrum_and_cepstrum_from_frame(
             frame, n_filter_banks, n_mfcc_coefficients
         )
-        cepstrum = running_mean_variance.normalize_and_update(cepstrum)
         mel_spectra.append(mel_spectrum)
         cepstra.append(cepstrum)
-    return np.asarray(cepstra), np.asarray(mel_spectra)
+    mel_spectra_np = np.asarray(mel_spectra)
+    return np.asarray(cepstra), normalize_cepstrum(mel_spectra_np)
 
 
 # TODO:
@@ -362,7 +397,7 @@ def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstrum") -> Fi
     """
     fig, ax = plt.subplots()
     ax: Axes
-    ax.imshow(derive_cepstrum_velocities(ceptra_matrix), cmap="hsv")
+    ax.imshow(derive_cepstrum_velocities(ceptra_matrix).T, cmap="hsv")
     ax.set_xlabel("Sample")
     ax.set_ylabel("Dimension")
     ax.set_title(title)
