@@ -2,9 +2,12 @@
 recordings with odd indexes using `0`s in `recordings/` as templates.
 Run as `python3 -m speech.project3.dtw_accuracy_vs_threshold`."""
 
+from itertools import repeat
+
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
+from .. import process_pool
 from ..project2.main import NUMBERS
 from . import TEST_INDEXES, boosted_mfcc_from_file
 from .dtw_single_template_time_sync import recognize_number
@@ -33,10 +36,13 @@ def main():
         for number in NUMBERS
     ]
 
-    average_accuracies = [
-        all_numbers_recognition_accuracy(template_mfcc_s, pruning_threshold)
-        for pruning_threshold in PRUNING_THRESHOLDS
-    ]
+    average_accuracies = tuple(
+        process_pool().map(
+            all_numbers_recognition_accuracy,
+            repeat(template_mfcc_s),
+            PRUNING_THRESHOLDS,
+        )
+    )
 
     ax: Axes
     fig, ax = plt.subplots()
