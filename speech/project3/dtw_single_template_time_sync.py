@@ -2,39 +2,18 @@
 templates to recognize the 5 recordings with odd indexes.
 Run as `python3 -m speech.project3.dtw_single_template_time_sync`."""
 
-import argparse
-
 from ..project2.main import NUMBERS
-from . import INF_FLOAT32, boosted_mfcc_from_file
-from .dtw import single_dtw_search
+from . import boosted_mfcc_from_file
+from .dtw import time_sync_dtw_search
 
 
-def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
+def recognize_number(number: str, template_mfcc_s):
     n_correct = 0
     for i in range(1, 10, 2):
         test_mfcc = boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
-        least_cost = INF_FLOAT32
-        prediction = None
-        for template_mfcc, associated_number in template_mfcc_s:
-            current_costs = single_dtw_search(template_mfcc, test_mfcc)
-            if len(current_costs) == 0:
-                continue
-            match cost_interpretation:
-                case "first":
-                    current_cost = current_costs[-1]
-                case "last":
-                    current_cost = current_costs[-1]
-                case _:
-                    current_cost = min(current_costs)
-
-            if current_cost < least_cost:
-                least_cost = current_cost
-                prediction = associated_number
-                print(
-                    f"\tUpdated prediction for `{number}` to be `{associated_number}` with new cost {current_cost:.2f}."
-                )
-
+        least_cost, prediction = time_sync_dtw_search(template_mfcc_s, test_mfcc)
         assert prediction is not None
+
         print(
             f"Prediction for `{number}`[{i}] is `{prediction}` with cost {least_cost:.2f}."
         )
@@ -45,24 +24,12 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DTW test with single templates")
-    parser.add_argument(
-        "-i",
-        "--cost-interpretation",
-        help="How the path cost is interpreted. Could be `min`, `first`, or `last`. Defaults to `min`.",
-    )
-    args = parser.parse_args()
-    cost_interpretation = args.cost_interpretation or "min"
-
     template_mfcc_s = [
         (boosted_mfcc_from_file(f"recordings/{number}0.wav"), number)
         for number in NUMBERS
     ]
 
-    accuracies = [
-        recognize_number(number, template_mfcc_s, cost_interpretation) / 5
-        for number in NUMBERS
-    ]
+    accuracies = [recognize_number(number, template_mfcc_s) / 5 for number in NUMBERS]
     print(
         f"""Number|{"|".join(NUMBERS)}
 {"|".join("-"for _ in range(len(NUMBERS) + 1))}
