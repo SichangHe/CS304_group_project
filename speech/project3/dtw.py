@@ -1,6 +1,9 @@
+from typing import Iterable
+
 import numpy as np
 from numpy.typing import NDArray
 
+from .. import T
 from . import INF_FLOAT32, NodeCostFn
 
 
@@ -16,6 +19,38 @@ def single_dtw_search(
         if total_cost := costs.add_input(input_frame):
             finish_costs.append(total_cost)
     return finish_costs
+
+
+def time_sync_dtw_search(
+    templates: Iterable[tuple[NDArray[np.float32], T]],
+    input_frames: NDArray[np.float32],
+) -> tuple[np.float32, T | None]:
+    """Conduct time-synchronous dynamic time warping search on given `templates`
+    and `input_frames`. Return the minimum cost found, and the corresponding
+    prediction if the search is done."""
+    costs_and_predictions = [
+        (
+            DTWCosts(len(template), DTWEnuclideanNodeCostFn(template=template)),
+            prediction,
+        )
+        for template, prediction in templates
+    ]
+
+    global_min_cost = INF_FLOAT32
+    global_best_prediction = None
+    finish_costs = [INF_FLOAT32 for _ in costs_and_predictions]
+    for input_frame in input_frames:
+        for index, ((costs, prediction), finish_cost) in enumerate(
+            zip(costs_and_predictions, finish_costs)
+        ):
+            if (
+                total_cost := costs.add_input(input_frame)
+            ) and total_cost < finish_cost:
+                finish_costs[index] = total_cost
+                if total_cost < global_min_cost:
+                    global_min_cost = total_cost
+                    global_best_prediction = prediction
+    return global_min_cost, global_best_prediction
 
 
 class DTWEnuclideanNodeCostFn(NodeCostFn):
