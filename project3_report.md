@@ -1,5 +1,7 @@
 # Project 3 Report
 
+In DTW, the node cost is set as the Euclidean distance between the input sample and the template, normalized by the length of the template to mitigate the effect of differences template lengths on the cumulative costs.
+
 Single DTW, taking the minimum finish costs of each template for comparison to decide which template is the best match:
 
 Number|zero|one|two|three|four|five|six|seven|eight|nine|ten

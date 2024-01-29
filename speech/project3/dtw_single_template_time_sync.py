@@ -11,11 +11,15 @@ def recognize_number(number: str, template_mfcc_s):
     n_correct = 0
     for i in TEST_INDEXES:
         test_mfcc = boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
-        least_cost, prediction = time_sync_dtw_search(template_mfcc_s, test_mfcc)
-        assert prediction is not None
+        min_cost, prediction = time_sync_dtw_search(template_mfcc_s, test_mfcc)
+        if prediction is None:
+            print(
+                f"Prediction for `{number}`[{i}] failed because the test sample was too short."
+            )
+            continue
 
         print(
-            f"Prediction for `{number}`[{i}] is `{prediction}` with cost {least_cost:.2f}."
+            f"Prediction for `{number}`[{i}] is `{prediction}` with cost {min_cost:.2f}."
         )
 
         if prediction == number:

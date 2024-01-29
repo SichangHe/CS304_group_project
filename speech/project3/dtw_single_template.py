@@ -13,7 +13,7 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
     n_correct = 0
     for i in TEST_INDEXES:
         test_mfcc = boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
-        least_cost = INF_FLOAT32
+        min_cost = INF_FLOAT32
         prediction = None
         for template_mfcc, associated_number in template_mfcc_s:
             current_costs = single_dtw_search(template_mfcc, test_mfcc)
@@ -27,8 +27,8 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
                 case _:
                     current_cost = min(current_costs)
 
-            if current_cost < least_cost:
-                least_cost = current_cost
+            if current_cost < min_cost:
+                min_cost = current_cost
                 prediction = associated_number
                 print(
                     f"\tUpdated prediction for `{number}` to be `{associated_number}` with new cost {current_cost:.2f}."
@@ -36,7 +36,7 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
 
         assert prediction is not None
         print(
-            f"Prediction for `{number}`[{i}] is `{prediction}` with cost {least_cost:.2f}."
+            f"Prediction for `{number}`[{i}] is `{prediction}` with cost {min_cost:.2f}."
         )
 
         if prediction == number:

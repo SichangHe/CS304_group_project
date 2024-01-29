@@ -1,3 +1,4 @@
+from logging import debug
 from typing import Iterable
 
 import numpy as np
@@ -24,6 +25,7 @@ def single_dtw_search(
 def time_sync_dtw_search(
     templates: Iterable[tuple[NDArray[np.float32], T]],
     input_frames: NDArray[np.float32],
+    pruning_threshold=10.0,
 ) -> tuple[np.float32, T | None]:
     """Conduct time-synchronous dynamic time warping search on given `templates`
     and `input_frames`. Return the minimum cost found, and the corresponding
@@ -35,21 +37,38 @@ def time_sync_dtw_search(
         )
         for template, prediction in templates
     ]
+    pruned_list = [False for _ in templates]
 
     global_min_cost = INF_FLOAT32
     global_best_prediction = None
-    finish_costs = [INF_FLOAT32 for _ in costs_and_predictions]
+
     for input_frame in input_frames:
-        for index, ((costs, prediction), finish_cost) in enumerate(
-            zip(costs_and_predictions, finish_costs)
+        round_min_cost = INF_FLOAT32
+        for index, ((costs, prediction), pruned) in enumerate(
+            zip(costs_and_predictions, pruned_list)
         ):
+            if pruned:
+                continue
+
             if (
                 total_cost := costs.add_input(input_frame)
-            ) and total_cost < finish_cost:
-                finish_costs[index] = total_cost
-                if total_cost < global_min_cost:
-                    global_min_cost = total_cost
-                    global_best_prediction = prediction
+            ) and total_cost < global_min_cost:
+                global_min_cost = total_cost
+                global_best_prediction = prediction
+                debug(f"Got new best total cost {total_cost:.2f} for `{prediction}`.")
+            round_min_cost = min(round_min_cost, costs.min_cost)
+
+        past_round_threshold = round_min_cost + pruning_threshold
+        for index, ((costs, prediction), pruned) in enumerate(
+            zip(costs_and_predictions, pruned_list)
+        ):
+            if pruned:
+                continue
+            if costs.min_cost > past_round_threshold:
+                pruned_list[index] = True
+                debug(f"Pruned template {index} for `{prediction}`.")
+            else:
+                costs.prune(past_round_threshold)
     return global_min_cost, global_best_prediction
 
 
@@ -71,13 +90,13 @@ class DTWCosts:
     template_len: int
     node_cost: NodeCostFn
     cost_columns: list[NDArray[np.float32]]
-    least_cost: np.float32
+    min_cost: np.float32
 
     def __init__(self, template_len: int, node_cost: NodeCostFn):
         self.template_len = template_len
         self.node_cost = node_cost
         self.cost_columns = []
-        self.least_cost = INF_FLOAT32  # TODO: Beam Search.
+        self.min_cost = INF_FLOAT32  # TODO: Beam Search.
 
     def empty_column(self) -> NDArray[np.float32]:
         return np.full(
@@ -99,7 +118,7 @@ class DTWCosts:
         r"""P_{\_, j-1}"""
 
         new_column = self.empty_column()
-        least_cost = INF_FLOAT32
+        min_cost = INF_FLOAT32
         for template_index in range(self.template_len):
             safe_template_index_lower = max(template_index - 2, 0)
             min_prev_cost = np.min(
@@ -112,11 +131,19 @@ class DTWCosts:
                 """C_{i,j}"""
                 current_cost = min_prev_cost + current_node_cost
                 new_column[template_index] = current_cost
-                least_cost = min(least_cost, current_cost)
+                min_cost = min(min_cost, current_cost)
         self.cost_columns.append(new_column)
-        self.least_cost = least_cost
+        self.min_cost = min_cost
 
         return total_cost if (total_cost := new_column[-1]) < INF_FLOAT32 else None
+
+    def prune(self, threshold: np.float32):
+        """Prune values in the last costs column that are higher than
+        `threshold`."""
+        if len(self.cost_columns) == 0:
+            return
+        last_column = self.cost_columns[-1]
+        last_column[last_column > threshold] = INF_FLOAT32
 
 
 def euclidean_distance(x: NDArray[np.float32], y: NDArray[np.float32]) -> np.float32:
