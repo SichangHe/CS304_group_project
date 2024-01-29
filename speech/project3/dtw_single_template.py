@@ -3,7 +3,8 @@ recognize the 5 recordings with odd indexes.
 Run as `python3 -m speech.project3.dtw_single_template`."""
 
 from ..project2.main import NUMBERS
-from . import INF_FLOAT32, boosted_mfcc_from_file, single_dtw_search
+from . import INF_FLOAT32, boosted_mfcc_from_file
+from .dtw import single_dtw_search
 
 
 def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
