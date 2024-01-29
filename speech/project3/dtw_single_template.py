@@ -64,9 +64,9 @@ def main():
         for number in NUMBERS
     ]
     print(
-        f"""Number|{"|".join(NUMBERS)}
-{"|".join("-"for _ in range(len(NUMBERS) + 1))}
-Accuracy|{"|".join(str(a) for a in accuracies)}"""
+        f"""Number|{"|".join(NUMBERS)}|Average
+{"|".join("-"for _ in range(len(NUMBERS) + 2))}
+Accuracy|{"|".join(str(a) for a in accuracies)}|{sum(accuracies) / len(accuracies):.2f}"""
     )
 
 
