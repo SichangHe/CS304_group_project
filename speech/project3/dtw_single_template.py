@@ -2,6 +2,8 @@
 recognize the 5 recordings with odd indexes.
 Run as `python3 -m speech.project3.dtw_single_template`."""
 
+import argparse
+
 from ..project2.main import NUMBERS
 from . import INF_FLOAT32, boosted_mfcc_from_file
 from .dtw import single_dtw_search
@@ -17,10 +19,13 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
             current_costs = single_dtw_search(template_mfcc, test_mfcc)
             if len(current_costs) == 0:
                 continue
-            if cost_interpretation == "last":
-                current_cost = current_costs[-1]
-            else:
-                current_cost = min(current_costs)
+            match cost_interpretation:
+                case "first":
+                    current_cost = current_costs[-1]
+                case "last":
+                    current_cost = current_costs[-1]
+                case _:
+                    current_cost = min(current_costs)
 
             if current_cost < least_cost:
                 least_cost = current_cost
@@ -40,12 +45,24 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="DTW test with single templates")
+    parser.add_argument(
+        "-i",
+        "--cost-interpretation",
+        help="How the path cost is interpreted. Could be `min`, `first`, or `last`. Defaults to `min`.",
+    )
+    args = parser.parse_args()
+    cost_interpretation = args.cost_interpretation or "min"
+
     template_mfcc_s = [
         (boosted_mfcc_from_file(f"recordings/{number}0.wav"), number)
         for number in NUMBERS
     ]
 
-    accuracies = [recognize_number(number, template_mfcc_s) / 5 for number in NUMBERS]
+    accuracies = [
+        recognize_number(number, template_mfcc_s, cost_interpretation) / 5
+        for number in NUMBERS
+    ]
     print(
         f"""Number|{"|".join(NUMBERS)}
 {"|".join("-"for _ in range(len(NUMBERS) + 1))}
