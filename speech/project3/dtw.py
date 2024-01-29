@@ -4,7 +4,7 @@ from typing import Iterable
 import numpy as np
 from numpy.typing import NDArray
 
-from .. import T
+from .. import T, process_pool
 from . import INF_FLOAT32, NodeCostFn
 
 
@@ -42,20 +42,31 @@ def time_sync_dtw_search(
     global_min_cost = INF_FLOAT32
     global_best_prediction = None
 
+    pool = process_pool()
     for input_frame in input_frames:
-        round_min_cost = INF_FLOAT32
-        for index, ((costs, prediction), pruned) in enumerate(
-            zip(costs_and_predictions, pruned_list)
-        ):
-            if pruned:
-                continue
+        indexes_and_costs_not_pruned = tuple(
+            (index, costs)
+            for index, (costs, _) in enumerate(costs_and_predictions)
+            if not pruned_list[index]
+        )
 
-            if (
-                total_cost := costs.add_input(input_frame)
-            ) and total_cost < global_min_cost:
+        total_costs_and_costs = pool.map(
+            DTWCosts.add_input_and_return_self,
+            (costs for _, costs in indexes_and_costs_not_pruned),
+            (input_frame for _ in indexes_and_costs_not_pruned),
+        )
+
+        round_min_cost = INF_FLOAT32
+        for (index, _), (total_cost, costs) in zip(
+            indexes_and_costs_not_pruned, total_costs_and_costs
+        ):
+            costs_and_predictions[index] = costs, costs_and_predictions[index][1]
+            if total_cost is not None and total_cost < global_min_cost:
                 global_min_cost = total_cost
-                global_best_prediction = prediction
-                debug(f"Got new best total cost {total_cost:.2f} for `{prediction}`.")
+                global_best_prediction = costs_and_predictions[index][1]
+                debug(
+                    f"Got new best total cost {total_cost:.2f} for `{global_best_prediction}`."
+                )
             round_min_cost = min(round_min_cost, costs.min_cost)
 
         past_round_threshold = round_min_cost + pruning_threshold
@@ -136,6 +147,9 @@ class DTWCosts:
         self.min_cost = min_cost
 
         return total_cost if (total_cost := new_column[-1]) < INF_FLOAT32 else None
+
+    def add_input_and_return_self(self, input_frame: NDArray[np.float32]):
+        return self.add_input(input_frame), self
 
     def prune(self, threshold: np.float32):
         """Prune values in the last costs column that are higher than
