@@ -395,8 +395,8 @@ def plot_cepstra(ceptra_matrix: NDArray[np.float32], title="Mel Cepstrum") -> Fi
     Each column of input matrix represents a feature vector of size equal to the number of features for cepstra (typically 13).
     Each row of input matrix corresponds to a feature after applying DCT.
     """
-    fig, ax = plt.subplots()
     ax: Axes
+    fig, ax = plt.subplots()
     ax.imshow(derive_cepstrum_velocities(ceptra_matrix).T, cmap="hsv")
     ax.set_xlabel("Sample")
     ax.set_ylabel("Dimension")
