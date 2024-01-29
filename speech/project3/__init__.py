@@ -11,6 +11,9 @@ from ..project2.lib import (
     mfcc_homebrew,
 )
 
+TEST_INDEXES = range(1, 10, 2)
+"""Indexes for test numbers."""
+
 INF_FLOAT32 = np.float32(np.inf)
 
 
