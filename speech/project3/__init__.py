@@ -91,10 +91,16 @@ class HMM:
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
         self._init()
-        print(self.grouped_data)
-        for i in range(10):
+        print(f"initial group:\n {self.grouped_data}")
+        MAX_ITERS = 50
+        prev_groups = None
+        for _ in range(MAX_ITERS):
             self._update()
-            print(self.grouped_data)
+            if prev_groups is not None and np.all(prev_groups == self.grouped_data):
+                print("coverges")
+                break
+            prev_groups = self.grouped_data
+        print(f"final result:\n {self.grouped_data}")
 
     def _init(self):
         ls = [_.shape[0] for _ in self._raw_data]
