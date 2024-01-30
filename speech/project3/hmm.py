@@ -3,6 +3,8 @@ from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
+from ..project2.main import NUMBERS
+from . import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
 
 TEST_INDEXES = range(1, 10, 2)
 """Indexes for test numbers."""
@@ -19,8 +21,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
 
     # start from first state
     np.seterr(divide="ignore")
-    viterbi_trellis[0, 0] = np.log1p(
-        # log1p for numerical stability
+    viterbi_trellis[0, 0] = np.log(
         sum(
             [
                 multivariate_normal.pdf(
@@ -63,15 +64,62 @@ def align_sequence(sequence, means, covariances, transition_probs):
 
 
 class HMM:
+    def __init__(self, n_states=5, n_gaussians=4):
+        self.means = []
+        self.variances = []
+        self.n_states = n_states
+        self.transition_matrix = None
+        self.n_gaussians = n_gaussians
+        self.max_gaussians = n_gaussians
+        self.hmm_instances: list[HMM_Single] = []
+        self.labels = []
+
+    def fit(self, X: list[list[NDArray[np.float32]]], y):
+        """
+        Fits the model to the given training data using segmental K-means.
+
+        Parameters
+        ----------
+        X : A list of training samples with length `n_samples`, where each sample is represented as a list of numpy arrays.
+            The outer list contains different training samples, each corresponding to a target number (e.g., 1, 2, 3).
+            The inner list represents the number of samples in each target.
+            Each numpy array is the training data and has a shape of `(l, d)`, where `l` is the number of frames and `d` is the dimension of features (typically 39).
+
+        y : array-like of shape `(n_samples,)`
+            Target vector relative to X.
+        """
+        assert len(X) == len(y)
+
+        self.labels = y
+        for _X, _y in zip(X, y):
+            print(f"fitting number {_y} ...")
+            hmm = HMM_Single()
+            hmm.fit(_X, self.n_states, self.n_gaussians)
+            self.hmm_instances.append(hmm)
+
+    def predict(self, X: list[NDArray[np.float32]]):
+        result = [self._predict(samples) for samples in X]
+
+        return result
+
+    def _predict(self, X: NDArray[np.float32]):
+        scores = [
+            (hmm.predict_score(X)[1], l)
+            for hmm, l in zip(self.hmm_instances, self.labels)
+        ]
+        return max(scores, key=lambda x: x[0])[1]
+
+
+class HMM_Single:
     def __init__(self):
         self.means = []
         self.variances = []
         self.n_states = 0
         self.transition_matrix = None
         self.n_gaussians = 1
-        self.max_gaussians = 5
+        self.max_gaussians = 4
 
-    def fit(self, data: list[NDArray[np.float32]], n_states=5, n_gaussians=5):
+    def fit(self, data: list[NDArray[np.float32]], n_states=5, n_gaussians=4):
         """
         Fits the model to the provided training data using segmental K-means.
 
@@ -87,19 +135,15 @@ class HMM:
         self.transition_matrix = np.zeros((n_states, n_states))
         self.max_gaussians = n_gaussians
         self._init()
-        print(f"initial group:\n {self.grouped_data}")
         MAX_ITERS = 50
         prev_groups = None
         for _ in range(MAX_ITERS):
             self._update()
-            print(self.n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self.grouped_data):
                 if self.n_gaussians == self.max_gaussians:
-                    print("coverges")
                     break
                 self.n_gaussians += 1
             prev_groups = self.grouped_data
-        print(f"final result:\n {self.grouped_data}")
 
     def _init(self):
         ls = [_.shape[0] for _ in self._raw_data]
@@ -159,7 +203,7 @@ class HMM:
             var = [
                 np.diag(np.diag(np.cov(d.T) + 0.1))
                 # careful when a state only has one associated frame
-                if d.shape[0] != 1 else np.diag(np.diag(np.cov(d) + 0.1))
+                if d.shape[0] != 1 else np.eye(d.shape[1])
                 for d in ds
             ]
             self.means.append(avg)
@@ -172,7 +216,7 @@ class HMM:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict(self, target: NDArray[np.float32]) -> int:
+    def predict_score(self, target: NDArray[np.float32]) -> int:
         """
         Take a target sequence and return similarity with the training samples.
         """
@@ -182,7 +226,30 @@ class HMM:
 
 
 def main():
-    pass
+    template_mfcc_s = [
+        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in range(10, 15)]
+        for number in NUMBERS
+    ]
+    template_mfcc_s_test = [
+        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in range(15, 20)]
+        for number in NUMBERS
+    ]
+
+    hmm = HMM(n_states=5, n_gaussians=2)
+    hmm.fit(template_mfcc_s[0:11], list(range(11)))
+
+    result = []
+    for i, _ in enumerate(template_mfcc_s_test[0:11]):
+        print(f"calculating probabilities for number {i}") or hmm.predict(_)
+        result.append(hmm.predict(_))
+
+    print(f"prediction: {result}")
+    target = [[i] * 5 for i in range(11)]
+    accuracy = [
+        sum(1 for elem1, elem2 in zip(r, t) if elem1 == elem2) / len(r)
+        for r, t in zip(result, target)
+    ]
+    print(f"accuracy: {accuracy}")
 
 
 main() if __name__ == "__main__" else None
