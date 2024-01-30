@@ -155,7 +155,13 @@ class HMM:
             ]
             ds = [flat_state_data[g] for g in groups]
             avg = [np.average(d, axis=0) for d in ds]
-            var = [np.diag(np.diag(np.cov(d.T) + 0.1)) for d in ds]
+            var = [
+                np.diag(np.diag(np.cov(d.T) + 0.1))
+                # careful when a state only has one associated frame
+                if d.shape[0] != 1
+                else np.diag(np.diag(np.cov(d) + 0.1))
+                for d in ds
+            ]
             self.means.append(avg)
             self.variances.append(var)
 
