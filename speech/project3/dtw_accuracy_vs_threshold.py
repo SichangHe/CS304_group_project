@@ -1,5 +1,5 @@
 """Plot recognition accuracy vs pruning threshold, tested against the 5
-recordings with odd indexes using `0`s in `recordings/` as templates.
+recordings with odd indexes using `10`s in `recordings/` as templates.
 Run as `python3 -m speech.project3.dtw_accuracy_vs_threshold`."""
 
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ Accuracy|{"|".join(str(a) for a in accuracies)}|{average_accuracy:.2f}"""
 
 def main():
     template_mfcc_s = [
-        (boosted_mfcc_from_file(f"recordings/{number}0.wav"), number)
+        (boosted_mfcc_from_file(f"recordings/{number}10.wav"), number)
         for number in NUMBERS
     ]
 

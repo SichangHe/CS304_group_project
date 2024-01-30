@@ -1,5 +1,5 @@
-"""With dynamic time warping, use `0`s in `recordings/` as templates to
-recognize the 5 recordings with odd indexes.
+"""With dynamic time warping, use `10`s in `recordings/` as templates to
+recognize the 5 recordings among 10~19 with odd indexes.
 Run as `python3 -m speech.project3.dtw_single_template`."""
 
 import argparse
@@ -55,7 +55,7 @@ def main():
     cost_interpretation = args.cost_interpretation or "min"
 
     template_mfcc_s = [
-        (boosted_mfcc_from_file(f"recordings/{number}0.wav"), number)
+        (boosted_mfcc_from_file(f"recordings/{number}10.wav"), number)
         for number in NUMBERS
     ]
 
