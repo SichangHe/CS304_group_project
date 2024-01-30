@@ -1,5 +1,7 @@
 """Run with `python3 -m speech.project3.hmm`."""
 import numpy as np
+
+from typing import Tuple, List, Iterable
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
@@ -7,17 +9,12 @@ from sklearn.cluster import KMeans
 from ..project2.main import NUMBERS
 from . import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
 
-TEST_INDEXES = range(1, 10, 2)
-"""Indexes for test numbers."""
-
-INF_FLOAT32 = np.float32(np.inf)
-
 
 def align_sequence(sequence, means, covariances, transition_probs):
     num_states = len(means)
     sequence_length = len(sequence)
 
-    viterbi_trellis = np.full((num_states, sequence_length), -np.inf)
+    viterbi_trellis = np.full((num_states, sequence_length), INF_FLOAT32)
     backpointers = np.zeros((num_states, sequence_length), dtype=int)
 
     np.seterr(divide="ignore")
@@ -28,7 +25,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
         start_index += 1
 
         if start_index == len(sequence):
-            return [0] * len(sequence), -np.inf
+            return [0] * len(sequence), INF_FLOAT32
 
         probabilities = [
             multivariate_normal.pdf(
@@ -38,7 +35,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
         ]
         viterbi_trellis[0, start_index] = np.log(sum(probabilities))
 
-        if viterbi_trellis[0, start_index] != -np.inf:
+        if viterbi_trellis[0, start_index] != INF_FLOAT32:
             break
 
     for t in range(start_index + 1, sequence_length):
@@ -72,63 +69,21 @@ def align_sequence(sequence, means, covariances, transition_probs):
     return alignment, viterbi_trellis[-1, -1]
 
 
-class HMM:
-    def __init__(self, n_states=5, n_gaussians=4):
-        self.means = []
-        self.variances = []
-        self.n_states = n_states
-        self.transition_matrix = None
-        self.n_gaussians = n_gaussians
-        self.max_gaussians = n_gaussians
-        self.hmm_instances: list[HMM_Single] = []
-        self.labels = []
-
-    def fit(self, X: list[list[NDArray[np.float32]]], y):
-        """
-        Fits the model to the given training data using segmental K-means.
-
-        Parameters
-        ----------
-        X : A list of training samples with length `n_samples`, where each sample is represented as a list of numpy arrays.
-            The outer list contains different training samples, each corresponding to a target number (e.g., 1, 2, 3).
-            The inner list represents the number of samples in each target.
-            Each numpy array is the training data and has a shape of `(l, d)`, where `l` is the number of frames and `d` is the dimension of features (typically 39).
-
-        y : array-like of shape `(n_samples,)`
-            Target vector relative to X.
-        """
-        assert len(X) == len(y)
-
-        self.labels = y
-        for _X, _y in zip(X, y):
-            print(f"fitting number {_y} ...")
-            hmm = HMM_Single()
-            hmm.fit(_X, self.n_states, self.n_gaussians)
-            self.hmm_instances.append(hmm)
-
-    def predict(self, X: list[NDArray[np.float32]]):
-        result = [self._predict(samples) for samples in X]
-
-        return result
-
-    def _predict(self, X: NDArray[np.float32]):
-        scores = [
-            (hmm.predict_score(X)[1], l)
-            for hmm, l in zip(self.hmm_instances, self.labels)
-        ]
-        return max(scores, key=lambda x: x[0])[1]
-
-
 class HMM_Single:
+    n_states: int
+    max_gaussians: int
+    transition_matrix: NDArray[np.float64]
+    grouped_data: NDArray[np.int64]
+    _raw_data: List[NDArray[np.float32]]
+    _slice_array: NDArray
+
     def __init__(self):
+        self.n_gaussians = 1
         self.means = []
         self.variances = []
-        self.n_states = 0
-        self.transition_matrix = None
-        self.n_gaussians = 1
-        self.max_gaussians = 4
+        self.n_samples = 0
 
-    def fit(self, data: list[NDArray[np.float32]], n_states=5, n_gaussians=4):
+    def fit(self, data: List[NDArray[np.float32]], n_states=5, n_gaussians=4):
         """
         Fits the model to the provided training data using segmental K-means.
 
@@ -139,8 +94,8 @@ class HMM_Single:
             Each training sample can be a scalar or a vector.
         """
         self._raw_data = data
-        self.n_states = n_states
-        self.n_samples = len(data)
+        self.n_states: int = n_states
+        self.n_samples: int = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
         self.max_gaussians = n_gaussians
         self._init()
@@ -186,7 +141,7 @@ class HMM_Single:
         return r
 
     def _calculate_slice_array(self):
-        self.slice_array = np.array(
+        self._slice_array = np.array(
             [
                 list(map(lambda x: slice(*x), zip(group, group[1:])))
                 for group in self.grouped_data
@@ -198,13 +153,15 @@ class HMM_Single:
         self.variances = []
 
         for state in range(self.n_states):
-            state_slices = self.slice_array[:, state]
+            state_slices = self._slice_array[:, state]
             state_data = [d[s] for s, d in zip(state_slices, self._raw_data)]
             flat_state_data = np.concatenate(state_data)
             kmeans = KMeans(n_clusters=self.n_gaussians)
             kmeans.fit(flat_state_data)
+            labels: Iterable[int] | None = kmeans.labels_
+            assert labels is not None
             groups = [
-                [True if _ == i else False for _ in kmeans.labels_]
+                [True if _ == i else False for _ in labels]
                 for i in range(self.n_gaussians)
             ]
             ds = [flat_state_data[g] for g in groups]
@@ -220,18 +177,65 @@ class HMM_Single:
 
     def _calculate_transition_matrix(self):
         for i in range(self.n_states):
-            total = sum([s.stop - s.start for s in self.slice_array[:, i]])
+            total = sum([s.stop - s.start for s in self._slice_array[:, i]])
             self.transition_matrix[i, i] = (total - self.n_samples) / total
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict_score(self, target: NDArray[np.float32]) -> int:
+    def predict_score(
+        self, target: NDArray[np.float32]
+    ) -> Tuple[List[int], np.float32]:
         """
         Take a target sequence and return similarity with the training samples.
         """
         return align_sequence(
             target, self.means, self.variances, self.transition_matrix
         )
+
+
+class HMM:
+    labels: List[int]
+    _hmm_instances: List[HMM_Single]
+
+    def __init__(self, n_states=5, n_gaussians=4):
+        self.n_states = n_states
+        self.n_gaussians = n_gaussians
+
+    def fit(self, X: list[list[NDArray[np.float32]]], y: List[int]):
+        """
+        Fits the model to the given training data using segmental K-means.
+
+        Parameters
+        ----------
+        X : A list of training samples with length `n_samples`, where each sample is represented as a list of numpy arrays.
+            The outer list contains different training samples, each corresponding to a target number (e.g., 1, 2, 3).
+            The inner list represents the number of samples in each target.
+            Each numpy array is the training data and has a shape of `(l, d)`, where `l` is the number of frames and `d` is the dimension of features (typically 39).
+
+        y : array-like of shape `(n_samples,)`
+            Target vector relative to X.
+        """
+        assert len(X) == len(y)
+
+        self.labels = y
+        for _X, _y in zip(X, y):
+            print(f"fitting number {_y} ...")
+            hmm = HMM_Single()
+            hmm.fit(_X, self.n_states, self.n_gaussians)
+            self._hmm_instances.append(hmm)
+
+    def predict(self, X: list[NDArray[np.float32]]):
+        result = [self._predict(samples) for samples in X]
+
+        return result
+
+    def _predict(self, X: NDArray[np.float32]):
+        scores = [
+            (hmm.predict_score(X)[1], l)
+            for hmm, l in zip(self._hmm_instances, self.labels)
+        ]
+
+        return max(scores, key=lambda x: x[0])[1]
 
 
 def main():
@@ -249,7 +253,7 @@ def main():
 
     result = []
     for i, _ in enumerate(template_mfcc_s_test[0:11]):
-        print(f"calculating probabilities for number {i}") or hmm.predict(_)
+        print(f"calculating probabilities for number {i}")
         result.append(hmm.predict(_))
 
     print(f"prediction: {result}")
