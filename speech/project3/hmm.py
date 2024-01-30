@@ -19,7 +19,8 @@ def align_sequence(sequence, means, covariances, transition_probs):
 
     # start from first state
     np.seterr(divide="ignore")
-    viterbi_trellis[0, 0] = np.log(
+    viterbi_trellis[0, 0] = np.log1p(
+        # log1p for numerical stability
         sum(
             [
                 multivariate_normal.pdf(
@@ -158,8 +159,7 @@ class HMM:
             var = [
                 np.diag(np.diag(np.cov(d.T) + 0.1))
                 # careful when a state only has one associated frame
-                if d.shape[0] != 1
-                else np.diag(np.diag(np.cov(d) + 0.1))
+                if d.shape[0] != 1 else np.diag(np.diag(np.cov(d) + 0.1))
                 for d in ds
             ]
             self.means.append(avg)
