@@ -176,16 +176,6 @@ class HMM:
         pass
 
 
-def boosted_mfcc_from_file(
-    file_name: str, n_filter_banks=40, n_mfcc_coefficients=N_MFCC_COEFFICIENTS
-):
-    """Get the boosted MFCC features from `file_name`. Each column should have
-    `n_mfcc_coefficients` × 3 values."""
-    audio_array = read_audio_file(file_name)
-    cepstra, _ = mfcc_homebrew(audio_array, n_filter_banks, n_mfcc_coefficients)
-    return derive_cepstrum_velocities(cepstra)
-
-
 def main():
     mean = np.array(
         [
