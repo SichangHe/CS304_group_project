@@ -1,5 +1,3 @@
-from abc import ABC
-
 import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
@@ -16,15 +14,6 @@ TEST_INDEXES = range(1, 10, 2)
 """Indexes for test numbers."""
 
 INF_FLOAT32 = np.float32(np.inf)
-
-
-class NodeCostFn(ABC):
-    """Returns node cost given input frame and template frame index."""
-
-    def __call__(
-        self, input_frame: NDArray[np.float32], template_frame_index: int
-    ) -> np.float32:
-        raise NotImplementedError(input_frame, template_frame_index)
 
 
 def align_sequence(sequence, means, covariances, transition_probs):
