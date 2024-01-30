@@ -1,3 +1,4 @@
+"""Run with `python3 -m speech.project3.hmm`."""
 import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
@@ -19,20 +20,28 @@ def align_sequence(sequence, means, covariances, transition_probs):
     viterbi_trellis = np.full((num_states, sequence_length), -np.inf)
     backpointers = np.zeros((num_states, sequence_length), dtype=int)
 
-    # start from first state
     np.seterr(divide="ignore")
-    viterbi_trellis[0, 0] = np.log(
-        sum(
-            [
-                multivariate_normal.pdf(
-                    sequence[0], mean=mean, cov=cov, allow_singular=True
-                )
-                for mean, cov in zip(means[0], covariances[0])
-            ]
-        )
-    )
 
-    for t in range(1, sequence_length):
+    # wait until positive probability
+    start_index = -1
+    while True:
+        start_index += 1
+
+        if start_index == len(sequence):
+            return [0] * len(sequence), -np.inf
+
+        probabilities = [
+            multivariate_normal.pdf(
+                sequence[start_index], mean=mean, cov=cov, allow_singular=True
+            )
+            for mean, cov in zip(means[0], covariances[0])
+        ]
+        viterbi_trellis[0, start_index] = np.log(sum(probabilities))
+
+        if viterbi_trellis[0, start_index] != -np.inf:
+            break
+
+    for t in range(start_index + 1, sequence_length):
         for state in range(num_states):
             emission_prob = sum(
                 [
