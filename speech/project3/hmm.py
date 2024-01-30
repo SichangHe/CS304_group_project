@@ -3,12 +3,6 @@ from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
-from ..project2 import read_audio_file
-from ..project2.lib import (
-    N_MFCC_COEFFICIENTS,
-    derive_cepstrum_velocities,
-    mfcc_homebrew,
-)
 
 TEST_INDEXES = range(1, 10, 2)
 """Indexes for test numbers."""
@@ -64,7 +58,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
         alignment.append(backpointers[alignment[-1], t])
 
     alignment.reverse()
-    return alignment
+    return alignment, viterbi_trellis[-1, -1]
 
 
 class HMM:
@@ -118,7 +112,7 @@ class HMM:
         self._calculate_transition_matrix()
         alignment_result = []
         for i in range(self.n_samples):
-            a = align_sequence(
+            a, _ = align_sequence(
                 self._raw_data[i], self.means, self.variances, self.transition_matrix
             )
             # print(a)
@@ -172,62 +166,32 @@ class HMM:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict():
-        pass
+    def predict(self, target: NDArray[np.float32]) -> int:
+        """
+        Take a target sequence and return similarity with the training samples.
+        """
+        return align_sequence(
+            target, self.means, self.variances, self.transition_matrix
+        )
 
 
 def main():
-    mean = np.array(
-        [
-            1,
-            -2,
-            3,
-            0,
-            2,
-            -1,
-            4,
-            1,
-            -3,
-            2,
-            -1,
-            0,
-            2,
-            -2,
-            3,
-            -1,
-            0,
-            1,
-            -2,
-            0,
-            2,
-            1,
-            -3,
-            0,
-            1,
-            -2,
-            3,
-            -1,
-            2,
-            0,
-            1,
-            -2,
-            3,
-            0,
-            2,
-            -1,
-            4,
-            1,
-            -3,
-            2,
-        ]
-    )
+    mean = np.random.normal(0, 1, 40)
     covariance = np.eye(40)
     num_samples = 200
     np.random.seed(0)
     samples = np.random.multivariate_normal(mean, covariance, num_samples)
     s = [samples[i : i + 40] for i in range(0, 161, 10)]
     dtw = HMM()
-    dtw.fit(s, 5, 3)
+    dtw.fit(s, 5, 1)
+    another_samples = np.random.multivariate_normal(
+        np.random.normal(2, 1, 40), np.eye(40) * 1, 5
+    )
+    for i in range(10):
+        print(dtw.predict(samples[i]))
+    print("another")
+    for s in another_samples:
+        print(dtw.predict(s))
 
 
 main() if __name__ == "__main__" else None
