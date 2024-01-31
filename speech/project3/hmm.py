@@ -1,5 +1,6 @@
 """Run with `python3 -m speech.project3.hmm`."""
 
+import argparse
 from logging import debug
 from typing import Iterable, List, Tuple
 
@@ -9,7 +10,14 @@ from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
 from ..project2.main import NUMBERS
-from . import INF_FLOAT32, TEMPLATE_INDEXES, TEST_INDEXES, boosted_mfcc_from_file
+from . import (
+    HARD_TEMPLATE_INDEXES,
+    HARD_TEST_INDEXES,
+    INF_FLOAT32,
+    TEMPLATE_INDEXES,
+    TEST_INDEXES,
+    boosted_mfcc_from_file,
+)
 
 MINUS_INF = -INF_FLOAT32
 
@@ -268,15 +276,26 @@ class HMM:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="HMM")
+    parser.add_argument(
+        "-m", "--hard-mode", action="store_true", help="Use hard mode datasets."
+    )
+    args = parser.parse_args()
+    template_indexes, test_indexes = (
+        (HARD_TEMPLATE_INDEXES, HARD_TEST_INDEXES)
+        if args.hard_mode
+        else (TEMPLATE_INDEXES, TEST_INDEXES)
+    )
+
     template_mfcc_s = [
         [
             boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
-            for i in TEMPLATE_INDEXES
+            for i in template_indexes
         ]
         for number in NUMBERS
     ]
     test_mfcc_s = [
-        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in TEST_INDEXES]
+        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in test_indexes]
         for number in NUMBERS
     ]
 
