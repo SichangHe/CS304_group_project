@@ -9,12 +9,14 @@ from sklearn.cluster import KMeans
 from ..project2.main import NUMBERS
 from . import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
 
+MINUS_INF = -np.inf
+
 
 def align_sequence(sequence, means, covariances, transition_probs):
     num_states = len(means)
     sequence_length = len(sequence)
 
-    viterbi_trellis = np.full((num_states, sequence_length), INF_FLOAT32)
+    viterbi_trellis = np.full((num_states, sequence_length), MINUS_INF)
     backpointers = np.zeros((num_states, sequence_length), dtype=int)
 
     np.seterr(divide="ignore")
@@ -24,8 +26,8 @@ def align_sequence(sequence, means, covariances, transition_probs):
     while True:
         start_index += 1
 
-        if start_index == len(sequence):
-            return [0] * len(sequence), INF_FLOAT32
+        if start_index > 5:
+            return [0] * len(sequence), MINUS_INF
 
         probabilities = [
             multivariate_normal.pdf(
@@ -35,7 +37,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
         ]
         viterbi_trellis[0, start_index] = np.log(sum(probabilities))
 
-        if viterbi_trellis[0, start_index] != INF_FLOAT32:
+        if viterbi_trellis[0, start_index] != MINUS_INF:
             break
 
     for t in range(start_index + 1, sequence_length):
@@ -182,9 +184,7 @@ class HMM_Single:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict_score(
-        self, target: NDArray[np.float32]
-    ) -> Tuple[List[int], np.float32]:
+    def predict_score(self, target: NDArray[np.float32]) -> Tuple[List[int], float]:
         """
         Take a target sequence and return similarity with the training samples.
         """
@@ -195,11 +195,11 @@ class HMM_Single:
 
 class HMM:
     labels: List[int]
-    _hmm_instances: List[HMM_Single]
 
     def __init__(self, n_states=5, n_gaussians=4):
         self.n_states = n_states
         self.n_gaussians = n_gaussians
+        self._hmm_instances: List[HMM_Single] = []
 
     def fit(self, X: list[list[NDArray[np.float32]]], y: List[int]):
         """
