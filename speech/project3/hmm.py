@@ -112,7 +112,7 @@ class HMM_Single:
 
         prev_groups = None
         current_n_gaussians = 1
-        while current_n_gaussians < n_gaussians:
+        while current_n_gaussians <= n_gaussians:
             self._update(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self.grouped_data):
                 # Converge.
