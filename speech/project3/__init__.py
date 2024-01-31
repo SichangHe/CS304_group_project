@@ -1,6 +1,8 @@
 from abc import ABC
+from logging import debug
 
 import numpy as np
+from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 
 from ..project2 import read_audio_file
@@ -34,11 +36,13 @@ class NodeCostFn(ABC):
         raise NotImplementedError(input_frame, template_frame_index)
 
 
+@cache_to_disk(30)
 def boosted_mfcc_from_file(
     file_name: str, n_filter_banks=40, n_mfcc_coefficients=N_MFCC_COEFFICIENTS
 ):
     """Get the boosted MFCC features from `file_name`. Each column should have
     `n_mfcc_coefficients` × 3 values."""
+    debug(f"Calculating the boosted MFCC from audio file {file_name}.")
     audio_array = read_audio_file(file_name)
     cepstra, _ = mfcc_homebrew(audio_array, n_filter_banks, n_mfcc_coefficients)
     return derive_cepstrum_velocities(cepstra)

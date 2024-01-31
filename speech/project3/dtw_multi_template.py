@@ -8,9 +8,8 @@ from matplotlib.axes import Axes
 
 from ..project2.main import NUMBERS
 from . import TEMPLATE_INDEXES, TEST_INDEXES, boosted_mfcc_from_file
+from .dtw import BEST_PRUNING_THRESHOLD
 from .dtw_single_template_time_sync import recognize_number
-
-BEST_PRUNING_THRESHOLD = 13.0
 
 
 def main():

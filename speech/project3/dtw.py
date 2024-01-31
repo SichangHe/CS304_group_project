@@ -7,6 +7,8 @@ from numpy.typing import NDArray
 from .. import T
 from . import INF_FLOAT32, NodeCostFn
 
+BEST_PRUNING_THRESHOLD = 13.0
+
 
 def single_dtw_search(
     template: NDArray[np.float32], input_frames: NDArray[np.float32]
@@ -25,7 +27,7 @@ def single_dtw_search(
 def time_sync_dtw_search(
     templates: Iterable[tuple[NDArray[np.float32], T]],
     input_frames: NDArray[np.float32],
-    pruning_threshold=10.0,
+    pruning_threshold=BEST_PRUNING_THRESHOLD,
 ) -> tuple[np.float32, T | None]:
     """Conduct time-synchronous dynamic time warping search on given `templates`
     and `input_frames`. Return the minimum cost found, and the corresponding
