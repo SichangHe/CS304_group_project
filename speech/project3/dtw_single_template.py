@@ -21,7 +21,7 @@ def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):
                 continue
             match cost_interpretation:
                 case "first":
-                    current_cost = current_costs[-1]
+                    current_cost = current_costs[0]
                 case "last":
                     current_cost = current_costs[-1]
                 case _:

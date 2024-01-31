@@ -20,7 +20,7 @@ By taking the first finish costs:
 
 Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
 -|-|-|-|-|-|-|-|-|-|-|-|-
-Accuracy|1.0|1.0|0.6|1.0|1.0|0.6|0.6|0.8|1.0|1.0|1.0|0.87
+Accuracy|0.0|0.0|0.0|0.0|0.8|1.0|0.6|0.0|0.0|0.2|0.0|0.24
 
 On average, taking the minimum finish costs gave the best accuracy, therefore we continued with this method for the time-synchronous DTW. However, the sample size is too small to draw a conclusion.
 
