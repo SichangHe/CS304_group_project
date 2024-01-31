@@ -1,15 +1,17 @@
 """Run with `python3 -m speech.project3.hmm`."""
-import numpy as np
 
-from typing import Tuple, List, Iterable
+from logging import debug
+from typing import Iterable, List, Tuple
+
+import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
 from ..project2.main import NUMBERS
-from . import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
+from . import INF_FLOAT32, TEMPLATE_INDEXES, TEST_INDEXES, boosted_mfcc_from_file
 
-MINUS_INF = -np.inf
+MINUS_INF = -INF_FLOAT32
 
 
 def align_sequence(sequence, means, covariances, transition_probs):
@@ -96,8 +98,8 @@ class HMM_Single:
             Each training sample can be a scalar or a vector.
         """
         self._raw_data = data
-        self.n_states: int = n_states
-        self.n_samples: int = len(data)
+        self.n_states = n_states
+        self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
         self.max_gaussians = n_gaussians
         self._init()
@@ -169,9 +171,12 @@ class HMM_Single:
             ds = [flat_state_data[g] for g in groups]
             avg = [np.average(d, axis=0) for d in ds]
             var = [
-                np.diag(np.diag(np.cov(d.T) + 0.1))
-                # careful when a state only has one associated frame
-                if d.shape[0] != 1 else np.eye(d.shape[1])
+                (
+                    np.diag(np.diag(np.cov(d.T) + 0.1))
+                    # careful when a state only has one associated frame
+                    if d.shape[0] != 1
+                    else np.eye(d.shape[1])
+                )
                 for d in ds
             ]
             self.means.append(avg)
@@ -219,7 +224,7 @@ class HMM:
 
         self.labels = y
         for _X, _y in zip(X, y):
-            print(f"fitting number {_y} ...")
+            debug(f"fitting number {_y} ...")
             hmm = HMM_Single()
             hmm.fit(_X, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
@@ -240,11 +245,14 @@ class HMM:
 
 def main():
     template_mfcc_s = [
-        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in range(10, 15)]
+        [
+            boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
+            for i in TEMPLATE_INDEXES
+        ]
         for number in NUMBERS
     ]
-    template_mfcc_s_test = [
-        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in range(15, 20)]
+    test_mfcc_s = [
+        [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in TEST_INDEXES]
         for number in NUMBERS
     ]
 
@@ -252,7 +260,7 @@ def main():
     hmm.fit(template_mfcc_s[0:11], list(range(11)))
 
     result = []
-    for i, _ in enumerate(template_mfcc_s_test[0:11]):
+    for i, _ in enumerate(test_mfcc_s[0:11]):
         print(f"calculating probabilities for number {i}")
         result.append(hmm.predict(_))
 
