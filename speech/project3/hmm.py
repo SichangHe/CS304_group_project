@@ -31,20 +31,20 @@ def align_sequence(sequence, means, covariances, transition_probs):
         if start_index > 5:
             return [0] * len(sequence), MINUS_INF
 
-        probabilities = [
+        probabilities = (
             multivariate_normal.pdf(
                 sequence[start_index], mean=mean, cov=cov, allow_singular=True
             )
             for mean, cov in zip(means[0], covariances[0])
-        ]
-        viterbi_trellis[0, start_index] = np.log(sum(probabilities))
+        )
+        viterbi_trellis[0, start_index] = np.log(max(probabilities))
 
         if viterbi_trellis[0, start_index] != MINUS_INF:
             break
 
     for t in range(start_index + 1, sequence_length):
         for state in range(num_states):
-            emission_prob = sum(
+            emission_prob = max(
                 [
                     multivariate_normal.pdf(
                         sequence[t], mean=mean, cov=cov, allow_singular=True
@@ -52,7 +52,6 @@ def align_sequence(sequence, means, covariances, transition_probs):
                     for mean, cov in zip(means[state], covariances[state])
                 ]
             )
-            np.log(transition_probs[:, state])
             viterbi_scores = (
                 (viterbi_trellis[:, t - 1])
                 + np.log(transition_probs[:, state])
@@ -65,12 +64,12 @@ def align_sequence(sequence, means, covariances, transition_probs):
     # Trace back
     # alignment = [np.argmax(viterbi_trellis[:, -1])]
     # start from last state, not highest score state
-    alignment = [num_states - 1]
+    path = [num_states - 1]
     for t in range(sequence_length - 1, 0, -1):
-        alignment.append(backpointers[alignment[-1], t])
+        path.append(backpointers[path[-1], t])
 
-    alignment.reverse()
-    return alignment, viterbi_trellis[-1, -1]
+    path.reverse()
+    return path, viterbi_trellis[-1, -1]
 
 
 class HMM_Single:
@@ -82,7 +81,6 @@ class HMM_Single:
     _slice_array: NDArray
 
     def __init__(self):
-        self.n_gaussians = 1
         self.means = []
         self.variances = []
         self.n_samples = 0
@@ -103,14 +101,14 @@ class HMM_Single:
         self.transition_matrix = np.zeros((n_states, n_states))
         self.max_gaussians = n_gaussians
         self._init()
-        MAX_ITERS = 50
+
         prev_groups = None
-        for _ in range(MAX_ITERS):
-            self._update()
+        current_n_gaussians = 1
+        while current_n_gaussians < n_gaussians:
+            self._update(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self.grouped_data):
-                if self.n_gaussians == self.max_gaussians:
-                    break
-                self.n_gaussians += 1
+                # Converge.
+                current_n_gaussians *= 2
             prev_groups = self.grouped_data
 
     def _init(self):
@@ -119,9 +117,9 @@ class HMM_Single:
             [np.linspace(0, l, self.n_states + 1).astype(int) for l in ls]
         )
 
-    def _update(self):
+    def _update(self, n_gaussians: int):
         self._calculate_slice_array()
-        self._calculate_mean_variance()
+        self._calculate_mean_variance(n_gaussians)
         self._calculate_transition_matrix()
         alignment_result = []
         for i in range(self.n_samples):
@@ -152,24 +150,50 @@ class HMM_Single:
             ]
         )
 
-    def _calculate_mean_variance(self):
-        self.means = []
+    def _calculate_mean_variance(self, n_gaussians: int):
+        prev_means = self.means
+
+        self.means = []  # [(39,); n_gaussian; n_state]
         self.variances = []
 
         for state in range(self.n_states):
             state_slices = self._slice_array[:, state]
             state_data = [d[s] for s, d in zip(state_slices, self._raw_data)]
-            flat_state_data = np.concatenate(state_data)
-            kmeans = KMeans(n_clusters=self.n_gaussians)
-            kmeans.fit(flat_state_data)
+            flat_state_data = np.concatenate(state_data)  # (n, 39)
+            if n_gaussians < 2:
+                # First K-means iteration
+                new_means = np.mean(flat_state_data, axis=0)
+                assert new_means.shape == (39,)
+                new_means = new_means[np.newaxis, :]
+                assert new_means.shape == (1, 39)
+            else:
+                prev_means_for_state = np.asarray(prev_means[state])
+                if prev_means_for_state.shape[0] == n_gaussians:
+                    # Last iteration with the same `n_gaussians` did not converge
+                    new_means = prev_means_for_state
+                else:
+                    # New iteration with double the `n_gaussians`
+                    assert prev_means_for_state.shape == (
+                        n_gaussians / 2,
+                        39,
+                    ), (n_gaussians, prev_means_for_state.shape)
+                    new_means = np.vstack(
+                        (prev_means_for_state * 0.9, prev_means_for_state * 1.1)
+                    )
+            assert new_means.shape == (n_gaussians, 39), new_means.shape
+            kmeans = KMeans(n_clusters=n_gaussians, init=new_means)
+            kmeans = kmeans.fit(flat_state_data)
             labels: Iterable[int] | None = kmeans.labels_
             assert labels is not None
             groups = [
-                [True if _ == i else False for _ in labels]
-                for i in range(self.n_gaussians)
+                [True if _ == i else False for _ in labels] for i in range(n_gaussians)
             ]
-            ds = [flat_state_data[g] for g in groups]
-            avg = [np.average(d, axis=0) for d in ds]
+            grouped_flat_state_data = [
+                flat_state_data[g] for g in groups
+            ]  # [(n, 39); n_g]
+            avg = [
+                np.average(d, axis=0) for d in grouped_flat_state_data
+            ]  # [(39,); n_g]
             var = [
                 (
                     np.diag(np.diag(np.cov(d.T) + 0.1))
@@ -177,7 +201,7 @@ class HMM_Single:
                     if d.shape[0] != 1
                     else np.eye(d.shape[1])
                 )
-                for d in ds
+                for d in grouped_flat_state_data
             ]
             self.means.append(avg)
             self.variances.append(var)
@@ -256,8 +280,8 @@ def main():
         for number in NUMBERS
     ]
 
-    hmm = HMM(n_states=5, n_gaussians=2)
-    hmm.fit(template_mfcc_s[0:11], list(range(11)))
+    hmm = HMM(n_states=5, n_gaussians=4)
+    hmm.fit(template_mfcc_s, list(range(11)))
 
     result = []
     for i, _ in enumerate(test_mfcc_s[0:11]):
