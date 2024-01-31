@@ -13,6 +13,15 @@ from ..project2.lib import (
 TEST_INDEXES = range(11, 20, 2)
 """Indexes for test numbers."""
 
+TEMPLATE_INDEXES = range(10, 20, 2)
+"""Indexes for template numbers."""
+
+HARD_TEST_INDEXES = range(1, 10, 2)
+"""Indexes for hard mode test numbers."""
+
+HARD_TEMPLATE_INDEXES = range(0, 10, 2)
+"""Indexes for hard mode template numbers."""
+
 INF_FLOAT32 = np.float32(np.inf)
 
 

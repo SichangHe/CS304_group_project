@@ -27,3 +27,7 @@ On average, taking the minimum finish costs gave the best accuracy, therefore we
 Best pruning threshold seems to be 13:
 
 ![Classification accuracy corresponding to pruning thresholds.](./dtw_accuracy_vs_threshold.pdf)
+
+When adding more templates, the accuracy increased and quickly reached 1:
+
+![Classification accuracy corresponding to the number of templates used.](./dtw_n_template_vs_accuracy.pdf)
