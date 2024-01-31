@@ -40,31 +40,31 @@ def align_sequence(sequence, means, covariances, transition_probs):
         if start_index > 5:
             return [0] * len(sequence), MINUS_INF
 
-        probabilities = (
-            multivariate_normal.pdf(
+        log_probabilities = (
+            multivariate_normal.logpdf(
                 sequence[start_index], mean=mean, cov=cov, allow_singular=True
             )
             for mean, cov in zip(means[0], covariances[0])
         )
-        viterbi_trellis[0, start_index] = np.log(max(probabilities))
+        viterbi_trellis[0, start_index] = max(log_probabilities)
 
         if viterbi_trellis[0, start_index] != MINUS_INF:
             break
 
+    pdfs = [
+        multivariate_normal(mean=mean, cov=cov)
+        for s in range(num_states)
+        for mean, cov in zip(means[s], covariances[s])
+    ]
+
     for t in range(start_index + 1, sequence_length):
         for state in range(num_states):
-            emission_prob = max(
-                [
-                    multivariate_normal.pdf(
-                        sequence[t], mean=mean, cov=cov, allow_singular=True
-                    )
-                    for mean, cov in zip(means[state], covariances[state])
-                ]
-            )
+            emission_log_prob = max(pdf.logpdf(sequence[t]) for pdf in pdfs)
+
             viterbi_scores = (
                 (viterbi_trellis[:, t - 1])
                 + np.log(transition_probs[:, state])
-                + np.log(emission_prob)
+                + emission_log_prob
             )
 
             viterbi_trellis[state, t] = np.max(viterbi_scores)
@@ -185,7 +185,7 @@ class HMM_Single:
                         (prev_means_for_state * 0.9, prev_means_for_state * 1.1)
                     )
             assert new_means.shape == (n_gaussians, 39), new_means.shape
-            kmeans = KMeans(n_clusters=n_gaussians, init=new_means)
+            kmeans = KMeans(n_clusters=n_gaussians, init=new_means)  # type: ignore
             kmeans = kmeans.fit(flat_state_data)
             labels: Iterable[int] | None = kmeans.labels_
             assert labels is not None
@@ -217,7 +217,9 @@ class HMM_Single:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict_score(self, target: NDArray[np.float32]) -> Tuple[List[int], float]:
+    def predict_score(
+        self, target: NDArray[np.float32]
+    ) -> Tuple[List[int], np.float32]:
         """
         Take a target sequence and return similarity with the training samples.
         """
