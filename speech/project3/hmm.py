@@ -5,6 +5,7 @@ from logging import debug
 from typing import Iterable, List, Tuple
 
 import numpy as np
+from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
@@ -82,18 +83,12 @@ def align_sequence(sequence, means, covariances, transition_probs):
 
 class HMM_Single:
     n_states: int
-    max_gaussians: int
     transition_matrix: NDArray[np.float64]
     grouped_data: NDArray[np.int64]
     _raw_data: List[NDArray[np.float32]]
     _slice_array: NDArray
 
-    def __init__(self):
-        self.means = []
-        self.variances = []
-        self.n_samples = 0
-
-    def fit(self, data: List[NDArray[np.float32]], n_states=5, n_gaussians=4):
+    def __init__(self, data: List[NDArray[np.float32]], n_states=5, n_gaussians=4):
         """
         Fits the model to the provided training data using segmental K-means.
 
@@ -107,7 +102,8 @@ class HMM_Single:
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
-        self.max_gaussians = n_gaussians
+
+        self.means: list[list[NDArray[np.float32]]] = []
         self._init()
 
         prev_groups = None
@@ -230,35 +226,55 @@ class HMM_Single:
         )
 
 
+@cache_to_disk(2)
+def single_hmm_w_template_file_names(
+    template_file_names: list[str], n_states: int, n_gaussians: int
+):
+    template_mfcc_s = [
+        boosted_mfcc_from_file(file_name) for file_name in template_file_names
+    ]
+    return HMM_Single(template_mfcc_s, n_states, n_gaussians)
+
+
 class HMM:
     labels: List[int]
 
-    def __init__(self, n_states=5, n_gaussians=4):
+    def __init__(
+        self,
+        n_states=5,
+        n_gaussians=4,
+        hmm_instances: List[HMM_Single] = [],
+        labels: list[int] = [],
+    ):
         self.n_states = n_states
         self.n_gaussians = n_gaussians
-        self._hmm_instances: List[HMM_Single] = []
+        self._hmm_instances = hmm_instances
+        self.labels = labels
 
-    def fit(self, X: list[list[NDArray[np.float32]]], y: List[int]):
+    def fit(
+        self,
+        templates_for_each_label: list[list[NDArray[np.float32]]],
+        labels: List[int],
+    ):
         """
         Fits the model to the given training data using segmental K-means.
 
         Parameters
         ----------
-        X : A list of training samples with length `n_samples`, where each sample is represented as a list of numpy arrays.
+        templates_for_each_label : A list of training samples with length `n_samples`, where each sample is represented as a list of numpy arrays.
             The outer list contains different training samples, each corresponding to a target number (e.g., 1, 2, 3).
             The inner list represents the number of samples in each target.
             Each numpy array is the training data and has a shape of `(l, d)`, where `l` is the number of frames and `d` is the dimension of features (typically 39).
 
-        y : array-like of shape `(n_samples,)`
+        labels : array-like of shape `(n_samples,)`
             Target vector relative to X.
         """
-        assert len(X) == len(y)
+        assert len(templates_for_each_label) == len(labels)
+        self.labels = labels
 
-        self.labels = y
-        for _X, _y in zip(X, y):
-            debug(f"fitting number {_y} ...")
-            hmm = HMM_Single()
-            hmm.fit(_X, self.n_states, self.n_gaussians)
+        for templates, label in zip(templates_for_each_label, labels):
+            debug(f"Calculating single HMM for number {label}.")
+            hmm = HMM_Single(templates, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
 
     def predict(self, X: list[NDArray[np.float32]]):
@@ -273,6 +289,31 @@ class HMM:
         ]
 
         return max(scores, key=lambda x: x[0])[1]
+
+    @classmethod
+    def from_template_file_names_and_labels(
+        cls,
+        template_file_names_for_each_label: list[list[str]],
+        labels: List[int],
+        n_states=5,
+        n_gaussians=4,
+    ):
+        assert len(template_file_names_for_each_label) == len(labels)
+        hmm_instances = []
+        for template_file_names, label in zip(
+            template_file_names_for_each_label, labels
+        ):
+            debug(f"Calculating single HMM for number {label}.")
+            hmm_single = single_hmm_w_template_file_names(
+                template_file_names, n_states, n_gaussians
+            )
+            hmm_instances.append(hmm_single)
+        return cls(
+            n_states=n_states,
+            n_gaussians=n_gaussians,
+            hmm_instances=hmm_instances,
+            labels=labels,
+        )
 
 
 def main():
@@ -294,20 +335,17 @@ def main():
         else (TEMPLATE_INDEXES, TEST_INDEXES)
     )
 
-    template_mfcc_s = [
-        [
-            boosted_mfcc_from_file(f"recordings/{number}{i}.wav")
-            for i in template_indexes
-        ]
-        for number in NUMBERS
+    template_files = [
+        [f"recordings/{number}{i}.wav" for i in template_indexes] for number in NUMBERS
     ]
     test_mfcc_s = [
         [boosted_mfcc_from_file(f"recordings/{number}{i}.wav") for i in test_indexes]
         for number in NUMBERS
     ]
 
-    hmm = HMM(n_states=5, n_gaussians=args.n_gaussians)
-    hmm.fit(template_mfcc_s, list(range(11)))
+    hmm = HMM.from_template_file_names_and_labels(
+        template_files, list(range(11)), n_states=5, n_gaussians=args.n_gaussians
+    )
 
     result = []
     for i, _ in enumerate(test_mfcc_s[0:11]):
