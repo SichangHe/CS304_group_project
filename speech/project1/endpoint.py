@@ -1,3 +1,4 @@
+from logging import debug
 from queue import Queue
 from threading import Thread
 
@@ -108,7 +109,7 @@ def get_classify_sample():
 
         level = ((level * FORGET_FACTOR) + current) / (FORGET_FACTOR + 1.0)
 
-        print(
+        debug(
             f"speaking: {'Y' if speaking else 'N'}, current: {current:.1f}, bg: {background:.1f}, fg: {foreground:.1f}, level: {level:.1f}."
         )
 

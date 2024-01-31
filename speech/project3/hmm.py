@@ -277,14 +277,14 @@ class HMM:
             hmm = HMM_Single(templates, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
 
-    def predict(self, X: list[NDArray[np.float32]]):
-        result = [self._predict(samples) for samples in X]
+    def predict(self, test_samples_list: list[NDArray[np.float32]]):
+        result = [self._predict(samples) for samples in test_samples_list]
 
         return result
 
-    def _predict(self, X: NDArray[np.float32]):
+    def _predict(self, samples: NDArray[np.float32]):
         scores = [
-            (hmm.predict_score(X)[1], l)
+            (hmm.predict_score(samples)[1], l)
             for hmm, l in zip(self._hmm_instances, self.labels)
         ]
 

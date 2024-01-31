@@ -24,6 +24,8 @@ HARD_TEST_INDEXES = range(1, 10, 2)
 HARD_TEMPLATE_INDEXES = range(0, 10, 2)
 """Indexes for hard mode template numbers."""
 
+DEMO_TEMPLATE_INDEXES = range(10)
+
 INF_FLOAT32 = np.float32(np.inf)
 
 
