@@ -280,6 +280,13 @@ def main():
     parser.add_argument(
         "-m", "--hard-mode", action="store_true", help="Use hard mode datasets."
     )
+    parser.add_argument(
+        "-n",
+        "--n-gaussians",
+        default=4,
+        type=int,
+        help="Number of gaussians for each state.",
+    )
     args = parser.parse_args()
     template_indexes, test_indexes = (
         (HARD_TEMPLATE_INDEXES, HARD_TEST_INDEXES)
@@ -299,7 +306,7 @@ def main():
         for number in NUMBERS
     ]
 
-    hmm = HMM(n_states=5, n_gaussians=4)
+    hmm = HMM(n_states=5, n_gaussians=args.n_gaussians)
     hmm.fit(template_mfcc_s, list(range(11)))
 
     result = []
