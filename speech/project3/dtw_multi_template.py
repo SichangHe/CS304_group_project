@@ -49,7 +49,7 @@ Accuracy|{"|".join(str(a) for a in accuracies)}|{average_accuracy:.2f}"""
     ax.set_xlabel("Number of Templates")
     ax.set_ylabel("Average Accuracy")
     plt.show(block=True)
-    fig.savefig("dtw_n_template_vs_accuracy.pdf", bbox_inches="tight")
+    fig.savefig("dtw_n_template_vs_accuracy.png", bbox_inches="tight")
 
 
 main() if __name__ == "__main__" else None

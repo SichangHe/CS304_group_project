@@ -45,7 +45,7 @@ def main():
     ax.set_xlabel("Pruning Threshold")
     ax.set_ylabel("Accuracy")
     plt.show(block=True)
-    fig.savefig("dtw_accuracy_vs_threshold.pdf", bbox_inches="tight")
+    fig.savefig("dtw_accuracy_vs_threshold.png", bbox_inches="tight")
 
 
 main() if __name__ == "__main__" else None
