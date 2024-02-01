@@ -59,9 +59,9 @@ The above results are obtained using the best pruning threshold we determined ea
 
 ## Problem 2
 
-### Training
+### Hidden Markov Model Training
 
-To train the Hidden Markov Model (HMM) for the digits, we follow the following steps:
+To train the Hidden Markov Model (HMM) for the numbers, we follow the following steps:
 
 1. Initialize all parameters uniformly:
    1. Initialize state means and covariances.
@@ -70,19 +70,17 @@ To train the Hidden Markov Model (HMM) for the digits, we follow the following s
 3. Reestimate the parameters from segmented training sequences:
    1. Update state means and covariances based on the segmented sequences.
    2. Update transition probabilities based on the segmented sequences.
-4. If the convergence criterion is not met, go back to step 2 and repeat the process.
+4. If the segmenting is not the same as last round, go back to step 2 and repeat the process.
 
 ### Prediction
 
-After training the HMM model for each of the digits (0 to 10), we can make predictions using the following steps:
+After training the HMM model for each of the numbers (0 to 10), we can make predictions using the following steps:
 
 1. Feed the test sample into each of the HMM models.
 2. Calculate the log probability for each HMM model.
 3. Select the number associated with the highest log probability as the predicted number.
 
-### Implementation details
-
-#### Viterbi decoding
+### Viterbi decoding
 
 We utilize the dynamic programming Viterbi decoding algorithm to find the best observed sequence of the HMM.
 The transition probabilities are derived from the sequences segmented into states using the following formula:
@@ -92,17 +90,17 @@ where:
 - $N_{k, i}$ is the number of vectors in the ith segment (state) of the kth training sequence
 - $N_{k, i, j}$ is the number of vectors in the ith segment (state) of the kth training sequence that were followed by vectors from the jth segment (state)
 
-The emission probabilities are determined using the Gaussian distribution for each state. We calculate the probability density function (pdf) of the input feature vector using the state mean and covariance.
+The emission probabilities are determined using the Gaussian distribution for each state. We calculate the probability density function (PDF) of the input feature vector using the state mean and covariance.
 
 We keep track of the best score (log probability) for each state at each time, and then backtrack to find the optimal trace by following the states with the highest scores at each time.
 
-#### Result
+### HMM Result
 
 Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
 -|-|-|-|-|-|-|-|-|-|-|-|-
 Accuracy|1.0|1.0|0.6|1.0|1.0|0.8|1.0|1.0|1.0|1.0|1.0|0.95
 
-## Problem 3:
+## Problem 3
 
 In addition to the routine followed in problem 2, we introduce the following modification:
 
