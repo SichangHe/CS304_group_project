@@ -113,6 +113,24 @@ When adding more templates (12, 14, 16, 18), the accuracy increased and quickly 
 
 <!-- slide -->
 
+### Transition probabilities
+
+The transition probabilities are derived from the sequences segmented into states using the following formula:
+$$ P_{ij} = \frac{\sum_k N_{k, i, j}}{\sum_k N_{k, i}} $$
+where:
+
+- $N_{k, i}$ is the number of vectors in the ith segment (state) of the kth training sequence
+- $N_{k, i, j}$ is the number of vectors in the ith segment (state) of the kth training sequence that were followed by vectors from the jth segment (state)
+
+<!-- slide -->
+
+### Emission probabilities
+
+- Determined using the Gaussian distribution for each state 
+- Calculate the probability density function (PDF) of the input feature vector using the state mean and covariance.
+
+<!-- slide -->
+
 ### Optimizing performance
 
 - Diagonal covariance matrix to simplify multivariate Gaussian pdf:
@@ -123,7 +141,7 @@ $$ f(x) = \frac{1}{\sqrt{(2\pi)^D \prod\limits_d \sigma_d^2}} \exp \Bigl(-0.5\su
 
 <!-- slide -->
 
-### HMM with  Gaussian mixture
+### HMM with Gaussian mixture
 
 1. Initialize all parameters uniformly and train HMMs with a single Gaussian:
    1. Initialize state means and covariances with a single Gaussian.
@@ -135,6 +153,15 @@ $$ f(x) = \frac{1}{\sqrt{(2\pi)^D \prod\limits_d \sigma_d^2}} \exp \Bigl(-0.5\su
 4. _Split_ the Gaussians in the state output distributions to obtain a larger Gaussian mixture at each state.
 5. Use the K-means algorithm to find clusters of Gaussians for each state (Not using EM for GMM for simplicity as suggested in assignment specification).
 6. If the convergence criterion is not met, go back to step 2 and repeat the process.
+
+<!-- slide -->
+
+### HMM with Gaussia mixture
+
+- Instead of having a single Gaussian distribution for each state
+- Represent the emission probabilities as a mixture of multiple Gaussian distributions.
+- Each state contains a Gaussian mixture model
+- Eission probability is calculated by selecting the Gaussian component with the highest probability within that segmented state.
 
 <!-- slide -->
 
