@@ -43,6 +43,8 @@ The best pruning threshold seems to be 13, according to Figure 1.
 
 ![Classification accuracy corresponding to pruning thresholds.](./dtw_accuracy_vs_threshold.png)
 
+### DTW With Five Templates
+
 When adding more templates (12, 14, 16, 18), the accuracy increased and quickly reached 1, as shown in Figure 2.
 
 ![Classification accuracy corresponding to the number of templates used.](./dtw_n_template_vs_accuracy.png)
@@ -55,7 +57,7 @@ The above results are obtained using the best pruning threshold we determined ea
 
 ![Classification accuracy corresponding to the number of templates used (hard mode, no pruning).](./dtw_n_template_vs_accuracy_hard_no_pruning.png)
 
-## Problem 2:
+## Problem 2
 
 ### Training
 
@@ -115,9 +117,7 @@ In addition to the routine followed in problem 2, we introduce the following mod
 5. Use the K-means algorithm to find clusters of Gaussians for each state (Not using EM for GMM for simplicity as suggested in assignment specification).
 6. If the convergence criterion is not met, go back to step 2 and repeat the process.
 
-### Implementation details
-
-#### Splitting Gaussians
+### Splitting Gaussians
 
 To split the Gaussians, we use the following formula:
 
@@ -131,13 +131,13 @@ $$
 where $y_n$ represents a Gaussian and $\epsilon$ is set to 0.1.
 At each iteration, we increase the number of Gaussians by a power of 2, resulting in 1, 2, 4, 8, and so on Gaussians.
 
-#### Emission probabilities with Gaussian mixture
+### Emission probabilities with Gaussian mixture
 
 Instead of having a single Gaussian distribution for each state, we represent the emission probabilities as a mixture of multiple Gaussian distributions. Each state contains a Gaussian mixture model, and the emission probability is calculated by selecting the Gaussian component with the highest probability within that segmented state.
 
 This approach allows for capturing the complexities and variations in the observed data by modeling them with multiple Gaussian distributions within each state.
 
-#### Result (4 Gaussians)
+### HMM Result With Four Gaussians
 
 Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
 -|-|-|-|-|-|-|-|-|-|-|-|-
