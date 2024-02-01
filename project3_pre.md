@@ -88,8 +88,6 @@ When adding more templates (12, 14, 16, 18), the accuracy increased and quickly 
 
 ![Classification accuracy corresponding to the number of templates used.](./dtw_n_template_vs_accuracy.png)
 
-![Classification accuracy corresponding to the number of templates used (hard mode).](./dtw_n_template_vs_accuracy_hard.png)
-
 <!-- slide -->
 
 ### DTW With Five Templates
@@ -99,7 +97,6 @@ When adding more templates (12, 14, 16, 18), the accuracy increased and quickly 
 - Increased accuract as we added more templates
 
 ![Classification accuracy corresponding to the number of templates used (hard mode).](./dtw_n_template_vs_accuracy_hard.png)
-
 
 <!-- slide -->
 
