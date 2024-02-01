@@ -15,21 +15,21 @@ We started with the "hard" dataset, using the number recordings with index 0 as 
 
 In this process, we experimented with the selection of DTW finish costs used for comparison. We first took the minimum finish costs of each template for comparison to decide which template is the best match:
 
-Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
--|-|-|-|-|-|-|-|-|-|-|-|-
-Accuracy|1.0|1.0|0.6|1.0|1.0|0.8|1.0|1.0|1.0|1.0|1.0|0.95
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+| -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
+| Accuracy | 1.0  | 1.0 | 0.6 | 1.0   | 1.0  | 0.8  | 1.0 | 1.0   | 1.0   | 1.0  | 1.0 | 0.95    |
 
 We then compared by taking the last finish costs:
 
-Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
--|-|-|-|-|-|-|-|-|-|-|-|-
-Accuracy|1.0|1.0|0.6|1.0|1.0|0.6|0.6|0.8|1.0|1.0|1.0|0.87
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+| -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
+| Accuracy | 1.0  | 1.0 | 0.6 | 1.0   | 1.0  | 0.6  | 0.6 | 0.8   | 1.0   | 1.0  | 1.0 | 0.87    |
 
 And, we compared by taking the first finish costs:
 
-Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
--|-|-|-|-|-|-|-|-|-|-|-|-
-Accuracy|0.0|0.0|0.0|0.0|0.8|1.0|0.6|0.0|0.0|0.2|0.0|0.24
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+| -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
+| Accuracy | 0.0  | 0.0 | 0.0 | 0.0   | 0.8  | 1.0  | 0.6 | 0.0   | 0.0   | 0.2  | 0.0 | 0.24    |
 
 On average, taking the minimum finish costs gave the best accuracy, therefore we continued with this method for the time-synchronous DTW. However, the sample size is too small to draw a conclusion.
 
@@ -84,7 +84,7 @@ After training the HMM model for each of the numbers (0 to 10), we can make pred
 
 We utilize the dynamic programming Viterbi decoding algorithm to find the best observed sequence of the HMM.
 The transition probabilities are derived from the sequences segmented into states using the following formula:
-$$ P_{ij} = \frac{\sum_k N_{k, i, j}}{\sum_k N_{k, i}} $$
+$$ P*{ij} = \frac{\sum_k N*{k, i, j}}{\sum*k N*{k, i}} $$
 where:
 
 - $N_{k, i}$ is the number of vectors in the ith segment (state) of the kth training sequence
@@ -92,13 +92,19 @@ where:
 
 The emission probabilities are determined using the Gaussian distribution for each state. We calculate the probability density function (PDF) of the input feature vector using the state mean and covariance.
 
+To simplify the computation of the Multivariate Gaussian distribution, we assume a diagonal covariance matrix. This means that the covariance matrix only contains non-zero values along the diagonal and zero values elsewhere. The probability density function (pdf) can be computed using the following formula:
+
+$$ f(x) = \frac{1}{\sqrt{(2\pi)^D \prod\limits_d \sigma_d^2}} \exp \Bigl(-0.5\sum_d \frac{(x_d - \mu_d)^2}{\sigma_d^2}\Bigr) $$
+
+To further reduce computations, we can optimize the calculation of emission probabilities by evaluating them only when the transition probability and Viterbi trellis of the last time step are valid. This optimization helps to save computation time.
+
 We keep track of the best score (log probability) for each state at each time, and then backtrack to find the optimal trace by following the states with the highest scores at each time.
 
 ### HMM Result
 
-Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
--|-|-|-|-|-|-|-|-|-|-|-|-
-Accuracy|1.0|1.0|0.6|1.0|1.0|0.8|1.0|1.0|1.0|1.0|1.0|0.95
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+| -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
+| Accuracy | 1.0  | 1.0 | 0.6 | 1.0   | 1.0  | 0.8  | 1.0 | 1.0   | 1.0   | 1.0  | 1.0 | 0.95    |
 
 ## Problem 3
 
@@ -137,6 +143,6 @@ This approach allows for capturing the complexities and variations in the observ
 
 ### HMM Result With Four Gaussians
 
-Number|zero|one|two|three|four|five|six|seven|eight|nine|ten|Average
--|-|-|-|-|-|-|-|-|-|-|-|-
-Accuracy|1.0|1.0|0.8|1.0|1.0|1.0|0.8|1.0|1.0|1.0|1.0|0.96
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+| -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
+| Accuracy | 1.0  | 1.0 | 0.8 | 1.0   | 1.0  | 1.0  | 0.8 | 1.0   | 1.0   | 1.0  | 1.0 | 0.96    |
