@@ -211,6 +211,13 @@ HMM with 4 Gaussian:
 
 <!-- slide -->
 
+### HMM Caching
+
+- For each number with certain configuration
+- `cache_to_disk`
+
+<!-- slide -->
+
 
 ## Demo
 

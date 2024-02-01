@@ -123,7 +123,7 @@ In addition to the routine followed in problem 2, we introduce the following mod
 3. Reestimate the parameters from segmented training sequences:
    1. Update state means and covariances based on the segmented sequences.
    2. Update transition probabilities based on the segmented sequences.
-4. _Split_ the Gaussians in the state output distributions to obtain a larger Gaussian mixture at each state.
+4. *Split* the Gaussians in the state output distributions to obtain a larger Gaussian mixture at each state.
 5. Use the K-means algorithm to find clusters of Gaussians for each state (Not using EM for GMM for simplicity as suggested in assignment specification).
 6. If the convergence criterion is not met, go back to step 2 and repeat the process.
 
@@ -172,3 +172,7 @@ Result for "hard" dataset:
 | Accuracy | 1.0 | 1.0 | 0.4 | 1.0 | 0.6 | 0.4 | 0.6 | 0.8 | 0.6 | 1.0 | 1.0 | 0.76 |
 
 As we can see from the results, we observe that for the "easy" dataset, HMMs with 1, 2, and 4 Gaussians perform equally well with an accuracy of 0.98. On the other hand, for the "hard" dataset, the HMM with 2 Gaussians outperforms the others. This difference in performance could be attributed to the fact that the HMM with four Gaussians may be overfitting the training data. Since we only have five templates for each digit, a higher number of Gaussians might lead to overfitting, where the model becomes too specialized and fails to generalize well to unseen data. In future projects, we will include more diverse training data so that the model can generalize more effectively to unseen instances.
+
+### HMM Caching
+
+Since calculating the HMM parameters is computationally expensive, we cache the parameters for each number with the given template file paths and configuration. We achieve this caching function using library `cache_to_disk`. The cached HMM are loaded instantly for our HMM demo.
