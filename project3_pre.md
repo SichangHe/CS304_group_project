@@ -78,7 +78,8 @@ Duke Kunshan University
 - Round minimum cost after each round of comparison
 
 The best pruning threshold seems to be 13
-![Classification accuracy corresponding to pruning thresholds.](./dtw_accuracy_vs_threshold.png)
+
+<img alt="Classification accuracy corresponding to pruning thresholds." src="./dtw_accuracy_vs_threshold.png" height="800vh" />
 
 <!-- slide -->
 
@@ -86,7 +87,7 @@ The best pruning threshold seems to be 13
 
 When adding more templates (12, 14, 16, 18), the accuracy increased and quickly reached 1.
 
-![Classification accuracy corresponding to the number of templates used.](./dtw_n_template_vs_accuracy.png)
+<img alt="Classification accuracy corresponding to the number of templates used." src="./dtw_n_template_vs_accuracy.png" height=800vh />
 
 <!-- slide -->
 
@@ -96,7 +97,7 @@ When adding more templates (12, 14, 16, 18), the accuracy increased and quickly 
 - Accuracy was lower
 - Increased accuract as we added more templates
 
-![Classification accuracy corresponding to the number of templates used (hard mode).](./dtw_n_template_vs_accuracy_hard.png)
+<img alt="Classification accuracy corresponding to the number of templates used (hard mode)." src="./dtw_n_template_vs_accuracy_hard.png" height=800vh />
 
 <!-- slide -->
 
