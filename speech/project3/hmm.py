@@ -5,6 +5,7 @@ from logging import debug
 from typing import Iterable, List, Tuple
 
 import numpy as np
+
 from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
@@ -52,14 +53,16 @@ def align_sequence(sequence, means, covariances, transition_probs):
             break
 
     pdfs = [
-        multivariate_normal(mean=mean, cov=cov)
+        [
+            multivariate_normal(mean=mean, cov=cov, allow_singular=True)
+            for mean, cov in zip(means[s], covariances[s])
+        ]
         for s in range(num_states)
-        for mean, cov in zip(means[s], covariances[s])
     ]
 
     for t in range(start_index + 1, sequence_length):
         for state in range(num_states):
-            emission_log_prob = max(pdf.logpdf(sequence[t]) for pdf in pdfs)
+            emission_log_prob = max(pdf.logpdf(sequence[t]) for pdf in pdfs[state])
 
             viterbi_scores = (
                 (viterbi_trellis[:, t - 1])
