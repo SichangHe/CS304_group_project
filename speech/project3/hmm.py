@@ -24,7 +24,7 @@ from . import (
 MINUS_INF = -INF_FLOAT32
 
 
-def multivariate_gaussian_pdf(
+def multivariate_gaussian_pdf_diag_cov(
     x: NDArray[np.float64], mean: NDArray[np.float64], cov: NDArray[np.float64]
 ) -> np.float64:
     """
@@ -77,21 +77,29 @@ def align_sequence(sequence, means, covariances, transition_probs):
 
     for t in range(start_index + 1, sequence_length):
         for state in range(num_states):
-            emission_log_prob = np.log(
-                max(
-                    multivariate_gaussian_pdf(sequence[t], mean=mean, cov=cov)
-                    for mean, cov in zip(means[state], covariances[state])
+            last_viterbi_trellis = viterbi_trellis[:, t - 1]
+            log_transition_prob = np.log(transition_probs[:, state])
+            if all(
+                np.logical_or(
+                    last_viterbi_trellis == MINUS_INF,
+                    log_transition_prob == MINUS_INF,
                 )
-            )
+            ):
+                """last_viterbi_trellis or log_transition_prob is -inf"""
+                viterbi_trellis[state, t] = MINUS_INF
+            else:
+                emission_log_prob = np.log(
+                    max(
+                        multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
+                        for mean, cov in zip(means[state], covariances[state])
+                    )
+                )
+                viterbi_scores = (
+                    last_viterbi_trellis + log_transition_prob + emission_log_prob
+                )
 
-            viterbi_scores = (
-                (viterbi_trellis[:, t - 1])
-                + np.log(transition_probs[:, state])
-                + emission_log_prob
-            )
-
-            viterbi_trellis[state, t] = np.max(viterbi_scores)
-            backpointers[state, t] = np.argmax(viterbi_scores)
+                viterbi_trellis[state, t] = np.max(viterbi_scores)
+                backpointers[state, t] = np.argmax(viterbi_scores)
 
     # Trace back
     # alignment = [np.argmax(viterbi_trellis[:, -1])]
