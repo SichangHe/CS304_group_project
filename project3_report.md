@@ -39,3 +39,73 @@ Therefore, we reverted to using the initial recordings with indexes 0 through 9,
 The above results are obtained using the best pruning threshold we determined earlier. If we remove the threshold, we get very similar results, as shown in Figure 4.
 
 ![Classification accuracy corresponding to the number of templates used (hard mode, no pruning).](./dtw_n_template_vs_accuracy_hard_no_pruning.png)
+
+## Problem 2:
+
+### Training
+
+To train the Hidden Markov Model (HMM) for the digits, we follow the following steps:
+
+1. Initialize all parameters uniformly:
+   1. Initialize state means and covariances.
+   2. Initialize transition probabilities.
+2. Segment all training sequences.
+3. Reestimate the parameters from segmented training sequences:
+   1. Update state means and covariances based on the segmented sequences.
+   2. Update transition probabilities based on the segmented sequences.
+4. If the convergence criterion is not met, go back to step 2 and repeat the process.
+
+### Prediction
+
+After training the HMM model for the digits, we can make predictions using the following steps:
+
+1. Feed the test sample into each of the HMM models.
+2. Calculate the log probability for each HMM model.
+3. Select the number associated with the highest log probability as the predicted number.
+
+### Implementation details
+
+#### Viterbi algorithm
+
+We utilize the dynamic programming Viterbi algorithm to find the best observed sequence of the HMM.
+The transition probabilities are derived from the sequences segmented into states using the following formula:
+$$ P_{ij} = \frac{\sum_k N_{k, i, j}}{\sum_k N_{k, i}} $$
+where:
+
+- $N_{k, i}$ is the number of vectors in the ith segment (state) of the kth training sequence
+- $N_{k, i, j}$ is the number of vectors in the ith segment (state) of the kth training sequence that were followed by vectors from the jth segment (state)
+
+The emission probabilities are determined using the Gaussian distribution for each state. We calculate the probability density function (pdf) of the input feature vector using the state mean and covariance.
+
+We keep track of the best score (log probability) for each state at each time, and then backtrack to find the optimal trace by following the states with the highest scores at each time.
+
+## Problem 3:
+
+In addition to the routine followed in problem 2, we introduce the following modification:
+
+1. Initialize all parameters uniformly and train HMMs with a single Gaussian:
+   1. Initialize state means and covariances with a single Gaussian.
+   2. Initialize transition probabilities.
+2. Segment all training sequences.
+3. Reestimate the parameters from segmented training sequences:
+   1. Update state means and covariances based on the segmented sequences.
+   2. Update transition probabilities based on the segmented sequences.
+4. _Split_ the Gaussians in the state output distributions to obtain a larger Gaussian mixture at each state.
+5. Use the K-means algorithm to find clusters of Gaussians for each state.
+6. If the convergence criterion is not met, go back to step 2 and repeat the process.
+
+### Implementation details
+
+#### Splitting Gaussians
+
+To split the Gaussians, we use the following formula:
+
+$$
+\begin{align*}
+    y_n^+ &= y_n ( 1 + \epsilon  ) \\
+    y_n^- &= y_n ( 1 - \epsilon  )
+\end{align*}
+$$
+
+where $y_n$ represents a Gaussian and $\epsilon$ is set to 0.1.
+At each iteration, we increase the number of Gaussians by a power of 2, resulting in 1, 2, 4, 8, and so on Gaussians.
