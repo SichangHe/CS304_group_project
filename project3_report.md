@@ -84,7 +84,9 @@ After training the HMM model for each of the numbers (0 to 10), we can make pred
 
 We utilize the dynamic programming Viterbi decoding algorithm to find the best observed sequence of the HMM.
 The transition probabilities are derived from the sequences segmented into states using the following formula:
+
 $$ P_{ij} = \frac{\sum_k N_{k, i, j}}{\sum_k N_{k, i}} $$
+
 where:
 
 - $N_{k, i}$ is the number of vectors in the ith segment (state) of the kth training sequence
@@ -103,14 +105,16 @@ We keep track of the best score (log probability) for each state at each time, a
 ### HMM Result
 
 Result for "easy" dataset:
-| Number | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
-| Accuracy | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 0.8 | 1.0 | 1.0 | 1.0 | 1.0 | 0.98 |
+| Accuracy | 1.0  | 1.0 | 1.0 | 1.0   | 1.0  | 1.0  | 0.8 | 1.0   | 1.0   | 1.0  | 1.0 | 0.98    |
 
 Result for "hard" dataset:
-| Number | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
-| Accuracy | 1.0 | 1.0 | 0.6 | 0.8 | 0.8 | 0.6 | 0.6 | 0.6 | 0.6 | 1.0 | 1.0 | 0.78 |
+| Accuracy | 1.0  | 1.0 | 0.6 | 0.8   | 0.8  | 0.6  | 0.6 | 0.6   | 0.6   | 1.0  | 1.0 | 0.78    |
 
 ## Problem 3
 
@@ -132,10 +136,10 @@ In addition to the routine followed in problem 2, we introduce the following mod
 To split the Gaussians, we use the following formula:
 
 $$
-\begin{align*}
-    y_n^+ &= y_n ( 1 + \epsilon  ) \\
-    y_n^- &= y_n ( 1 - \epsilon  )
-\end{align*}
+\begin{aligned}
+    y_n^+ &= y_n (1 + \epsilon) \\
+    y_n^- &= y_n (1 - \epsilon)
+\end{aligned}
 $$
 
 where $y_n$ represents a cluster mean and $\epsilon$ is set to 0.1.
@@ -150,26 +154,30 @@ This approach allows for capturing the complexities and variations in the observ
 ### HMM Result With Two Gaussians
 
 Result for "easy" dataset:
-| Number | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
-| Accuracy | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 0.8 | 1.0 | 1.0 | 1.0 | 1.0 | 0.98 |
+| Accuracy | 1.0  | 1.0 | 1.0 | 1.0   | 1.0  | 1.0  | 0.8 | 1.0   | 1.0   | 1.0  | 1.0 | 0.98    |
 
 Result for "hard" dataset:
-| Number | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
-| Accuracy | 1.0 | 1.0 | 0.4 | 0.8 | 1.0 | 0.8 | 0.8 | 0.8 | 0.4 | 1.0 | 1.0 | 0.82 |
+| Accuracy | 1.0  | 1.0 | 0.4 | 0.8   | 1.0  | 0.8  | 0.8 | 0.8   | 0.4   | 1.0  | 1.0 | 0.82    |
 
 ### HMM Result With Four Gaussians
 
 Result for "easy" dataset:
-| Number | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
-| Accuracy | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 0.8 | 1.0 | 1.0 | 1.0 | 1.0 | 0.98 |
+| Accuracy | 1.0  | 1.0 | 1.0 | 1.0   | 1.0  | 1.0  | 0.8 | 1.0   | 1.0   | 1.0  | 1.0 | 0.98    |
 
 Result for "hard" dataset:
-| Number | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
+
+| Number   | zero | one | two | three | four | five | six | seven | eight | nine | ten | Average |
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
-| Accuracy | 1.0 | 1.0 | 0.4 | 1.0 | 0.6 | 0.4 | 0.6 | 0.8 | 0.6 | 1.0 | 1.0 | 0.76 |
+| Accuracy | 1.0  | 1.0 | 0.4 | 1.0   | 0.6  | 0.4  | 0.6 | 0.8   | 0.6   | 1.0  | 1.0 | 0.76    |
 
 As we can see from the results, we observe that for the "easy" dataset, HMMs with 1, 2, and 4 Gaussians perform equally well with an accuracy of 0.98. On the other hand, for the "hard" dataset, the HMM with 2 Gaussians outperforms the others. This difference in performance could be attributed to the fact that the HMM with four Gaussians may be overfitting the training data. Since we only have five templates for each digit, a higher number of Gaussians might lead to overfitting, where the model becomes too specialized and fails to generalize well to unseen data. In future projects, we will include more diverse training data so that the model can generalize more effectively to unseen instances.
 
