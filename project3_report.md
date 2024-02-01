@@ -92,7 +92,7 @@ where:
 
 The emission probabilities are determined using the Gaussian distribution for each state. We calculate the probability density function (PDF) of the input feature vector using the state mean and covariance.
 
-To simplify the computation of the Multivariate Gaussian distribution, we assume a diagonal covariance matrix. This means that the covariance matrix only contains non-zero values along the diagonal and zero values elsewhere. The probability density function (pdf) can be computed using the following formula:
+To simplify the computation of the Multivariate Gaussian distribution, we assume a diagonal covariance matrix. This means that the covariance matrix only contains non-zero values along the diagonal and zero values elsewhere. The probability density function (PDF) can be computed using the following formula:
 
 $$ f(x) = \frac{1}{\sqrt{(2\pi)^D \prod\limits_d \sigma_d^2}} \exp \Bigl(-0.5\sum_d \frac{(x_d - \mu_d)^2}{\sigma_d^2}\Bigr) $$
 
