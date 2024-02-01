@@ -24,6 +24,29 @@ from . import (
 MINUS_INF = -INF_FLOAT32
 
 
+def multivariate_gaussian_pdf(
+    x: NDArray[np.float64], mean: NDArray[np.float64], cov: NDArray[np.float64]
+) -> np.float64:
+    """
+    Compute the probability density function (PDF) of a multivariate Gaussian distribution with a diagonal covariance matrix.
+    """
+    n = x.shape[0]
+    variance = np.diag(cov)
+    det_covariance = np.prod(variance)
+    inv_covariance_matrix = np.diag(1 / variance)
+
+    difference_vector = x - mean
+    exponent = np.dot(
+        np.dot(difference_vector, inv_covariance_matrix), difference_vector
+    )
+
+    normalization = (2 * np.pi) ** (n / 2) * np.sqrt(det_covariance)
+
+    pdf = 1 / normalization * np.exp(-0.5 * exponent)
+
+    return pdf
+
+
 def align_sequence(sequence, means, covariances, transition_probs):
     num_states = len(means)
     sequence_length = len(sequence)
@@ -52,17 +75,14 @@ def align_sequence(sequence, means, covariances, transition_probs):
         if viterbi_trellis[0, start_index] != MINUS_INF:
             break
 
-    pdfs = [
-        [
-            multivariate_normal(mean=mean, cov=cov, allow_singular=True)
-            for mean, cov in zip(means[s], covariances[s])
-        ]
-        for s in range(num_states)
-    ]
-
     for t in range(start_index + 1, sequence_length):
         for state in range(num_states):
-            emission_log_prob = max(pdf.logpdf(sequence[t]) for pdf in pdfs[state])
+            emission_log_prob = np.log(
+                max(
+                    multivariate_gaussian_pdf(sequence[t], mean=mean, cov=cov)
+                    for mean, cov in zip(means[state], covariances[state])
+                )
+            )
 
             viterbi_scores = (
                 (viterbi_trellis[:, t - 1])
