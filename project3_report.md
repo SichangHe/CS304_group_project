@@ -138,7 +138,7 @@ $$
 \end{align*}
 $$
 
-where $y_n$ represents a Gaussian and $\epsilon$ is set to 0.1.
+where $y_n$ represents a cluster mean and $\epsilon$ is set to 0.1.
 At each iteration, we increase the number of Gaussians by a power of 2, resulting in 1, 2, 4, 8, and so on Gaussians.
 
 ### Emission probabilities with Gaussian mixture
@@ -171,6 +171,4 @@ Result for "hard" dataset:
 | -------- | ---- | --- | --- | ----- | ---- | ---- | --- | ----- | ----- | ---- | --- | ------- |
 | Accuracy | 1.0 | 1.0 | 0.4 | 1.0 | 0.6 | 0.4 | 0.6 | 0.8 | 0.6 | 1.0 | 1.0 | 0.76 |
 
-As we can see from the result, for the "easy" dataset, HMM with 1, 2, and 4 Gaussians perform as well (0.98). However, we see that for the hard dataset, HMM with 2 Gaussians works better. This might due to that HMM with four gaussians overfit the training data as we only have 5 templates for each digit.
-
-As we can see from the results, we observe that for the "easy" dataset, HMMs with 1, 2, and 4 Gaussians perform equally well with an accuracy of 0.98. On the other hand, for the more "hard" dataset, the HMM with 2 Gaussians outperforms the others. This difference in performance could be attributed to the fact that the HMM with four Gaussians may be overfitting the training data. Since we only have five templates for each digit, a higher number of Gaussians might lead to overfitting, where the model becomes too specialized and fails to generalize well to unseen data. In future projects, we will include more diverse training data so that the model can generalize more effectively to unseen instances.
+As we can see from the results, we observe that for the "easy" dataset, HMMs with 1, 2, and 4 Gaussians perform equally well with an accuracy of 0.98. On the other hand, for the "hard" dataset, the HMM with 2 Gaussians outperforms the others. This difference in performance could be attributed to the fact that the HMM with four Gaussians may be overfitting the training data. Since we only have five templates for each digit, a higher number of Gaussians might lead to overfitting, where the model becomes too specialized and fails to generalize well to unseen data. In future projects, we will include more diverse training data so that the model can generalize more effectively to unseen instances.
