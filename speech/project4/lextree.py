@@ -65,18 +65,23 @@ def _trie_strs(node: TrieNode) -> list[str]:
     children = node.children
     if children is None:
         return [value]
+
     sub_trie_strs = [_trie_strs(child) for child in children.inner.values()]
     if len(sub_trie_strs) == 0:
         return [value]
-    sub_trie_strs.sort(key=lambda lines: (len(lines), lines[0]))
 
+    sub_trie_strs.sort(key=lambda lines: (len(lines), lines[0]))
     result = [f"{value}─{sub_trie_strs[0][0]}"]
-    for line in sub_trie_strs[0][1:]:
-        result.append(f"│ {line}")
+
+    if len(sub_trie_strs) == 1:
+        result.extend(f"  {line}" for line in sub_trie_strs[0][1:])
+        return result
+
+    result.extend(f"│ {line}" for line in sub_trie_strs[0][1:])
 
     for lines in sub_trie_strs[1:-1]:
         result.append(f"├─{lines[0]}")
-        result.extend((f"│ {line}" for line in lines[1:]))
+        result.extend(f"│ {line}" for line in lines[1:])
 
     if len(sub_trie_strs) > 1:
         result.append(f"└─{sub_trie_strs[-1][0]}")
