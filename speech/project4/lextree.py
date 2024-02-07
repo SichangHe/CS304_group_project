@@ -289,6 +289,24 @@ class Trie:
 
         return result
 
+    def flatten_w_parent_index(self) -> list[tuple[int | None, TrieNode]]:
+        result: list[tuple[int | None, TrieNode]] = []
+        result.append((None, self.root))
+
+        nodes: deque[tuple[int, TrieNode]] = deque()
+        """(index, node)"""
+        nodes.append((0, self.root))
+
+        while len(nodes) > 0:
+            parent_index, node = nodes.popleft()
+            if node.children is not None:
+                for child in node.children.inner.values():
+                    index = len(result)
+                    result.append((parent_index, child))
+                    nodes.append((index, child))
+
+        return result
+
     def __len__(self):
         return self.len
 
@@ -303,14 +321,14 @@ def main() -> None:
     assert trie.insert("battle")[1]
     assert trie.insert("banana")[1]
     print(trie)
-    print(trie.flatten())
+    print(trie.flatten_w_parent_index())
 
     assert trie.insert("and")[1]
     assert trie.insert("a")[1]
     assert trie.insert("an")[1]
     assert trie.insert("apple")[1]
     print(trie)
-    print(trie.flatten())
+    print(trie.flatten_w_parent_index())
 
 
 main() if __name__ == "__main__" else None
