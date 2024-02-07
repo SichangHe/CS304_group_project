@@ -1,5 +1,6 @@
 """Run as `python3 -m speech.project4.lextree`."""
 
+from collections import deque
 from dataclasses import dataclass
 from logging import debug
 from typing import Iterable
@@ -273,6 +274,21 @@ class Trie:
 
         return best_loss_node.backtrack()
 
+    def flatten(self) -> list[TrieNode]:
+        result = []
+        result.append(self.root)
+
+        nodes: deque[TrieNode] = deque()
+        nodes.append(self.root)
+
+        while len(nodes) > 0:
+            node = nodes.popleft()
+            if node.children is not None:
+                result.extend(node.children.inner.values())
+                nodes.extend(node.children.inner.values())
+
+        return result
+
     def __len__(self):
         return self.len
 
@@ -287,12 +303,14 @@ def main() -> None:
     assert trie.insert("battle")[1]
     assert trie.insert("banana")[1]
     print(trie)
+    print(trie.flatten())
 
     assert trie.insert("and")[1]
     assert trie.insert("a")[1]
     assert trie.insert("an")[1]
     assert trie.insert("apple")[1]
     print(trie)
+    print(trie.flatten())
 
 
 main() if __name__ == "__main__" else None
