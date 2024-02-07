@@ -2,6 +2,10 @@
 
 import numpy as np
 
+from . import DATA_DIR, read_file, write_split_lines
+from .dictionary import dictionary_trie
+from .lextree import Trie
+
 
 def segment_text(text, dictionary):
     n = len(text)
@@ -73,38 +77,16 @@ def levenshtein_distance(word1, word2):
     return dp[m][n]
 
 
+def segment(dict_trie: Trie, text: str, beam_width=5) -> list[str]:
+    # TODO: Use the trie to segment the text.
+    return [text]
+
+
 def main():
-
-    dictionary = [
-        "Genshin",
-        "Impact",
-        "is",
-        "an",
-        "action",
-        "role-playing",
-        "game",
-        "developed",
-        "by",
-        "miHoYo",
-        "takes",
-        "place",
-        "in",
-        "the",
-        "fantasy",
-        "world",
-        "of",
-        "Teyvat",
-        "home",
-        "to",
-        "seven",
-        "nations",
-    ]
-
-    text = "GenshitImpartisanauctionrole-plugingamedeveloperbymiYoHo"
-    segmented_result = segment_text(text, dictionary)
-    print(segmented_result)
-    segmented_text = [text[i:j] for i, j in zip(segmented_result, segmented_result[1:])]
-    print(segmented_text)
+    dict_trie = dictionary_trie()
+    lines = read_file(f"{DATA_DIR}unsegmented0.txt").splitlines()
+    segmented_result = [segment(dict_trie, line) for line in lines]
+    write_split_lines("segment_unsegmented0.txt", segmented_result)
 
 
 main() if __name__ == "__main__" else None
