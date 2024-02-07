@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from logging import debug
+from typing import Iterable
 
 
 @dataclass
@@ -20,7 +21,7 @@ class TrieNodeChildren:
 
     def insert(self, node: "TrieNode"):
         assert node.value is not None, (node, "Should not insert root node")
-        key = (node.children is None, node.value)
+        key = (node.is_leaf(), node.value)
         assert key not in self.inner, (self, node, "key already exists")
         self.inner[key] = node
 
@@ -33,6 +34,24 @@ class TrieNode:
     """The node is a leaf node if the `children` is `None`."""
     value: str | None = None
     """The node is a root node if the `value` is `None`."""
+
+    def is_leaf(self) -> bool:
+        return self.children is None
+
+    def backtrack(self) -> str:
+        reversed_chars = []
+        current: "TrieNode | None" = self
+        while current is not None:
+            if current.value is not None:
+                reversed_chars.append(current.value)
+            current = current.parent
+        return "".join(reversed(reversed_chars))
+
+    def __repr__(self) -> str:
+        if self.children is None:
+            return f"Leaf TrieNode({self.value})"
+        else:
+            return f"TrieNode({self.value}, {len(self.children.inner)} children)"
 
 
 def _insert_new_chain_into_trie(node: TrieNode, value: str):
@@ -90,6 +109,40 @@ def _trie_strs(node: TrieNode) -> list[str]:
     return result
 
 
+@dataclass
+class LossNode:
+    to_be_matched: str
+    trie_node: TrieNode
+    prev_end_loss_node: "LossNode | None" = None
+    loss: int = 0
+
+    def copying_update(
+        self,
+        to_be_matched: str | None = None,
+        trie_node: TrieNode | None = None,
+        prev_end_loss_node: "LossNode | None" = None,
+        loss: int | None = None,
+    ):
+        if to_be_matched is None:
+            to_be_matched = self.to_be_matched
+        if trie_node is None:
+            trie_node = self.trie_node
+        if prev_end_loss_node is None:
+            prev_end_loss_node = self.prev_end_loss_node
+        if loss is None:
+            loss = self.loss
+
+        return LossNode(to_be_matched, trie_node, prev_end_loss_node, loss)
+
+    def backtrack(self) -> list[str]:
+        reversed_words = []
+        current: "LossNode | None" = self
+        while current is not None:
+            reversed_words.append(current.trie_node.backtrack())
+            current = current.prev_end_loss_node
+        return list(reversed(reversed_words))
+
+
 class Trie:
     def __init__(self):
         self.root = TrieNode(children=TrieNodeChildren())
@@ -132,6 +185,93 @@ class Trie:
             return (new_node, True)
         else:
             return (child, False)
+
+    def match_word(self, word: str, beam_width: int):
+        current_losses: list[LossNode] = [LossNode(word, self.root)]
+        finished_losses: list[LossNode] = []
+
+        while len(current_losses) > 0:
+            debug(f"{len(current_losses)} current losses.")
+            next_losses: list[LossNode] = []
+            round_min_loss = 0x7FFFFFFF
+
+            for loss_node in current_losses:
+                loss = loss_node.loss
+                if loss > round_min_loss + beam_width:
+                    continue
+
+                to_be_matched = loss_node.to_be_matched
+                trie_node = loss_node.trie_node
+
+                can_right = True
+                if len(to_be_matched) == 0:
+                    if trie_node.is_leaf():
+                        finished_losses.append(loss_node)
+                        round_min_loss = min(round_min_loss, loss)
+                        continue
+                    can_right = False
+
+                if can_right:
+                    move_right = loss_node.copying_update(
+                        to_be_matched=to_be_matched[1:],
+                        loss=loss + 1,
+                    )
+                    next_losses.append(move_right)
+                    round_min_loss = min(round_min_loss, loss + 1)
+
+                prev_end_loss_node = loss_node.prev_end_loss_node
+                next_nodes: Iterable[TrieNode]
+                if trie_node.children is None:
+                    # Leaf node
+                    next_nodes = (self.root,)
+                    prev_end_loss_node = loss_node
+                else:
+                    next_nodes = trie_node.children.inner.values()
+
+                observation_increment = 1
+                if trie_node.value is None:
+                    # Root node.
+                    observation_increment = 0
+
+                for next_node in next_nodes:
+                    move_up = loss_node.copying_update(
+                        trie_node=next_node,
+                        prev_end_loss_node=prev_end_loss_node,
+                        loss=loss + 1,
+                    )
+                    next_losses.append(move_up)
+                    round_min_loss = min(round_min_loss, loss + 1)
+
+                    if can_right:
+                        node_loss = 1
+                        if (
+                            next_node.value is None  # Root node.
+                            or next_node.value == to_be_matched[0]
+                        ):
+                            node_loss = 0
+                            round_min_loss = min(round_min_loss, loss)
+                        move_diag = loss_node.copying_update(
+                            to_be_matched=to_be_matched[observation_increment:],
+                            prev_end_loss_node=prev_end_loss_node,
+                            loss=loss + node_loss,
+                        )
+                        next_losses.append(move_diag)
+
+                round_threshold = round_min_loss + beam_width
+                current_losses = [
+                    next_loss
+                    for next_loss in next_losses
+                    if next_loss.loss <= round_threshold
+                ]
+
+        final_min_loss = 0x7FFFFFFF
+        best_loss_node = finished_losses[0]
+        for loss_node in finished_losses[1:]:
+            if loss_node.loss < final_min_loss:
+                final_min_loss = loss_node.loss
+                best_loss_node = loss_node
+
+        return best_loss_node.backtrack()
 
     def __len__(self):
         return self.len
