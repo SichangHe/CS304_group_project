@@ -26,11 +26,13 @@ Trie(len=7):
 ## Spell checking
 
 In order to facilitate techniques similar to Levenshtein distance with dynamic programming, we employ a process of flattening the lexical tree. This involves transforming the tree structure into a linear sequence. For instance, the given tree:
+
 ```
 *─b─a─n─a─n─a
     ├─t
     └─t─t─l─e
 ```
+
 would be flattened as [root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]. Each node in the flattened structure is represented by a character, and connections between nodes are denoted by references. For example, 'b' points to 'a1', 'a1' points to 'n', 't', and 't', and so on.
 
 During the process of generating the target word, we consider three possible operations at each character position:
@@ -43,6 +45,56 @@ At each round, we generate a list of `LossNode`s, which contain the current loss
 
 To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the `LossNode`s that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
 
+### Result
+
+Raw type text:
+
+```
+onse apon a tyme wile gramadatta ws kng of benares th bohisata kame to lif t the foot of he himlays as ...
+```
+
+Ground truth text:
+
+```
+Once upon a time, while Brahmadatta was king of Benares, the Bodhisatta came to life at the foot of the Himalayas as ...
+```
+
+Corrected text:
+
+```
+one upon a time wide brahmadatta as ing of benares oh bodhisatta came to if a the foot of he hillas as a ...
+```
+
+The accuracy is Accuracy: 74.39%.
+
 ## Segmentation
 
 For sentence segmentation, we utilize a modified approach based on spell checking. In this case, when a leaf node is reached, it points back to the root node. This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
+
+### Result
+
+We use a uniform approach for segmenting and segmenting with spellcheck.
+
+For the unsgegmented correct text:
+
+```
+onceuponatimewhilebrahmadattawaskingofbenaresthebodhisattacametolifeatthefootofthehimalayasasa ...
+```
+
+Result:
+
+```
+once upon a time while brahmadatta was king of benares the bodhisatta came to life at the foot of the himalayas as a ...
+```
+
+For the unsegmented typo text:
+
+```
+onseaponatymewilegramadattawskngofbenaresthbohisatakametoliftthefootofhehimlaysasa ...
+```
+
+Result:
+
+```
+on sea porath mew i le brahmadatta waking of benares the oh i sat a kamen to lilt the foot of he him ways as a ...
+```
