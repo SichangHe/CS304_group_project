@@ -4,7 +4,7 @@
 
 We construct a trie structure for the lexical tree.
 
-Each `TrieNode` represents a character. A node has a parent, a list of children, and an associated value. We use `None` in place of the children list to indicate that the node is a leaf node corresponding to the end of a word. We use `None` in place of the value for the dummy node prepended at the beginning of all words.
+Each trie node represents a character. A node has a parent, a list of children, and an associated value. We use `None` in place of the children list to indicate that the node is a leaf node corresponding to the end of a word. We use `None` in place of the value for the dummy node prepended at the beginning of all words.
 
 Leaf nodes and non-leaf nodes are distinguished within each node's children. We assign keys composed of whether the child node is a leaf node and the child node's value to the parent's children dictionary. This allows us to query either leaf or non-leaf nodes in $O(1)$.
 
@@ -55,7 +55,7 @@ The plot above illustrates the relationship between beam width and inaccuracy co
 
 ### Backtracking
 
-After obtaining an optimal loss at the end of the target word, we perform backtracking through the `LossNode` to identify the best matching string. This process involves iteratively finding the parent of the `TrieNode` associated with each `LossNode`. By utilizing linked lists, our implementation remains concise.
+After obtaining an optimal loss at the end of the target word, we perform backtracking through the loss node to identify the best matching string. This process involves iteratively finding the parent of the trie node associated with each loss node. By utilizing linked lists, our implementation remains concise.
 
 ### Result
 
