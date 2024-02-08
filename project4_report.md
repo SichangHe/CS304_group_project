@@ -61,7 +61,7 @@ Raw typo text:
 onse apon a tyme wile gramadatta ws kng of benares th bohisata kame to lif t the foot of he himlays as ...
 ```
 
-Ground truth text:
+Ground truth text, where we have removed the punctuation and made all the words lowercase:
 
 ```
 once upon a time while brahmadatta was king of benares the bodhisatta came to life at the foot of the himalayas as ...
