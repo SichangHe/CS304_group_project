@@ -73,7 +73,7 @@ Corrected text:
 one upon a time wide brahmadatta as ing of benares oh bodhisatta came to if a the foot of he hillas as a ...
 ```
 
-74.39% of the words are correctly matched, resulting in a Levenshtein distance to the ground truth of 28. As we can see, the spellcheck result suffers from words that have the same Levenshtein distance to the typo text as the correct words have. We could leverage grammar and word-transition probabilities to improve the result, but since we do not have any training data for those options, we did not try those ideas.
+74.39% of the words are correctly matched, resulting in a Levenshtein distance to the ground truth of 28. As we can see, the spellcheck result suffers from words that have the same Levenshtein distance to the typo text as the correct words have. We could leverage grammar and prior word-transition probabilities to improve the result, but since we do not have any training data for those options, we did not try those ideas.
 
 ## Text Segmentation And Spellcheck
 
@@ -123,14 +123,24 @@ We studied the relationship between accuracy and the beam width used. As Figure 
 
 ### Variation to Procedure - 1
 
+The inaccuracy of our segmentation and spellchecking procedure is high. The main reason is the that it suffers from the same problem our spellchecking procedure faces, words that have the same Levenshtein distances.
+
+To improve the procedure, we first came up with the idea to differentiate the loss between *left*, *diag* and *down* movements. Observing that people most frequently type the wrong character (replacement), or less frequently touch additional keys when typing, we want to accordingly penalize *diag* and *down* movements less. To achieve this modification, we modify the aforementioned `left_loss`, `diag_loss`, and `down_loss` to 16, 15, and 14, respectively. We chose to use integers larger than one to avoid the more expensive floating point computation.
+
+Unfortunately, the resulting inaccuracy of this variation of segmentation and spellchecking procedure increased to 104. We tried setting `down_loss` to 16 and other changes, but the inaccuracy did not improve. I suspect that the reason is that the provided `unsegmented0.txt` does not represent real-world typo text, and our assumptions do not hold.
+
 ### Variation to Procedure - 2
 
-### Inaccuracy And Beam Width in Variation 2
+The other variation to the procedure we tried is to tweak the transition loss. In the previous settings, we did not add any transition losses when teleporting loss nodes to root trie nodes; this resulted in long words being split into shorter words, such as "eat" to "e at". We hope that by adding transition losses, we can discourage the algorithm from splitting long words.
 
-![Inaccuracy Corresponding to Beam Widths in Variation 2.](./accuracy_vs_beam.png)
+Using a transition loss of 8 with `left_loss`, `diag_loss`, and `down_loss` all set to 16, we obtained a decreased inaccuracy of 76. We wanted to find the optimal transition loss. However, we first needed to eliminate the effect of different beam widths.
 
-#### Inaccuracy and Transition Loss
+![Inaccuracy Corresponding to Beam Widths in Variation 2.](./accuracy_vs_beam_alt2.png)
+
+As shown above, a beam width of 32, equivalent to a previous beam width of 2, already gives the lowest inaccuracy. We then tried different transition losses, and the below results show that the optimal transition loss happens to be 8, half the amount compared to other losses.
 
 ![Inaccuracy Corresponding to Transition Loss](./accuracy_vs_transition_loss_alt2.png)
 
-The plot above depicts the relationship between transition loss and the accuracy of the results. The optimal transition loss alls in the middle.
+## Conclusion
+
+In this project, we implemented a spellchecking algorithm based on a trie structure and dynamic programming. We also adapted the spellchecking algorithm to perform text segmentation. We observed that the algorithm suffers from words that have the same Levenshtein distance to the typo text as the correct words have. We attempted to improve the segmentation and spellchecking procedure by modifying the loss parameters and adding transition losses, and only the latter resulted in positive effects.
