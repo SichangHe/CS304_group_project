@@ -19,10 +19,8 @@ Duke Kunshan University
 ### Contents
 
 - Lexical tree
-  - Tasks:
   - Spellcheck against words
 - Text Segmentation And Spellcheck
-  - Tasks:
   - Segment text
   - Segment and spellcheck text
 
@@ -31,14 +29,13 @@ Duke Kunshan University
 ### Lexical tree
 
 - Each trie node represents a character
-- Trie node data type
+- Trie node
   - Parent node
   - Children, `None` if leaf
-  - an associated value, `None` if beginning as dummy value
+  - an associated value, `None` if root
 
-- The children dictionary uses `(is_leaf, value)`
-- Allow querying either leaf or non-leaf nodes in $O(1)$
-- Enhance the speed of the insertion process
+- Children dictionary key: `(is_leaf, value)`
+  - $O(1)$ query for leaf/ non-leaf nodes
 
 <!-- slide -->
 
@@ -61,10 +58,8 @@ Trie(len=7):
 
 ### Spellchecking
 
-- Perform procedures similar to Levenshtein distance with dynamic programming
+- Similar procedures to Levenshtein distance with dynamic programming
 - Flatten the lexical tree, transforming the tree structure into a linear sequence.
-
-From
 
 ```
 *─b─a─n─a─n─a
@@ -72,20 +67,20 @@ From
     └─t─t─l─e
 ```
 
-To `[root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]`
+→ `[root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]`
 
-- Breadth-first to ensure each node's parent node appears before the node itself
-  - This order is important when we traverse the flat node list in dynamic programming.
+- Breadth-first: parents appears before children
+  - Important when traversing
 
 <!-- slide -->
 
 ### Dynamic Programming
 
-During the process of generating the target word, we consider three possible operations at each character position:
+Three possible operations at each character position:
 
-1. Stay (move from _left_ in the trellis): The tree remains at the current position with loss `left_loss`.
-2. Advance (move *diag*onal in the trellis): The tree moves to the next layer or level with loss `diag_loss` if character does not match.
-3. Skip (move from _down_ in the trellis): The tree skips that particular character with loss `down_loss`.
+1. → Stay (move from *left* in the trellis): The tree remains at the current position with loss `left_loss`.
+2. ↗ Advance (move *diag*onal in the trellis): The tree moves to the next layer or level with loss `diag_loss` if character does not match.
+3. ↑ Skip (move from _down_ in the trellis): The tree skips that particular character with loss `down_loss`.
 
 These loss parameters can be adjusted to obtain better result.
 
@@ -93,9 +88,11 @@ These loss parameters can be adjusted to obtain better result.
 
 ### Dynamic Programming
 
-- New data type "loss node" to keep track of the trelis
-  - A loss node contains the current loss value and the references to the corresponding trie node
-- Maintain a dictionary from trie nodes to loss nodes during each round of traversal for the ease of
+- "Loss node": keep track of the trellis
+    - Current loss value
+    - Reference to corresponding trie node
+- Dictionary trie nodes → loss nodes
+    - during each round of traversal
 
 <!-- slide -->
 
@@ -189,20 +186,31 @@ The inaccuracies of our segmentation and spellchecking results are all 90 when w
 
 ### Inaccuracy And Beam Width
 
-![Inaccuracy Corresponding to Beam Widths.](./accuracy_vs_beam.png)
+<img alt="Inaccuracy Corresponding to Beam Widths." src="./accuracy_vs_beam.png" height="800vh" />
 
 Beam width of 2 is empirically the optimal choice.
 
 <!-- slide -->
 
-### Variations
+### Variations to Procedure - 1
 
-- Some words is splitted into smaller parts: eat => e at
-- Add additional penalty to transition between words
+- Words with the same Levenshtein distances
+- Typo norms
+    - Adjust `left_loss`, `diag_loss`, and `down_loss`
+    - Negative effect
 
-![Inaccuracy Corresponding to Transition Loss](./accuracy_vs_transition_loss_alt2.png)
+<!-- slide -->
 
-With `left_loss`, `diag_loss`, and `down_loss` all set to 16 and beam width of 32.
+### Variation to Procedure - 2
+
+- Words split into smaller parts: eat → e at
+- Additional penalty to transition between words
+
+<!-- slide -->
+
+<img alt="Inaccuracy Corresponding to Transition Loss" src="./accuracy_vs_transition_loss_alt2.png" height="800vh" />
+
+`left_loss`, `diag_loss`, `down_loss` = 16, beam width = 32
 
 <!-- slide -->
 
