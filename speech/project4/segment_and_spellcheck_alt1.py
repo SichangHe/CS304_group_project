@@ -20,7 +20,7 @@ def main():
 
     lines = read_lines_stripped(f"{DATA_DIR}unsegmented.txt")
     segmented_result = [segment_and_spellcheck(dict_trie, line, 0x50) for line in lines]
-    write_split_lines("segment_unsegmented_alt.txt", segmented_result)
+    write_split_lines("segment_unsegmented_alt1.txt", segmented_result)
 
     correct_lines = correct_story_lines_stripped()
     compare_to_correct(correct_lines, segmented_result)
