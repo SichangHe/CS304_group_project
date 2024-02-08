@@ -30,7 +30,7 @@ def main() -> None:
     lines = read_lines_stripped(f"{DATA_DIR}unsegmented.txt")
     correct_lines = correct_story_lines_stripped()
 
-    beam_widths = range(1, 51, 5)
+    beam_widths = (1, 2, 5, 10, 15, 50)
     inaccuracies = [
         experiment_inaccuracy(dict_trie, lines, correct_lines, beam_width)
         for beam_width in beam_widths
@@ -42,6 +42,7 @@ def main() -> None:
     ax.grid()
     ax.set_xlabel("Beam Width")
     ax.set_ylabel("Inaccuracy")
+    ax.ticklabel_format(style="plain")
     plt.show(block=True)
     fig.savefig("accuracy_vs_beam.png", bbox_inches="tight")
 
