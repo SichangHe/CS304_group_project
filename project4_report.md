@@ -6,7 +6,7 @@ We construct a trie structure for the lexical tree.
 
 Each trie node represents a character. A node has a parent, a list of children, and an associated value. We use `None` in place of the children list to indicate that the node is a leaf node corresponding to the end of a word. We use `None` in place of the value for the dummy node prepended at the beginning of all words.
 
-Leaf nodes and non-leaf nodes are distinguished within each node's children. We assign keys composed of whether the child node is a leaf node and the child node's value to the parent's children dictionary. This allows us to query either leaf or non-leaf nodes in $O(1)$.
+Leaf nodes and non-leaf nodes are distinguished within each node's children. The children dictionary uses `(is_leaf, value)` as keys, where `is_leaf` is whether the child node is a leaf node, and `value` is the child node's value. This allows us to query either leaf or non-leaf nodes in $O(1)$.
 
 ### Debugging the trie
 
@@ -23,7 +23,7 @@ Trie(len=7):
     └─t─t─l─e
 ```
 
-## Spell checking
+## Spellchecking
 
 In order to facilitate techniques similar to Levenshtein distance with dynamic programming, we employ a process of flattening the lexical tree. This involves transforming the tree structure into a linear sequence. For instance, the given tree:
 
@@ -41,25 +41,21 @@ During the process of generating the target word, we consider three possible ope
 2. Advance (move *diag*onal in the trellis): The tree moves to the next layer or level with loss `diag_loss` if character does not match.
 3. Skip (move from *down* in the trellis): The tree skips that particular character with loss `down_loss`.
 
-These loss parameters can be adjusted to obtain better result.
+These loss parameters default to 1, but can be adjusted to obtain better result.
 
 To traverse the trie and find the best match, we introduce a data type called loss node. During each round of traversal, we maintain a dictionary from trie nodes to loss nodes. A loss node contains the current loss value and the references to the corresponding trie node, which help us backtrack the search to obtain the recognized word.
 
 In each round, we attempt to generate a new loss nodes for each trie node. A previous loss node among *left*, *diag*, and *down* on the trellis is chosen based on the resulting next cost following the classic string matching algorithm; the new loss node is created based on this previous loss node with the updated trie node and the added loss.
 
-To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the loss nodes that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
+To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the loss nodes that have a loss value smaller than the minimum loss of the current round plus the specified beam width. In this experiment, we used a fixed beam width of 3.
 
-![Inaccuracy vs beam width](./accuracy_vs_beam_alt2.png)
+### Spellcheck Backtracking
 
-The plot above illustrates the relationship between beam width and inaccuracy counts. As the beam width decreases, the number of inaccuracies increases. This tradeoff between performance and correctness highlights the balance between achieving optimal performance and ensuring accuracy in the results.
+After obtaining an optimal loss at the end of the target word, we perform backtracking through the best loss node that corresponds to a leaf trie node, to identify the best matching string. Starting from the trie node referred to by the best loss node, we backtrack to the root node iteratively, find all characters in the way, and reverse their order to obtain the matched word.
 
-### Backtracking
+### Spellcheck Result
 
-After obtaining an optimal loss at the end of the target word, we perform backtracking through the loss node to identify the best matching string. This process involves iteratively finding the parent of the trie node associated with each loss node. By utilizing linked lists, our implementation remains concise.
-
-### Result
-
-Raw type text:
+Raw typo text:
 
 ```
 onse apon a tyme wile gramadatta ws kng of benares th bohisata kame to lif t the foot of he himlays as ...
@@ -68,7 +64,7 @@ onse apon a tyme wile gramadatta ws kng of benares th bohisata kame to lif t the
 Ground truth text:
 
 ```
-Once upon a time, while Brahmadatta was king of Benares, the Bodhisatta came to life at the foot of the Himalayas as ...
+once upon a time while brahmadatta was king of benares the bodhisatta came to life at the foot of the himalayas as ...
 ```
 
 Corrected text:
@@ -77,46 +73,64 @@ Corrected text:
 one upon a time wide brahmadatta as ing of benares oh bodhisatta came to if a the foot of he hillas as a ...
 ```
 
-The accuracy is Accuracy: 74.39%.
+74.39% of the words are correctly matched, resulting in a Levenshtein distance to the ground truth of 28. As we can see, the spellcheck result suffers from words that have the same Levenshtein distance to the typo text as the correct words have. We could leverage grammar and word-transition probabilities to improve the result, but since we do not have any training data for those options, we did not try those ideas.
 
-## Segmentation
+## Text Segmentation And Spellcheck
 
-For sentence segmentation, we utilize a modified approach based on spell checking to accommodate for multiple words. Besides the corresponding trie node, each loss node also refers to the previous loss node to help us backtrack all the words. A new loss node is created only when the previous one reaches a leaf trie node; in this case, the new loss node is "teleported" to the root node, and refers to the previous loss node. This teleportation behavior is disabled for single-word matching and matching the last character.
+We use the same approach to segment and to segment with spellcheck.
 
-This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
+For the text segmentation, we utilize a modified approach based on spellchecking to accommodate for multiple words. Besides the corresponding trie node, each loss node also refers to the previous loss node to help us backtrack all the words. A new loss node is created only when the previous one reaches a leaf trie node; in this case, the new loss node is "teleported" to the root node, and refers to the previous loss node. This teleportation behavior is disabled for single-word matching and matching the last character so the single words and last characters correctly result in leaf trie nodes.
 
-![Inaccuracy vs transition loss](./accuracy_vs_transition_loss_alt2.png)
+This modification enables us to adapt the spellchecking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spellchecking mechanism.
 
-The plot above depicts the relationship between transition loss and the accuracy of the results. The optimal transition loss alls in the middle.
+### Text Segmentation Result
 
-### Result
-
-We use a uniform approach for segmenting and segmenting with spellcheck.
-
-For the unsgegmented correct text:
+The unsgegmented text:
 
 ```
 onceuponatimewhilebrahmadattawaskingofbenaresthebodhisattacametolifeatthefootofthehimalayasasa ...
 ```
 
-Result:
+Segmentation result:
 
 ```
 once upon a time while brahmadatta was king of benares the bodhisatta came to life at the foot of the himalayas as a ...
 ```
 
-Levenshtein distance between ground truth and the result is 2.
+Instead of calculating the "accuracy" as "difference in the number of words in the hypothesized segmentation and the number of words in the correct transcription PLUS the number of misspelled words", we calculate an "inaccuracy" as the Levenshtein distance between each line of the ground truth and our segmentation result, to avoid the inconsistencies resulted from alignments. The inaccuracy for our segmentation result is 7.
 
-For the unsegmented typo text:
+### Text Segmentation And Spellchecking Result
+
+The unsegmented typo text:
 
 ```
 onseaponatymewilegramadattawskngofbenaresthbohisatakametoliftthefootofhehimlaysasa ...
 ```
 
-Result:
+Segmentation and spellchecking result:
 
 ```
 on sea porath mew i le brahmadatta waking of benares the oh i sat a kamen to lilt the foot of he him ways as a ...
 ```
 
-Levenshtein distance between ground truth and the result is 76.
+The inaccuracies of our segmentation and spellchecking results are all 90 when we use beam widths 5, 10, and 15.
+
+#### Inaccuracy And Beam Width
+
+![Inaccuracy Corresponding to Beam Widths.](./accuracy_vs_beam.png)
+
+We studied the relationship between accuracy and the beam width used. As Figure 1 illustrates, as the beam width increases to 2, the number of inaccuracies drops down from 92 to 90. Further increasing the beam width does not improve the inaccuracy, showing that the beam width of 2 is empirically already the optimal choice.
+
+### Variation to Procedure - 1
+
+### Variation to Procedure - 2
+
+### Inaccuracy And Beam Width in Variation 2
+
+![Inaccuracy Corresponding to Beam Widths in Variation 2.](./accuracy_vs_beam.png)
+
+#### Inaccuracy and Transition Loss
+
+![Inaccuracy Corresponding to Transition Loss](./accuracy_vs_transition_loss_alt2.png)
+
+The plot above depicts the relationship between transition loss and the accuracy of the results. The optimal transition loss alls in the middle.

@@ -2,7 +2,7 @@
 
 import string
 
-from . import DATA_DIR, read_lines_stripped
+from . import DATA_DIR, read_lines_stripped, write_split_lines
 
 
 def correct_story_lines() -> list[list[str]]:
@@ -19,7 +19,9 @@ def correct_story_lines_stripped() -> list[list[str]]:
 
 
 def main() -> None:
-    print(correct_story_lines())
+    correct_story = correct_story_lines()
+    write_split_lines(f"cleaned_storycorrect.txt", correct_story_lines())
+    print(correct_story)
     print(correct_story_lines_stripped())
 
 
