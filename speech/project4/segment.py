@@ -2,10 +2,10 @@
 
 import numpy as np
 
-from . import DATA_DIR, read_lines_stripped, write_split_lines
-from .correct_story import correct_story_lines_stripped
-from .dictionary import dictionary_trie
-from .lextree import Trie
+from speech.project4 import DATA_DIR, read_lines_stripped, write_split_lines
+from speech.project4.correct_story import correct_story_lines_stripped
+from speech.project4.dictionary import dictionary_trie
+from speech.project4.lextree import Trie
 
 
 def segment_text(text, dictionary):

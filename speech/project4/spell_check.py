@@ -2,10 +2,10 @@
 accuracy against `storycorrect.txt`.
 Run as `python3 -m speech.project4.spell_check`."""
 
-from . import DATA_DIR, read_lines_stripped, write_split_lines
-from .correct_story import correct_story_lines
-from .dictionary import dictionary_trie
-from .lextree import Trie
+from speech.project4 import DATA_DIR, read_lines_stripped, write_split_lines
+from speech.project4.correct_story import correct_story_lines
+from speech.project4.dictionary import dictionary_trie
+from speech.project4.lextree import Trie
 
 
 def correct_word(dict_trie: Trie, word: str, beam_width=3) -> str:

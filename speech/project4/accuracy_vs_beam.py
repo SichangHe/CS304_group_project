@@ -3,12 +3,12 @@
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from . import DATA_DIR, read_lines_stripped
-from .correct_story import correct_story_lines_stripped
-from .dictionary import dictionary_trie
-from .lextree import Trie
-from .segment import longest_common_subsequence_diff
-from .segment_and_spellcheck import segment_and_spellcheck
+from speech.project4 import DATA_DIR, read_lines_stripped
+from speech.project4.correct_story import correct_story_lines_stripped
+from speech.project4.dictionary import dictionary_trie
+from speech.project4.lextree import Trie
+from speech.project4.segment import longest_common_subsequence_diff
+from speech.project4.segment_and_spellcheck import segment_and_spellcheck
 
 plt.rcParams["font.size"] = 24
 

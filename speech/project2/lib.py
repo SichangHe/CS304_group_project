@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 from scipy import fft
 from scipy.signal import spectrogram
 
-from ..project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
+from speech.project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
 
 
 def pre_emphasis(signal: NDArray, alpha: float = 0.95) -> NDArray[np.float32]:

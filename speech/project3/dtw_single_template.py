@@ -4,9 +4,9 @@ Run as `python3 -m speech.project3.dtw_single_template`."""
 
 import argparse
 
-from ..project2.main import NUMBERS
-from . import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
-from .dtw import single_dtw_search
+from speech.project2.main import NUMBERS
+from speech.project3 import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
+from speech.project3.dtw import single_dtw_search
 
 
 def recognize_number(number: str, template_mfcc_s, cost_interpretation="min"):

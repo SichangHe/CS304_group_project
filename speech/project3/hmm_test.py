@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from .hmm import HMM
+from speech.project3.hmm import HMM
 
 
 class TestAudio(unittest.TestCase):

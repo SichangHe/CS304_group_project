@@ -5,8 +5,8 @@ import numpy as np
 from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 
-from ..project2 import read_audio_file
-from ..project2.lib import (
+from speech.project2 import read_audio_file
+from speech.project2.lib import (
     N_MFCC_COEFFICIENTS,
     derive_cepstrum_velocities,
     mfcc_homebrew,

@@ -1,10 +1,10 @@
 """Run as `python3 -m speech.project4.segment_alt2`."""
 
-from . import DATA_DIR, read_lines_stripped, write_split_lines
-from .correct_story import correct_story_lines_stripped
-from .dictionary import dictionary_trie
-from .segment import compare_to_correct, segment
-from .segment_and_spellcheck_alt2 import alter_dict_trie_losses
+from speech.project4 import DATA_DIR, read_lines_stripped, write_split_lines
+from speech.project4.correct_story import correct_story_lines_stripped
+from speech.project4.dictionary import dictionary_trie
+from speech.project4.segment import compare_to_correct, segment
+from speech.project4.segment_and_spellcheck_alt2 import alter_dict_trie_losses
 
 
 def main():

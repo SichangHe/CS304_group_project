@@ -1,8 +1,8 @@
 """Run as `python3 -m speech.project4.demo`."""
 
-from .dictionary import dictionary_trie
-from .lextree import Trie
-from .segment_and_spellcheck import segment_and_spellcheck
+from speech.project4.dictionary import dictionary_trie
+from speech.project4.lextree import Trie
+from speech.project4.segment_and_spellcheck import segment_and_spellcheck
 
 
 def alter_dict_trie_losses(dict_trie: Trie):

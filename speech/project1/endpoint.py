@@ -5,8 +5,8 @@ from threading import Thread
 import numpy as np
 from numpy.typing import NDArray
 
-from . import CHUNK_MS, MAX_PAUSE_MS, MS_IN_SECOND, SAMPLING_RATE
-from .audio_in import AudioIn
+from speech.project1 import CHUNK_MS, MAX_PAUSE_MS, MS_IN_SECOND, SAMPLING_RATE
+from speech.project1.audio_in import AudioIn
 
 SIZEOF_FRAME = 2
 """Size of each frame in bytes."""

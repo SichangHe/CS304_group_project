@@ -5,9 +5,9 @@ Run as `python3 -m speech.project3.dtw_accuracy_vs_threshold`."""
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from ..project2.main import NUMBERS
-from . import TEST_INDEXES, boosted_mfcc_from_file
-from .dtw_single_template_time_sync import recognize_number
+from speech.project2.main import NUMBERS
+from speech.project3 import TEST_INDEXES, boosted_mfcc_from_file
+from speech.project3.dtw_single_template_time_sync import recognize_number
 
 PRUNING_THRESHOLDS = range(40)
 

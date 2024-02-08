@@ -1,5 +1,5 @@
-from . import DATA_DIR, read_lines_stripped
-from .lextree import Trie
+from speech.project4 import DATA_DIR, read_lines_stripped
+from speech.project4.lextree import Trie
 
 
 def dictionary_trie():

@@ -4,8 +4,8 @@ from typing import Iterable
 import numpy as np
 from numpy.typing import NDArray
 
-from .. import T
-from . import INF_FLOAT32, NodeCostFn
+from speech import T
+from speech.project3 import INF_FLOAT32, NodeCostFn
 
 BEST_PRUNING_THRESHOLD = 13.0
 

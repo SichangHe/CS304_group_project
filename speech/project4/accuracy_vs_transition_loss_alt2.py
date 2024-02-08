@@ -3,11 +3,11 @@
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from . import DATA_DIR, read_lines_stripped
-from .accuracy_vs_beam import experiment_inaccuracy
-from .correct_story import correct_story_lines_stripped
-from .dictionary import dictionary_trie
-from .segment_and_spellcheck_alt2 import alter_dict_trie_losses
+from speech.project4 import DATA_DIR, read_lines_stripped
+from speech.project4.accuracy_vs_beam import experiment_inaccuracy
+from speech.project4.correct_story import correct_story_lines_stripped
+from speech.project4.dictionary import dictionary_trie
+from speech.project4.segment_and_spellcheck_alt2 import alter_dict_trie_losses
 
 plt.rcParams["font.size"] = 24
 

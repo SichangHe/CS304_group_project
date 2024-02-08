@@ -8,11 +8,11 @@ from threading import Thread
 
 import numpy as np
 
-from ..project1.main import audio_recording_thread
-from ..project2.lib import derive_cepstrum_velocities, mfcc_homebrew
-from ..project2.main import NUMBERS
-from . import DEMO_TEMPLATE_INDEXES
-from .hmm import HMM
+from speech.project1.main import audio_recording_thread
+from speech.project2.lib import derive_cepstrum_velocities, mfcc_homebrew
+from speech.project2.main import NUMBERS
+from speech.project3 import DEMO_TEMPLATE_INDEXES
+from speech.project3.hmm import HMM
 
 
 def main() -> None:

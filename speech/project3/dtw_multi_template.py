@@ -6,10 +6,10 @@ Run as `python3 -m speech.project3.dtw_multi_template`."""
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from ..project2.main import NUMBERS
-from . import TEMPLATE_INDEXES, TEST_INDEXES, boosted_mfcc_from_file
-from .dtw import BEST_PRUNING_THRESHOLD
-from .dtw_single_template_time_sync import recognize_number
+from speech.project2.main import NUMBERS
+from speech.project3 import TEMPLATE_INDEXES, TEST_INDEXES, boosted_mfcc_from_file
+from speech.project3.dtw import BEST_PRUNING_THRESHOLD
+from speech.project3.dtw_single_template_time_sync import recognize_number
 
 
 def main():

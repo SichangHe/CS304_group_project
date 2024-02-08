@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..project1 import open_wave_file
+from speech.project1 import open_wave_file
 
 
 def read_audio_file(file_name: str):

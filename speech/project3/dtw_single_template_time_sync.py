@@ -4,9 +4,9 @@ Run as `python3 -m speech.project3.dtw_single_template_time_sync`."""
 
 import argparse
 
-from ..project2.main import NUMBERS
-from . import TEST_INDEXES, boosted_mfcc_from_file
-from .dtw import time_sync_dtw_search
+from speech.project2.main import NUMBERS
+from speech.project3 import TEST_INDEXES, boosted_mfcc_from_file
+from speech.project3.dtw import time_sync_dtw_search
 
 
 def recognize_number(number: str, template_mfcc_s, pruning_threshold=10.0):

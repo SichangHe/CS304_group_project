@@ -11,8 +11,8 @@ from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
-from ..project2.main import NUMBERS
-from . import (
+from speech.project2.main import NUMBERS
+from speech.project3 import (
     HARD_TEMPLATE_INDEXES,
     HARD_TEST_INDEXES,
     INF_FLOAT32,

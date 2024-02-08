@@ -2,7 +2,7 @@
 
 import string
 
-from . import DATA_DIR, read_lines_stripped, write_split_lines
+from speech.project4 import DATA_DIR, read_lines_stripped, write_split_lines
 
 
 def correct_story_lines() -> list[list[str]]:

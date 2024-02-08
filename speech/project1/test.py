@@ -4,9 +4,9 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import open_wave_file
-from .audio_in import N_FRAME_PER_CHUNK
-from .endpoint import get_classify_sample
+from speech.project1 import open_wave_file
+from speech.project1.audio_in import N_FRAME_PER_CHUNK
+from speech.project1.endpoint import get_classify_sample
 
 
 def process(my_list, classify_frame):

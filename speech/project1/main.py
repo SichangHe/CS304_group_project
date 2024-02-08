@@ -7,9 +7,9 @@ from threading import Thread
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import N_CHANNEL, RESOLUTION_FORMAT, SAMPLING_RATE
-from .audio_in import AudioIn
-from .endpoint import Endpointer
+from speech.project1 import N_CHANNEL, RESOLUTION_FORMAT, SAMPLING_RATE
+from speech.project1.audio_in import AudioIn
+from speech.project1.endpoint import Endpointer
 
 
 def audio_recording_thread(byte_queue: Queue[bytes | None], out_file_name: str):

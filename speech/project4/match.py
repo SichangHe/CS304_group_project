@@ -1,5 +1,5 @@
 from speech.project4 import DATA_DIR, read_file
-from .lextree import Trie, TrieNode
+from speech.project4.lextree import Trie, TrieNode
 
 
 def _find_first_layer(flat_trienode_list: list[TrieNode]):

@@ -9,9 +9,9 @@ from threading import Thread
 import numpy as np
 from numpy.typing import NDArray
 
-from ..project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
-from ..project1.main import audio_recording_thread
-from .lib import (
+from speech.project1 import CHUNK_MS, MS_IN_SECOND, SAMPLING_RATE
+from speech.project1.main import audio_recording_thread
+from speech.project2.lib import (
     Segmenter,
     cep2spec,
     mel_spectrum_from_frame,
@@ -20,7 +20,7 @@ from .lib import (
     pre_emphasis,
     spec2cep,
 )
-from .main import NS_FILTER_BANKS
+from speech.project2.main import NS_FILTER_BANKS
 
 
 def plot_audio(
