@@ -143,12 +143,13 @@ class LossNode:
 
 
 class Trie:
-    def __init__(self, left_loss=1, diag_loss=1, down_loss=1):
+    def __init__(self, left_loss=1, diag_loss=1, down_loss=1, transition_loss=0):
         self.root = TrieNode(children=TrieNodeChildren())
         self.len = 0
         self.left_loss = left_loss
         self.diag_loss = diag_loss
         self.down_loss = down_loss
+        self.transition_loss = transition_loss
 
     def insert(self, value: str) -> tuple[TrieNode, bool]:
         """Return the leaf node associated with `value` and whether it is new."""
@@ -229,14 +230,15 @@ class Trie:
                 )
 
                 if trie_node.is_leaf() and not single_word:
+                    loss = min_loss + self.transition_loss
                     if current_root_loss_node := current_losses.get(self.root):
-                        if current_root_loss_node.loss < min_loss:
+                        if current_root_loss_node.loss < loss:
                             return round_min_loss
 
                     current_losses[self.root] = new_loss_node.copying_update(
                         trie_node=self.root,
                         prev_end_loss_node=new_loss_node,
-                        loss=min_loss,
+                        loss=loss,
                     )
                 else:
                     current_losses[trie_node] = new_loss_node
