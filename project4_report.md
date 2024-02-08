@@ -85,7 +85,7 @@ This modification enables us to adapt the spellchecking procedure for sentence s
 
 ### Text Segmentation Result
 
-The unsgegmented text:
+The unsegmented text:
 
 ```
 onceuponatimewhilebrahmadattawaskingofbenaresthebodhisattacametolifeatthefootofthehimalayasasa ...
