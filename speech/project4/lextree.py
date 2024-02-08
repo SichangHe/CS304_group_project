@@ -143,9 +143,12 @@ class LossNode:
 
 
 class Trie:
-    def __init__(self):
+    def __init__(self, left_loss=1, diag_loss=1, down_loss=1):
         self.root = TrieNode(children=TrieNodeChildren())
         self.len = 0
+        self.left_loss = left_loss
+        self.diag_loss = diag_loss
+        self.down_loss = down_loss
 
     def insert(self, value: str) -> tuple[TrieNode, bool]:
         """Return the leaf node associated with `value` and whether it is new."""
@@ -199,23 +202,23 @@ class Trie:
         min_loss_node = None
 
         if left := prev_losses.get(trie_node):
-            if left.loss + 1 < min_loss:
-                min_loss = left.loss + 1
+            if (left_loss := left.loss + self.left_loss) < min_loss:
+                min_loss = left_loss
                 min_loss_node = left
 
         if parent := trie_node.parent:
             if diag := prev_losses.get(parent):
-                node_loss = 1
+                node_loss = self.diag_loss
                 if trie_node.value is None or trie_node.value == char:
                     node_loss = 0
 
-                if diag.loss + node_loss < min_loss:
-                    min_loss = diag.loss + node_loss
+                if (diag_loss := diag.loss + node_loss) < min_loss:
+                    min_loss = diag_loss
                     min_loss_node = diag
 
             if down := current_losses.get(parent):
-                if down.loss + 1 < min_loss:
-                    min_loss = down.loss + 1
+                if (down_loss := down.loss + self.down_loss) < min_loss:
+                    min_loss = down_loss
                     min_loss_node = down
 
         if min_loss_node is not None:
