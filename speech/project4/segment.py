@@ -78,14 +78,14 @@ def levenshtein_distance(word1, word2):
     return dp[m][n]
 
 
-def longest_common_subsequence_diff(word_list0, word_list1):
+def longest_common_subsequence_diff(word_list0: list[str], word_list1: list[str]):
     m, n = len(word_list0), len(word_list1)
     loss_matrix = [[0] * (n + 1) for _ in range(m + 1)]
 
     for i in range(1, m + 1):
         for j in range(1, n + 1):
             node_loss = 0 if word_list0[i - 1] == word_list1[j - 1] else 1
-            loss_matrix[i][j] = max(
+            loss_matrix[i][j] = min(
                 loss_matrix[i - 1][j] + 1,
                 loss_matrix[i][j - 1] + 1,
                 loss_matrix[i - 1][j - 1] + node_loss,
@@ -101,14 +101,12 @@ def segment(dict_trie: Trie, text: str, beam_width=5) -> list[str]:
 def compare_to_correct(
     correct_lines: list[list[str]], segmented_result: list[list[str]]
 ):
+    inaccuracy = 0
     for correct, spell_checked in zip(correct_lines, segmented_result):
         if correct != spell_checked:
             print(f"{' '.join(correct)} !=\n{' '.join(spell_checked)}")
+            inaccuracy += longest_common_subsequence_diff(correct, spell_checked)
 
-    inaccuracy = sum(
-        longest_common_subsequence_diff(correct, spell_checked)
-        for correct, spell_checked in zip(correct_lines, segmented_result)
-    )
     print(f"Inaccuracy: {inaccuracy}.")
 
 
