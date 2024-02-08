@@ -190,7 +190,48 @@ class Trie:
         else:
             return (child, False)
 
-    def match_word_single(self, word: str, beam_width: int):
+    def _match_word_round(
+        self,
+        char: str,
+        node: TrieNode,
+        round_min_loss: int,
+        prev_losses: dict[TrieNode, LossNode],
+        current_losses: dict[TrieNode, LossNode],
+        beam_width: int,
+    ):
+        min_loss = 0x7FFFFFFF
+        min_loss_node = None
+
+        if left := prev_losses.get(node):
+            if left.loss + 1 < min_loss:
+                min_loss = left.loss + 1
+                min_loss_node = left
+
+        if parent := node.parent:
+            if diag := prev_losses.get(parent):
+                node_loss = 1
+                if node.value is None or node.value == char:
+                    node_loss = 0
+
+                if diag.loss + node_loss < min_loss:
+                    min_loss = diag.loss + node_loss
+                    min_loss_node = diag
+
+            if down := current_losses.get(parent):
+                if down.loss + 1 < min_loss:
+                    min_loss = down.loss + 1
+                    min_loss_node = down
+
+        if min_loss_node is not None:
+            if min_loss <= round_min_loss + beam_width:
+                round_min_loss = min(round_min_loss, min_loss)
+                current_losses[node] = min_loss_node.copying_update(
+                    trie_node=node, loss=min_loss
+                )
+
+        return round_min_loss
+
+    def _match_word(self, word: str, beam_width: int):
         nodes = self.flatten()
         losses_list: list[dict[TrieNode, LossNode]] = [
             {self.root: LossNode(word, self.root)}
@@ -202,35 +243,9 @@ class Trie:
             round_min_loss = 0x7FFFFFFF
 
             for node in nodes:
-                min_loss = 0x7FFFFFFF
-                min_loss_node = None
-
-                if left := prev_losses.get(node):
-                    if left.loss + 1 < min_loss:
-                        min_loss = left.loss + 1
-                        min_loss_node = left
-
-                if parent := node.parent:
-                    if diag := prev_losses.get(parent):
-                        node_loss = 1
-                        if node.value is None or node.value == char:
-                            node_loss = 0
-
-                        if diag.loss + node_loss < min_loss:
-                            min_loss = diag.loss + node_loss
-                            min_loss_node = diag
-
-                    if down := current_losses.get(parent):
-                        if down.loss + 1 < min_loss:
-                            min_loss = down.loss + 1
-                            min_loss_node = down
-
-                if min_loss_node is not None:
-                    if min_loss <= round_min_loss + beam_width:
-                        round_min_loss = min(round_min_loss, min_loss)
-                        current_losses[node] = min_loss_node.copying_update(
-                            trie_node=node, loss=min_loss
-                        )
+                round_min_loss = self._match_word_round(
+                    char, node, round_min_loss, prev_losses, current_losses, beam_width
+                )
 
             debug(
                 f"char: {char}, {len(current_losses)} current losses, round min loss {round_min_loss}, {len(prev_losses)} previous losses."
@@ -244,8 +259,12 @@ class Trie:
 
             losses_list.append(filtered_current_losses)
 
+        return losses_list
+
+    def match_word_single(self, word: str, beam_width: int):
         min_last_loss = 0x7FFFFFFF
         min_last_loss_node = None
+        losses_list = self._match_word(word, beam_width)
         last_losses = losses_list[-1]
 
         for node, last_loss_node in last_losses.items():
