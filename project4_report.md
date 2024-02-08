@@ -45,7 +45,9 @@ These loss parameters default to 1, but can be adjusted to obtain better result.
 
 To traverse the trie and find the best match, we introduce a data type called loss node. During each round of traversal, we maintain a dictionary from trie nodes to loss nodes. A loss node contains the current loss value and the references to the corresponding trie node, which help us backtrack the search to obtain the recognized word.
 
-In each round, we attempt to generate a new loss nodes for each trie node. A previous loss node among *left*, *diag*, and *down* on the trellis is chosen based on the resulting next cost following the classic string matching algorithm; the new loss node is created based on this previous loss node with the updated trie node and the added loss.
+We maintain a loss dictionary from trie nodes to loss nodes. In each round, we attempt to generate a new loss nodes for each trie node. Following the classic string matching algorithm, a previous loss node among *left*, *diag*, and *down* on the trellis is chosen based on the resulting next cost. This next cost is calculated from string matching and the previous loss queried in the previous loss dictionary; the new loss node is created based on this previous loss node with the updated trie node and the added loss.
+
+At the end of the round, we replace the previous loss dictionary with the new one, thus only tracking necessary information. This implementation saves memory: all our algorithms ran under 65MB in our experiments.
 
 To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the loss nodes that have a loss value smaller than the minimum loss of the current round plus the specified beam width. In this experiment, we used a fixed beam width of 3.
 

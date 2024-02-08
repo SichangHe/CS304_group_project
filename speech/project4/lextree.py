@@ -247,10 +247,9 @@ class Trie:
 
     def _match_word(self, word: str, beam_width: int, single_word=False):
         nodes = self.flatten()
-        losses_list: list[dict[TrieNode, LossNode]] = [{self.root: LossNode(self.root)}]
+        prev_losses: dict[TrieNode, LossNode] = {self.root: LossNode(self.root)}
 
         for index, char in enumerate(word):
-            prev_losses = losses_list[-1]
             current_losses: dict[TrieNode, LossNode] = {}
             round_min_loss = 0x7FFFFFFF
 
@@ -275,15 +274,14 @@ class Trie:
                 if loss_node.loss <= round_threshold:
                     filtered_current_losses[node] = loss_node
 
-            losses_list.append(filtered_current_losses)
+            prev_losses = filtered_current_losses
 
-        return losses_list
+        return prev_losses
 
     def match_word_single(self, word: str, beam_width: int):
         min_last_loss = 0x7FFFFFFF
         min_last_loss_node = None
-        losses_list = self._match_word(word, beam_width, True)
-        last_losses = losses_list[-1]
+        last_losses = self._match_word(word, beam_width, True)
 
         for node, last_loss_node in last_losses.items():
             if node.is_leaf():
@@ -297,8 +295,7 @@ class Trie:
     def match_words(self, words: str, beam_width: int):
         min_last_loss = 0x7FFFFFFF
         min_last_loss_node = None
-        losses_list = self._match_word(words, beam_width, False)
-        last_losses = losses_list[-1]
+        last_losses = self._match_word(words, beam_width, False)
 
         for node, last_loss_node in last_losses.items():
             if node.is_leaf():
