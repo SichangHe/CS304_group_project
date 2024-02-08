@@ -4,7 +4,7 @@
 
 We construct a trie structure for the lexical tree.
 
-Each trie node represents a character. A node has a parent, a list of children, and an associated value. We use `None` in place of the children list to indicate that the node is a leaf node corresponding to the end of a word. We use `None` in place of the value for the dummy node prepended at the beginning of all words.
+Each `TrieNode` represents a character. A node has a parent, a list of children, and an associated value. We use `None` in place of the children list to indicate that the node is a leaf node corresponding to the end of a word. We use `None` in place of the value for the dummy node prepended at the beginning of all words.
 
 Leaf nodes and non-leaf nodes are distinguished within each node's children. We assign keys composed of whether the child node is a leaf node and the child node's value to the parent's children dictionary. This allows us to query either leaf or non-leaf nodes in $O(1)$.
 
@@ -41,9 +41,13 @@ During the process of generating the target word, we consider three possible ope
 2. Advance: The tree moves to the next layer or level.
 3. Skip: The tree skips that particular character.
 
-At each round, we generate a list of `LossNode`s, which contain the current loss value as well as references to the previous `LossNode` and `TrieNode`. These nodes help us keep track of the progress made during the search.
+To traverse the trie and find the best match, we introduce a new data type called `LossNode`. Each `LossNode` contains the current loss value and references to the previous `LossNode` and `TrieNode`. During each round of traversal, we generate a list of `LossNode`s to keep track of the progress made during the search.
 
 To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the `LossNode`s that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
+
+### Backtracking
+
+After obtaining an optimal loss at the end of the target word, we perform backtracking through the `LossNode` to identify the best matching string. This process involves iteratively finding the parent of the `TrieNode` associated with each `LossNode`. By utilizing linked lists, our implementation remains concise.
 
 ### Result
 
