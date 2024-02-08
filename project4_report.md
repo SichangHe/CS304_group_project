@@ -37,9 +37,9 @@ would be flattened as [root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]. Each node 
 
 During the process of generating the target word, we consider three possible operations at each character position:
 
-1. Stay: The tree remains at the current position.
-2. Advance: The tree moves to the next layer or level.
-3. Skip: The tree skips that particular character.
+1. Stay: The tree remains at the current position with loss `left_loss`.
+2. Advance: The tree moves to the next layer or level with loss `diag_loss` if character does not match.
+3. Skip: The tree skips that particular character with loss `down_loss`.
 
 To traverse the trie and find the best match, we introduce a new data type called `LossNode`. Each `LossNode` contains the current loss value and references to the previous `LossNode` and `TrieNode`. During each round of traversal, we generate a list of `LossNode`s to keep track of the progress made during the search.
 
@@ -73,7 +73,7 @@ The accuracy is Accuracy: 74.39%.
 
 ## Segmentation
 
-For sentence segmentation, we utilize a modified approach based on spell checking. In this case, when a leaf node is reached, it points back to the root node. This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
+For sentence segmentation, we utilize a modified approach based on spell checking. In this case, when a leaf node is reached, it points back to the root node. In addition to the existing three operations (Stay, Advance, and Skip), we introduce a new operation called "Transition", with a loss value of `transition_loss`. This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
 
 ### Result
 
