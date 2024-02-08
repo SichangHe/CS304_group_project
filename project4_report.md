@@ -41,9 +41,15 @@ During the process of generating the target word, we consider three possible ope
 2. Advance: The tree moves to the next layer or level with loss `diag_loss` if character does not match.
 3. Skip: The tree skips that particular character with loss `down_loss`.
 
+These loss parameters can be adjusted to find best result.
+
 To traverse the trie and find the best match, we introduce a new data type called `LossNode`. Each `LossNode` contains the current loss value and references to the previous `LossNode` and `TrieNode`. During each round of traversal, we generate a list of `LossNode`s to keep track of the progress made during the search.
 
 To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the `LossNode`s that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
+
+![Inaccuracy vs beam width](./accuracy_vs_beam_alt2.png)
+
+The plot above illustrates the relationship between beam width and inaccuracy counts. As the beam width decreases, the number of inaccuracies increases. This tradeoff between performance and correctness highlights the balance between achieving optimal performance and ensuring accuracy in the results.
 
 ### Backtracking
 
@@ -75,6 +81,10 @@ The accuracy is Accuracy: 74.39%.
 
 For sentence segmentation, we utilize a modified approach based on spell checking. In this case, when a leaf node is reached, it points back to the root node. In addition to the existing three operations (Stay, Advance, and Skip), we introduce a new operation called "Transition", with a loss value of `transition_loss`. This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
 
+![Inaccuracy vs transition loss](./accuracy_vs_transition_loss_alt2.png)
+
+The plot above depicts the relationship between transition loss and the accuracy of the results. The optimal transition loss alls in the middle.
+
 ### Result
 
 We use a uniform approach for segmenting and segmenting with spellcheck.
@@ -91,6 +101,8 @@ Result:
 once upon a time while brahmadatta was king of benares the bodhisatta came to life at the foot of the himalayas as a ...
 ```
 
+Levenshtein distance between ground truth and the result is 2.
+
 For the unsegmented typo text:
 
 ```
@@ -102,3 +114,5 @@ Result:
 ```
 on sea porath mew i le brahmadatta waking of benares the oh i sat a kamen to lilt the foot of he him ways as a ...
 ```
+
+Levenshtein distance between ground truth and the result is 76.
