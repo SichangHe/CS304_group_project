@@ -33,19 +33,21 @@ In order to facilitate techniques similar to Levenshtein distance with dynamic p
     └─t─t─l─e
 ```
 
-would be flattened as [root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]. Each node in the flattened structure is represented by a character, and connections between nodes are denoted by references. For example, 'b' points to 'a1', 'a1' points to 'n', 't', and 't', and so on.
+would be flattened as trie nodes with values `[root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]`. Our flattening strategy is breadth-first, which ensures that each node's parent node would appear before the node itself in the sequence. This is important for the dynamic programming later.
 
 During the process of generating the target word, we consider three possible operations at each character position:
 
-1. Stay: The tree remains at the current position with loss `left_loss`.
-2. Advance: The tree moves to the next layer or level with loss `diag_loss` if character does not match.
-3. Skip: The tree skips that particular character with loss `down_loss`.
+1. Stay (move from *left* in the trellis): The tree remains at the current position with loss `left_loss`.
+2. Advance (move *diag*onal in the trellis): The tree moves to the next layer or level with loss `diag_loss` if character does not match.
+3. Skip (move from *down* in the trellis): The tree skips that particular character with loss `down_loss`.
 
-These loss parameters can be adjusted to find best result.
+These loss parameters can be adjusted to obtain better result.
 
-To traverse the trie and find the best match, we introduce a new data type called `LossNode`. Each `LossNode` contains the current loss value and references to the previous `LossNode` and `TrieNode`. During each round of traversal, we generate a list of `LossNode`s to keep track of the progress made during the search.
+To traverse the trie and find the best match, we introduce a data type called loss node. During each round of traversal, we maintain a dictionary from trie nodes to loss nodes. A loss node contains the current loss value and the references to the corresponding trie node, which help us backtrack the search to obtain the recognized word.
 
-To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the `LossNode`s that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
+In each round, we attempt to generate a new loss nodes for each trie node. A previous loss node among *left*, *diag*, and *down* on the trellis is chosen based on the resulting next cost following the classic string matching algorithm; the new loss node is created based on this previous loss node with the updated trie node and the added loss.
+
+To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the loss nodes that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
 
 ![Inaccuracy vs beam width](./accuracy_vs_beam_alt2.png)
 
@@ -79,7 +81,9 @@ The accuracy is Accuracy: 74.39%.
 
 ## Segmentation
 
-For sentence segmentation, we utilize a modified approach based on spell checking. In this case, when a leaf node is reached, it points back to the root node. In addition to the existing three operations (Stay, Advance, and Skip), we introduce a new operation called "Transition", with a loss value of `transition_loss`. This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
+For sentence segmentation, we utilize a modified approach based on spell checking to accommodate for multiple words. Besides the corresponding trie node, each loss node also refers to the previous loss node to help us backtrack all the words. A new loss node is created only when the previous one reaches a leaf trie node; in this case, the new loss node is "teleported" to the root node, and refers to the previous loss node. This teleportation behavior is disabled for single-word matching and matching the last character.
+
+This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
 
 ![Inaccuracy vs transition loss](./accuracy_vs_transition_loss_alt2.png)
 
