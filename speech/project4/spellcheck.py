@@ -1,6 +1,6 @@
-"""Use dictionary `dict_1.txt` to spell check against `typos.txt`, and calculate
+"""Use dictionary `dict_1.txt` to spellcheck against `typos.txt`, and calculate
 accuracy against `storycorrect.txt`.
-Run as `python3 -m speech.project4.spell_check`."""
+Run as `python3 -m speech.project4.spellcheck`."""
 
 from speech.project4 import DATA_DIR, read_lines_stripped, write_split_lines
 from speech.project4.correct_story import correct_story_lines

@@ -6,7 +6,7 @@ presentation:
 
 <!-- slide -->
 
-# COMPSCI 304 group project 4: Text Segmentation and Spell Check with Lexical Tree
+# COMPSCI 304 group project 4: Text Segmentation and Spellcheck with Lexical Tree
 
 Steven Hé (Sīchàng), Luyao Wang
 
@@ -20,7 +20,7 @@ Duke Kunshan University
 
 - Lexical tree
   - Tasks:
-  - Spell check against words
+  - Spellcheck against words
 - Text Segmentation And Spellcheck
   - Tasks:
   - Segment text
