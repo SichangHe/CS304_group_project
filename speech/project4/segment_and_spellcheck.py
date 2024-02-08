@@ -7,7 +7,7 @@ from .lextree import Trie
 
 
 def segment_and_spellcheck(dict_trie: Trie, text: str, beam_width=5) -> list[str]:
-    return dict_trie.match_word(text, beam_width)
+    return dict_trie.match_words(text, beam_width)
 
 
 def longest_common_subsequence_diff(word_list0, word_list1):
