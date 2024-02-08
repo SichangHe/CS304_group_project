@@ -25,6 +25,10 @@ def main() -> None:
     n_correct = 0
     n_total = 0
     for correct_line, spell_checked_line in zip(correct_lines, spell_checked_lines):
+        assert len(correct_line) == len(spell_checked_line), (
+            correct_line,
+            spell_checked_line,
+        )
         for correct, spell_checked in zip(correct_line, spell_checked_line):
             n_total += 1
             if correct == spell_checked:

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from . import DATA_DIR, read_lines_stripped
-from .correct_story import correct_story_lines
+from .correct_story import correct_story_lines_stripped
 from .dictionary import dictionary_trie
 from .lextree import Trie
 from .segment import longest_common_subsequence_diff
@@ -28,7 +28,7 @@ def experiment_inaccuracy(
 def main() -> None:
     dict_trie = dictionary_trie()
     lines = read_lines_stripped(f"{DATA_DIR}unsegmented.txt")
-    correct_lines = correct_story_lines()
+    correct_lines = correct_story_lines_stripped()
 
     beam_widths = range(1, 51, 5)
     inaccuracies = [

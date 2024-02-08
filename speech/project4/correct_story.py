@@ -10,12 +10,17 @@ def correct_story_lines() -> list[list[str]]:
     return [
         [split.strip(string.punctuation).lower() for split in line.split()]
         for line in lines
-        if line
     ]
+
+
+def correct_story_lines_stripped() -> list[list[str]]:
+    lines = correct_story_lines()
+    return [line for line in lines if len(line) > 0]
 
 
 def main() -> None:
     print(correct_story_lines())
+    print(correct_story_lines_stripped())
 
 
 main() if __name__ == "__main__" else None
