@@ -42,3 +42,7 @@ During the process of generating the target word, we consider three possible ope
 At each round, we generate a list of `LossNode`s, which contain the current loss value as well as references to the previous `LossNode` and `TrieNode`. These nodes help us keep track of the progress made during the search.
 
 To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the `LossNode`s that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
+
+## Segmentation
+
+For sentence segmentation, we utilize a modified approach based on spell checking. In this case, when a leaf node is reached, it points back to the root node. This modification enables us to adapt the spell checking procedure for sentence segmentation. The concept is similar to continuous speech recognition using Hidden Markov Models (HMMs). By leveraging this modified approach, we can achieve sentence segmentation with minimal adjustments to the spell checking mechanism.
