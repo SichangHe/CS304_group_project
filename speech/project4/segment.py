@@ -78,8 +78,7 @@ def levenshtein_distance(word1, word2):
 
 
 def segment(dict_trie: Trie, text: str, beam_width=5) -> list[str]:
-    # TODO: Use the trie to segment the text.
-    return [text]
+    return dict_trie.match_words(text, beam_width)
 
 
 def main():

@@ -289,6 +289,21 @@ class Trie:
         assert min_last_loss_node is not None, (word, last_losses)
         return min_last_loss_node.backtrack()[0]
 
+    def match_words(self, words: str, beam_width: int):
+        min_last_loss = 0x7FFFFFFF
+        min_last_loss_node = None
+        losses_list = self._match_word(words, beam_width, False)
+        last_losses = losses_list[-1]
+
+        for node, last_loss_node in last_losses.items():
+            if node.is_leaf():
+                if last_loss_node.loss < min_last_loss:
+                    min_last_loss = last_loss_node.loss
+                    min_last_loss_node = last_loss_node
+
+        assert min_last_loss_node is not None, (words, last_losses)
+        return min_last_loss_node.backtrack()
+
     def flatten(self) -> list[TrieNode]:
         """Guaranteed to return parent nodes first."""
         result = []
