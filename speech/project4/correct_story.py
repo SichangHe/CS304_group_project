@@ -2,14 +2,15 @@
 
 import string
 
-from . import DATA_DIR, read_file
+from . import DATA_DIR, read_lines_stripped
 
 
 def correct_story_lines() -> list[list[str]]:
-    lines = read_file(f"{DATA_DIR}storycorrect.txt").splitlines()
+    lines = read_lines_stripped(f"{DATA_DIR}storycorrect.txt")
     return [
         [split.strip(string.punctuation).lower() for split in line.split()]
         for line in lines
+        if line
     ]
 
 

@@ -3,14 +3,12 @@
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from . import DATA_DIR, read_file
+from . import DATA_DIR, read_lines_stripped
 from .correct_story import correct_story_lines
 from .dictionary import dictionary_trie
 from .lextree import Trie
-from .segment_and_spellcheck import (
-    longest_common_subsequence_diff,
-    segment_and_spellcheck,
-)
+from .segment import longest_common_subsequence_diff
+from .segment_and_spellcheck import segment_and_spellcheck
 
 plt.rcParams["font.size"] = 24
 
@@ -29,7 +27,7 @@ def experiment_inaccuracy(
 
 def main() -> None:
     dict_trie = dictionary_trie()
-    lines = read_file(f"{DATA_DIR}unsegmented.txt").splitlines()
+    lines = read_lines_stripped(f"{DATA_DIR}unsegmented.txt")
     correct_lines = correct_story_lines()
 
     beam_widths = range(1, 51, 5)

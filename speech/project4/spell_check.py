@@ -2,7 +2,7 @@
 accuracy against `storycorrect.txt`.
 Run as `python3 -m speech.project4.spell_check`."""
 
-from . import DATA_DIR, read_file, write_split_lines
+from . import DATA_DIR, read_lines_stripped, write_split_lines
 from .correct_story import correct_story_lines
 from .dictionary import dictionary_trie
 from .lextree import Trie
@@ -15,9 +15,7 @@ def correct_word(dict_trie: Trie, word: str, beam_width=3) -> str:
 def main() -> None:
     dict_trie = dictionary_trie()
 
-    typo_lines = [
-        line.split() for line in read_file(f"{DATA_DIR}typos.txt").splitlines()
-    ]
+    typo_lines = [line.split() for line in read_lines_stripped(f"{DATA_DIR}typos.txt")]
     spell_checked_lines = [
         [correct_word(dict_trie, word) for word in line] for line in typo_lines
     ]

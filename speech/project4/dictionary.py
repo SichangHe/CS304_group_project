@@ -1,9 +1,9 @@
-from . import DATA_DIR, read_file
+from . import DATA_DIR, read_lines_stripped
 from .lextree import Trie
 
 
 def dictionary_trie():
-    dictionary = read_file(f"{DATA_DIR}dict_1.txt").split()
+    dictionary = read_lines_stripped(f"{DATA_DIR}dict_1.txt")
     dict_trie = Trie()
     for word in dictionary:
         dict_trie.insert(word)
