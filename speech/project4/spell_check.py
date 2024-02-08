@@ -8,7 +8,7 @@ from .dictionary import dictionary_trie
 from .lextree import Trie
 
 
-def correct_word(dict_trie: Trie, word: str, beam_width=3) -> str | None:
+def correct_word(dict_trie: Trie, word: str, beam_width=3) -> str:
     return dict_trie.match_word_single(word, beam_width)
 
 
