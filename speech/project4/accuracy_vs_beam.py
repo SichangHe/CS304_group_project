@@ -32,7 +32,7 @@ def main() -> None:
     lines = read_file(f"{DATA_DIR}unsegmented.txt").splitlines()
     correct_lines = correct_story_lines()
 
-    beam_widths = range(50)
+    beam_widths = range(1, 51, 5)
     inaccuracies = [
         experiment_inaccuracy(dict_trie, lines, correct_lines, beam_width)
         for beam_width in beam_widths
