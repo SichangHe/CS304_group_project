@@ -22,3 +22,23 @@ Trie(len=7):
     ├─t
     └─t─t─l─e
 ```
+
+## Spell checking
+
+In order to facilitate techniques similar to Levenshtein distance with dynamic programming, we employ a process of flattening the lexical tree. This involves transforming the tree structure into a linear sequence. For instance, the given tree:
+```
+*─b─a─n─a─n─a
+    ├─t
+    └─t─t─l─e
+```
+would be flattened as [root, b, a1, n, t1, t2, a2, t3, n2, l, a3, e]. Each node in the flattened structure is represented by a character, and connections between nodes are denoted by references. For example, 'b' points to 'a1', 'a1' points to 'n', 't', and 't', and so on.
+
+During the process of generating the target word, we consider three possible operations at each character position:
+
+1. Stay: The tree remains at the current position.
+2. Advance: The tree moves to the next layer or level.
+3. Skip: The tree skips that particular character.
+
+At each round, we generate a list of `LossNode`s, which contain the current loss value as well as references to the previous `LossNode` and `TrieNode`. These nodes help us keep track of the progress made during the search.
+
+To improve efficiency and reduce computational complexity, we employ beam search for pruning at each round. This means that we only consider the `LossNode`s that have a loss value smaller than the minimum loss of the current round plus the specified beam width.
