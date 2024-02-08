@@ -3,14 +3,13 @@ accuracy against `storycorrect.txt`.
 Run as `python3 -m speech.project4.spell_check`."""
 
 from . import DATA_DIR, read_file, write_split_lines
-from .bfs import bfs
 from .correct_story import correct_story_lines
 from .dictionary import dictionary_trie
 from .lextree import Trie
 
 
-def correct_word(dict_trie: Trie, word: str, beam_width=3) -> str:
-    return bfs(dict_trie.root, word, beam_width)
+def correct_word(dict_trie: Trie, word: str, beam_width=3) -> str | None:
+    return dict_trie.match_word_single(word, beam_width)
 
 
 def main() -> None:
