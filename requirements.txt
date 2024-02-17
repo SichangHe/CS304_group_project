@@ -1,4 +1,6 @@
 cache_to_disk
 pyaudio
-numby
+numpy
 matplotlib
+scipy
+scikit-learn
