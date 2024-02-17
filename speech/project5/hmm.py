@@ -1,12 +1,12 @@
-"""Run with `python3 -m speech.project3.hmm`."""
+"""Run with `python3 -m speech.project5.hmm`."""
 
 import argparse
+from dataclasses import dataclass
 from logging import debug
 from typing import Iterable, List, Tuple
 
 import numpy as np
 
-from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
@@ -31,9 +31,10 @@ def multivariate_gaussian_pdf_diag_cov(
     Compute the probability density function (PDF) of a multivariate Gaussian distribution with a diagonal covariance matrix.
     """
     n = x.shape[0]
-    variance = np.diag(cov)
-    det_covariance = np.prod(variance)
-    inv_covariance_matrix = np.diag(1 / variance)
+    if len(cov.shape) == 2:
+        cov = np.diag(cov)
+    det_covariance = np.prod(cov)
+    inv_covariance_matrix = np.diag(1 / cov)
 
     difference_vector = x - mean
     exponent = np.dot(
@@ -90,7 +91,9 @@ def align_sequence(sequence, means, covariances, transition_probs):
             else:
                 emission_log_prob = np.log(
                     max(
-                        multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
+                        multivariate_gaussian_pdf_diag_cov(
+                            sequence[t], mean=mean, cov=cov
+                        )
                         for mean, cov in zip(means[state], covariances[state])
                     )
                 )
@@ -111,15 +114,93 @@ def align_sequence(sequence, means, covariances, transition_probs):
     path.reverse()
     return path, viterbi_trellis[-1, -1]
 
-class HMM_State:
-    parent: "HMM_State | None" = None
+
+def align_sequence_new(sequence, hmm_states: list["HMMState"]):
+    """align a sequence vs a hmm model"""
+    sequence_length = len(sequence)
+
+    np.seterr(divide="ignore")
+
+    # initialize prev_losses with first state
+    prev_losses: list[LossNode] = [
+        LossNode(
+            state_node=hmm_states[0],
+            prev_end_loss_node=None,
+            loss=np.log(
+                max(
+                    multivariate_gaussian_pdf_diag_cov(sequence[0], mean=mean, cov=cov)
+                    for mean, cov in zip(hmm_states[0].mean, hmm_states[0].covariance)
+                )
+            ),
+        )
+    ]
+
+    for t in range(1, sequence_length):
+        current_losses: list[LossNode] = []
+        for node in hmm_states:
+            trans_n_last_probs: list[tuple[LossNode, float]] = []
+
+            for prev in prev_losses:
+                if prob := prev.state_node.transition.get(node):
+                    trans_n_last_probs.append((prev, np.log(prob) + prev.loss))
+            emission_log_prob = np.log(
+                max(
+                    multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
+                    for mean, cov in zip(node.mean, node.covariance)
+                )
+            )
+
+            if len(trans_n_last_probs) > 0:
+                max_score = max(trans_n_last_probs, key=lambda x: x[1])
+                current_losses.append(
+                    LossNode(
+                        state_node=node,
+                        prev_end_loss_node=max_score[0],
+                        loss=max_score[1] + emission_log_prob,
+                    )
+                )
+
+        prev_losses = current_losses
+
+    # backtrace
+    prev = current_losses[-1]
+    alignment = [prev.state_node.nth_state]
+    while prev := prev.prev_end_loss_node:
+        alignment.append(prev.state_node.nth_state)
+
+    alignment.reverse()
+
+    return alignment, current_losses[-1].loss
+
+
+@dataclass
+class HMMState:
+    parent: "HMMState | None" = None
     """The state is the first state if the `parent` is `None`."""
-    mean: list[NDArray[np.float64]]
+    value: str | None = None
+    """The word associated with the state"""
+    nth_state: int = -1
+    """nth in n_states"""
+    mean: list[NDArray[np.float64]] = None
     """n_gaussians of mean vectors."""
-    covariance: list[NDArray[np.float64]]
+    covariance: list[NDArray[np.float64]] = None
     """n_gaussians of diagonal of covariance matrix"""
-    children: dict["HMM_State", int]
+    transition: dict["HMMState", int] = None
     """Transition probability"""
+
+    def __hash__(self) -> int:
+        return id(self)
+
+
+@dataclass
+class LossNode:
+    state_node: HMMState
+    prev_end_loss_node: "LossNode | None" = None
+    loss: int = 0
+
+    def __hash__(self) -> int:
+        return id(self)
+
 
 class HMM_Single:
     n_states: int
@@ -268,7 +349,6 @@ class HMM_Single:
         )
 
 
-@cache_to_disk(2)
 def single_hmm_w_template_file_names(
     template_file_names: list[str], n_states: int, n_gaussians: int
 ):
