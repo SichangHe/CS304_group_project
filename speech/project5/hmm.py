@@ -230,7 +230,7 @@ class HMM_Single:
         prev_groups = None
         current_n_gaussians = 1
         while current_n_gaussians <= n_gaussians:
-            self._update(current_n_gaussians)
+            self._update_new(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self.grouped_data):
                 # Converge.
                 current_n_gaussians *= 2
@@ -252,6 +252,38 @@ class HMM_Single:
                 self._raw_data[i], self.means, self.variances, self.transition_matrix
             )
             # print(a)
+            alignment_result.append(a)
+        self.grouped_data = np.array(
+            list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
+        )
+
+    def _update_new(self, n_gaussians: int):
+        self._calculate_slice_array()
+        self._calculate_mean_variance(n_gaussians)
+        self._calculate_transition_matrix()
+
+        assert self.n_states == len(self.means)
+        assert self.n_states == len(self.variances)
+        states = []
+        for s in range(self.n_states):
+            state = HMMState(
+                parent=None,
+                mean=self.means[s],
+                covariance=self.variances[s],
+                transition=None,
+                nth_state=s,
+            )
+            states.append(state)
+        for s in range(self.n_states):
+            states[s].transition = {
+                states[i]: v for i, v in enumerate(self.transition_matrix[s]) if v > 0
+            }
+        for s in range(1, self.n_states):
+            states[s].parent = states[s - 1]
+
+        alignment_result = []
+        for i in range(self.n_samples):
+            a, _ = align_sequence_new(self._raw_data[i], states)
             alignment_result.append(a)
         self.grouped_data = np.array(
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
