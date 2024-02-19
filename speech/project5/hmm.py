@@ -135,8 +135,9 @@ def align_sequence_new(sequence, hmm_states: list["HMMState"]):
         )
     ]
 
+    current_losses: list[LossNode] = []
     for t in range(1, sequence_length):
-        current_losses: list[LossNode] = []
+        current_losses = []
         for node in hmm_states:
             trans_n_last_probs: list[tuple[LossNode, float]] = []
 
@@ -165,7 +166,8 @@ def align_sequence_new(sequence, hmm_states: list["HMMState"]):
     # backtrace
     prev = current_losses[-1]
     alignment = [prev.state_node.nth_state]
-    while prev := prev.prev_end_loss_node:
+    while maybe_prev := prev.prev_end_loss_node:
+        prev = maybe_prev
         alignment.append(prev.state_node.nth_state)
 
     alignment.reverse()
@@ -175,18 +177,18 @@ def align_sequence_new(sequence, hmm_states: list["HMMState"]):
 
 @dataclass
 class HMMState:
+    mean: list[FloatArray]
+    """n_gaussians of mean vectors."""
+    covariance: list[FloatArray]
+    """n_gaussians of diagonal of covariance matrix"""
+    transition: dict["HMMState", float]
+    """Transition probability"""
     parent: "HMMState | None" = None
     """The state is the first state if the `parent` is `None`."""
     value: str | None = None
     """The word associated with the state"""
     nth_state: int = -1
     """nth in n_states"""
-    mean: list[FloatArray] = None
-    """n_gaussians of mean vectors."""
-    covariance: list[FloatArray] = None
-    """n_gaussians of diagonal of covariance matrix"""
-    transition: dict["HMMState", int] = None
-    """Transition probability"""
 
     def __hash__(self) -> int:
         return id(self)
@@ -222,7 +224,7 @@ class HMM_Single:
         self._raw_data = data
         self.n_states = n_states
         self.n_samples = len(data)
-        self.transition_matrix = np.zeros((n_states, n_states))
+        self.transition_matrix = np.zeros((n_states, n_states), dtype=np.float32)
 
         self.means: list[list[FloatArray]] = []
         self._init()
@@ -264,22 +266,23 @@ class HMM_Single:
 
         assert self.n_states == len(self.means)
         assert self.n_states == len(self.variances)
-        states = []
+
+        states: list[HMMState] = []
+        parent = None
         for s in range(self.n_states):
             state = HMMState(
-                parent=None,
+                parent=parent,
                 mean=self.means[s],
                 covariance=self.variances[s],
-                transition=None,
+                transition={
+                    states[i]: v
+                    for i, v in enumerate(self.transition_matrix[s])
+                    if v > 0
+                },
                 nth_state=s,
             )
+            parent = state
             states.append(state)
-        for s in range(self.n_states):
-            states[s].transition = {
-                states[i]: v for i, v in enumerate(self.transition_matrix[s]) if v > 0
-            }
-        for s in range(1, self.n_states):
-            states[s].parent = states[s - 1]
 
         alignment_result = []
         for i in range(self.n_samples):
@@ -300,11 +303,12 @@ class HMM_Single:
         return r
 
     def _calculate_slice_array(self):
-        self._slice_array = np.array(
+        self._slice_array = np.asarray(
             [
                 list(map(lambda x: slice(*x), zip(group, group[1:])))
                 for group in self.grouped_data
-            ]
+            ],
+            dtype=np.float32,
         )
 
     def _calculate_mean_variance(self, n_gaussians: int):

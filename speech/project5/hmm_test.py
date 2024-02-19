@@ -4,22 +4,22 @@ import unittest
 
 import numpy as np
 
-from speech.project5.hmm import HMM_Single, HMMState, align_sequence, align_sequence_new
+from speech.project5.hmm import HMMState, align_sequence, align_sequence_new
 
 
 class TestAudio(unittest.TestCase):
     def test_new_align_impl(self):
         np.random.seed(0)
-        mean1 = np.random.normal(0, 1, 39)
-        mean2 = np.random.normal(0, 2, 39)
-        mean3 = np.random.normal(1, 1, 39)
-        mean4 = np.random.normal(-1, 1, 39)
-        mean5 = np.random.normal(1, 2, 39)
+        mean1 = np.random.normal(0, 1, 39).astype(np.float32)
+        mean2 = np.random.normal(0, 2, 39).astype(np.float32)
+        mean3 = np.random.normal(1, 1, 39).astype(np.float32)
+        mean4 = np.random.normal(-1, 1, 39).astype(np.float32)
+        mean5 = np.random.normal(1, 2, 39).astype(np.float32)
         covariance = np.eye(39)
         covariance = np.abs(np.diag(np.diag(np.random.normal(2, 2, (39, 39)))))
         num_samples = 200
         samples = np.random.multivariate_normal(mean1, covariance, num_samples)
-        s = [samples[i : i + 40] for i in range(0, 161, 10)]
+        # s = [samples[i : i + 40] for i in range(0, 161, 10)]
         alignment, score = align_sequence(
             samples[0:40],
             [[mean1], [mean2], [mean3], [mean4], [mean5]],
@@ -31,7 +31,8 @@ class TestAudio(unittest.TestCase):
                     [0, 0, 0.5, 0.5, 0],
                     [0, 0, 0, 0.5, 0.5],
                     [0, 0, 0, 0, 0.5],
-                ]
+                ],
+                dtype=np.float32,
             ),
         )
         print("Alignment and score with legacy implementation:")
@@ -42,35 +43,35 @@ class TestAudio(unittest.TestCase):
             parent=None,
             mean=[mean1],
             covariance=[np.diag(covariance.T)],
-            transition=None,
+            transition={},
             nth_state=0,
         )
         n1 = HMMState(
             parent=None,
             mean=[mean2],
             covariance=[np.diag(covariance.T)],
-            transition=None,
+            transition={},
             nth_state=1,
         )
         n2 = HMMState(
             parent=None,
             mean=[mean3],
             covariance=[np.diag(covariance.T)],
-            transition=None,
+            transition={},
             nth_state=2,
         )
         n3 = HMMState(
             parent=None,
             mean=[mean4],
             covariance=[np.diag(covariance.T)],
-            transition=None,
+            transition={},
             nth_state=3,
         )
         n4 = HMMState(
             parent=None,
             mean=[mean5],
             covariance=[np.diag(covariance.T)],
-            transition=None,
+            transition={},
             nth_state=4,
         )
         root.transition = {root: 0.5, n1: 0.5}

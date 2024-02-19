@@ -57,7 +57,7 @@ MAX_DRAWING_SAMPLES = SAMPLING_RATE * MAXIMUM_DRAWING_TIME
 """Maximum number of samples drawn"""
 
 
-def main():
+def main() -> None:
     """Run GUI from main thread."""
     parser = argparse.ArgumentParser(description="Recorder")
     parser.add_argument("-g", "--gui", action="store_true", help="Show spectrum GUI.")
