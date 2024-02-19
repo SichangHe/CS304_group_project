@@ -268,13 +268,12 @@ class Trie:
                 f"char: {char}, {len(current_losses)} current losses, round min loss {round_min_loss}, {len(prev_losses)} previous losses."
             )
 
-            filtered_current_losses = {}
-            for node, loss_node in current_losses.items():
-                round_threshold = round_min_loss + beam_width
-                if loss_node.loss <= round_threshold:
-                    filtered_current_losses[node] = loss_node
-
-            prev_losses = filtered_current_losses
+            round_threshold = round_min_loss + beam_width
+            prev_losses = {
+                node: loss_node
+                for node, loss_node in current_losses.items()
+                if loss_node.loss <= round_threshold
+            }
 
         return prev_losses
 
