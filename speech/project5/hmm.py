@@ -115,7 +115,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
     return path, viterbi_trellis[-1, -1]
 
 
-def align_sequence_new(sequence, hmm_states: list["HMMState"]):
+def align_sequence_new(sequence: FloatArray, hmm_states: list["HMMState"]):
     """align a sequence vs a hmm model"""
     sequence_length = len(sequence)
 
@@ -126,7 +126,7 @@ def align_sequence_new(sequence, hmm_states: list["HMMState"]):
         LossNode(
             state_node=hmm_states[0],
             prev_end_loss_node=None,
-            loss=np.log(
+            loss=-np.log(
                 max(
                     multivariate_gaussian_pdf_diag_cov(sequence[0], mean=mean, cov=cov)
                     for mean, cov in zip(hmm_states[0].mean, hmm_states[0].covariance)
@@ -139,36 +139,39 @@ def align_sequence_new(sequence, hmm_states: list["HMMState"]):
     for t in range(1, sequence_length):
         current_losses = []
         for node in hmm_states:
-            trans_n_last_probs: list[tuple[LossNode, float]] = []
+            combined_losses: list[tuple[LossNode, float]] = []
 
-            for prev in prev_losses:
-                if prob := prev.state_node.transition.get(node):
-                    trans_n_last_probs.append((prev, np.log(prob) + prev.loss))
-            emission_log_prob = np.log(
+            # TODO: Optimize by skipping calculations when not needed.
+            for prev_loss in prev_losses:
+                if transition_probability := prev_loss.state_node.transition.get(node):
+                    combined_losses.append(
+                        (prev_loss, -np.log(transition_probability) + prev_loss.loss)
+                    )
+            emission_loss = -np.log(
                 max(
                     multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
                     for mean, cov in zip(node.mean, node.covariance)
                 )
             )
 
-            if len(trans_n_last_probs) > 0:
-                max_score = max(trans_n_last_probs, key=lambda x: x[1])
+            if len(combined_losses) > 0:
+                best_loss_node, min_loss = min(combined_losses, key=lambda x: x[1])
                 current_losses.append(
                     LossNode(
                         state_node=node,
-                        prev_end_loss_node=max_score[0],
-                        loss=max_score[1] + emission_log_prob,
+                        prev_end_loss_node=best_loss_node,
+                        loss=min_loss + emission_loss,
                     )
                 )
 
         prev_losses = current_losses
 
-    # backtrace
-    prev = current_losses[-1]
-    alignment = [prev.state_node.nth_state]
-    while maybe_prev := prev.prev_end_loss_node:
-        prev = maybe_prev
-        alignment.append(prev.state_node.nth_state)
+    # backtrack
+    prev_loss = current_losses[-1]
+    alignment = [prev_loss.state_node.nth_state]
+    while maybe_prev := prev_loss.prev_end_loss_node:
+        prev_loss = maybe_prev
+        alignment.append(prev_loss.state_node.nth_state)
 
     alignment.reverse()
 
@@ -197,8 +200,8 @@ class HMMState:
 @dataclass
 class LossNode:
     state_node: HMMState
-    prev_end_loss_node: "LossNode | None" = None
-    loss: int = 0
+    prev_end_loss_node: "LossNode | None"
+    loss: float
 
     def __hash__(self) -> int:
         return id(self)
