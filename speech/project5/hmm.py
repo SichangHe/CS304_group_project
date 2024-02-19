@@ -186,12 +186,13 @@ class HMMState:
     """n_gaussians of diagonal of covariance matrix"""
     transition: dict["HMMState", float]
     """Transition probability"""
+    nth_state: int
+    """nth in n_states"""
+    label: int | None
+    """The digit associated with the state.
+    `None` if the state is the first state."""
     parent: "HMMState | None" = None
     """The state is the first state if the `parent` is `None`."""
-    value: str | None = None
-    """The word associated with the state"""
-    nth_state: int = -1
-    """nth in n_states"""
 
     def __hash__(self) -> int:
         return id(self)
@@ -201,20 +202,43 @@ class HMMState:
 class LossNode:
     state_node: HMMState
     prev_end_loss_node: "LossNode | None"
-    loss: float
+    loss: float = 1.0
 
-    def __hash__(self) -> int:
-        return id(self)
+    def copying_update(
+        self,
+        state_node: HMMState | None = None,
+        prev_end_loss_node: "LossNode | None" = None,
+        loss: float | None = None,
+    ):
+        if state_node is None:
+            state_node = self.state_node
+        if prev_end_loss_node is None:
+            prev_end_loss_node = self.prev_end_loss_node
+        if loss is None:
+            loss = self.loss
+
+        return LossNode(state_node, prev_end_loss_node, loss)
+
+    def backtrack(self) -> list[int]:
+        reversed_words = []
+        current: "LossNode | None" = self
+        while current is not None:
+            word = current.state_node.label
+            assert word is not None, (self, current)
+            reversed_words.append(word)
+            current = current.prev_end_loss_node
+        return list(reversed(reversed_words))
 
 
 class HMM_Single:
     n_states: int
     transition_matrix: FloatArray
     grouped_data: NDArray[np.int64]
+    label: int
     _raw_data: List[FloatArray]
     _slice_array: NDArray
 
-    def __init__(self, data: List[FloatArray], n_states=5, n_gaussians=4):
+    def __init__(self, label: int, data: List[FloatArray], n_states=5, n_gaussians=4):
         """
         Fits the model to the provided training data using segmental K-means.
 
@@ -224,6 +248,7 @@ class HMM_Single:
             and l is the length of each training sample.
             Each training sample can be a scalar or a vector.
         """
+        self.label = label
         self._raw_data = data
         self.n_states = n_states
         self.n_samples = len(data)
@@ -283,6 +308,7 @@ class HMM_Single:
                     if v > 0
                 },
                 nth_state=s,
+                label=self.label,
             )
             parent = state
             states.append(state)
@@ -387,12 +413,12 @@ class HMM_Single:
 
 
 def single_hmm_w_template_file_names(
-    template_file_names: list[str], n_states: int, n_gaussians: int
+    label: int, template_file_names: list[str], n_states: int, n_gaussians: int
 ):
     template_mfcc_s = [
         boosted_mfcc_from_file(file_name) for file_name in template_file_names
     ]
-    return HMM_Single(template_mfcc_s, n_states, n_gaussians)
+    return HMM_Single(label, template_mfcc_s, n_states, n_gaussians)
 
 
 class HMM:
@@ -433,7 +459,7 @@ class HMM:
 
         for templates, label in zip(templates_for_each_label, labels):
             debug(f"Calculating single HMM for number {label}.")
-            hmm = HMM_Single(templates, self.n_states, self.n_gaussians)
+            hmm = HMM_Single(label, templates, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
 
     def predict(self, test_samples_list: list[FloatArray]):
@@ -464,7 +490,7 @@ class HMM:
         ):
             debug(f"Calculating single HMM for number {label}.")
             hmm_single = single_hmm_w_template_file_names(
-                template_file_names, n_states, n_gaussians
+                label, template_file_names, n_states, n_gaussians
             )
             hmm_instances.append(hmm_single)
         return cls(

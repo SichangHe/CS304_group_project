@@ -18,7 +18,9 @@ class TestAudio(unittest.TestCase):
         covariance = np.eye(39)
         covariance = np.abs(np.diag(np.diag(np.random.normal(2, 2, (39, 39)))))
         num_samples = 200
-        samples = np.random.multivariate_normal(mean1, covariance, num_samples)
+        samples = np.random.multivariate_normal(mean1, covariance, num_samples).astype(
+            np.float32
+        )
         # s = [samples[i : i + 40] for i in range(0, 161, 10)]
         alignment, score = align_sequence(
             samples[0:40],
@@ -40,6 +42,7 @@ class TestAudio(unittest.TestCase):
         print(alignment)
 
         root = HMMState(
+            label=None,
             parent=None,
             mean=[mean1],
             covariance=[np.diag(covariance.T)],
@@ -47,6 +50,7 @@ class TestAudio(unittest.TestCase):
             nth_state=0,
         )
         n1 = HMMState(
+            label=1,
             parent=None,
             mean=[mean2],
             covariance=[np.diag(covariance.T)],
@@ -54,6 +58,7 @@ class TestAudio(unittest.TestCase):
             nth_state=1,
         )
         n2 = HMMState(
+            label=2,
             parent=None,
             mean=[mean3],
             covariance=[np.diag(covariance.T)],
@@ -61,6 +66,7 @@ class TestAudio(unittest.TestCase):
             nth_state=2,
         )
         n3 = HMMState(
+            label=3,
             parent=None,
             mean=[mean4],
             covariance=[np.diag(covariance.T)],
@@ -68,6 +74,7 @@ class TestAudio(unittest.TestCase):
             nth_state=3,
         )
         n4 = HMMState(
+            label=4,
             parent=None,
             mean=[mean5],
             covariance=[np.diag(covariance.T)],
