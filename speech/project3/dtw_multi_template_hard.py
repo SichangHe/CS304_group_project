@@ -9,7 +9,11 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from speech.project2.main import NUMBERS
-from speech.project3 import HARD_TEMPLATE_INDEXES, HARD_TEST_INDEXES, boosted_mfcc_from_file
+from speech.project3 import (
+    HARD_TEMPLATE_INDEXES,
+    HARD_TEST_INDEXES,
+    boosted_mfcc_from_file,
+)
 from speech.project3.dtw_single_template_time_sync import recognize_number
 
 BEST_PRUNING_THRESHOLD = 13.0

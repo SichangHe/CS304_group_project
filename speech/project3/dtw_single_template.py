@@ -5,7 +5,7 @@ Run as `python3 -m speech.project3.dtw_single_template`."""
 import argparse
 
 from speech.project2.main import NUMBERS
-from speech.project3 import INF_FLOAT32, boosted_mfcc_from_file, TEST_INDEXES
+from speech.project3 import INF_FLOAT32, TEST_INDEXES, boosted_mfcc_from_file
 from speech.project3.dtw import single_dtw_search
 
 

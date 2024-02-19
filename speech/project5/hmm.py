@@ -6,7 +6,6 @@ from logging import debug
 from typing import Iterable, List, Tuple
 
 import numpy as np
-
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans

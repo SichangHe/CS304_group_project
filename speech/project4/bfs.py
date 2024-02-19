@@ -1,10 +1,10 @@
 from collections import deque
-from typing import List
+from typing import Deque, List, Tuple
 
 import numpy as np
+
 from speech.project4 import DATA_DIR, read_file
 from speech.project4.lextree import Trie, TrieNode
-from typing import Deque, List, Tuple
 
 
 def levenshtein_distance(word1, word2):

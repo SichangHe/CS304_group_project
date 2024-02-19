@@ -1,4 +1,5 @@
 """Run with `python3 -m speech.project1.test`."""
+
 import unittest
 
 import matplotlib.pyplot as plt

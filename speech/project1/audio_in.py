@@ -3,7 +3,13 @@ from typing import Mapping
 
 from pyaudio import PyAudio, paContinue
 
-from speech.project1 import CHUNK_MS, MS_IN_SECOND, N_CHANNEL, RESOLUTION_FORMAT, SAMPLING_RATE
+from speech.project1 import (
+    CHUNK_MS,
+    MS_IN_SECOND,
+    N_CHANNEL,
+    RESOLUTION_FORMAT,
+    SAMPLING_RATE,
+)
 
 N_FRAME_PER_CHUNK = SAMPLING_RATE * CHUNK_MS // MS_IN_SECOND
 """Number of frames per audio sample chunk."""

@@ -7,7 +7,12 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 from speech.project2 import read_audio_file
-from speech.project2.lib import cep2spec, mfcc_homebrew, plot_cepstra, plot_log_mel_spectra
+from speech.project2.lib import (
+    cep2spec,
+    mfcc_homebrew,
+    plot_cepstra,
+    plot_log_mel_spectra,
+)
 
 plt.rcParams["font.size"] = 24
 

@@ -1,4 +1,5 @@
 """Run with `python3 -m speech.project3.hmm_test`."""
+
 import unittest
 
 import numpy as np

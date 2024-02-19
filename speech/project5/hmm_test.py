@@ -4,12 +4,7 @@ import unittest
 
 import numpy as np
 
-from speech.project5.hmm import (
-    HMM_Single,
-    HMMState,
-    align_sequence,
-    align_sequence_new,
-)
+from speech.project5.hmm import HMM_Single, HMMState, align_sequence, align_sequence_new
 
 
 class TestAudio(unittest.TestCase):

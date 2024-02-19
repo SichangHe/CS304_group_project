@@ -5,7 +5,6 @@ from logging import debug
 from typing import Iterable, List, Tuple
 
 import numpy as np
-
 from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
@@ -90,7 +89,9 @@ def align_sequence(sequence, means, covariances, transition_probs):
             else:
                 emission_log_prob = np.log(
                     max(
-                        multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
+                        multivariate_gaussian_pdf_diag_cov(
+                            sequence[t], mean=mean, cov=cov
+                        )
                         for mean, cov in zip(means[state], covariances[state])
                     )
                 )
