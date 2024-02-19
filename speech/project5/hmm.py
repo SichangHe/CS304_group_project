@@ -7,8 +7,8 @@ from typing import Iterable, List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.stats import multivariate_normal
-from sklearn.cluster import KMeans
+from scipy.stats import multivariate_normal  # type: ignore
+from sklearn.cluster import KMeans  # type: ignore
 
 from speech import FloatArray
 from speech.project2.main import NUMBERS
