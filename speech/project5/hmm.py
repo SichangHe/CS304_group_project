@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
 from sklearn.cluster import KMeans
 
+from speech import FloatArray
 from speech.project2.main import NUMBERS
 from speech.project3 import (
     HARD_TEMPLATE_INDEXES,
@@ -24,7 +25,7 @@ MINUS_INF = -INF_FLOAT32
 
 
 def multivariate_gaussian_pdf_diag_cov(
-    x: NDArray[np.float64], mean: NDArray[np.float64], cov: NDArray[np.float64]
+    x: FloatArray, mean: FloatArray, cov: FloatArray
 ) -> np.float64:
     """
     Compute the probability density function (PDF) of a multivariate Gaussian distribution with a diagonal covariance matrix.
@@ -180,9 +181,9 @@ class HMMState:
     """The word associated with the state"""
     nth_state: int = -1
     """nth in n_states"""
-    mean: list[NDArray[np.float64]] = None
+    mean: list[FloatArray] = None
     """n_gaussians of mean vectors."""
-    covariance: list[NDArray[np.float64]] = None
+    covariance: list[FloatArray] = None
     """n_gaussians of diagonal of covariance matrix"""
     transition: dict["HMMState", int] = None
     """Transition probability"""
@@ -203,12 +204,12 @@ class LossNode:
 
 class HMM_Single:
     n_states: int
-    transition_matrix: NDArray[np.float64]
+    transition_matrix: FloatArray
     grouped_data: NDArray[np.int64]
-    _raw_data: List[NDArray[np.float32]]
+    _raw_data: List[FloatArray]
     _slice_array: NDArray
 
-    def __init__(self, data: List[NDArray[np.float32]], n_states=5, n_gaussians=4):
+    def __init__(self, data: List[FloatArray], n_states=5, n_gaussians=4):
         """
         Fits the model to the provided training data using segmental K-means.
 
@@ -223,7 +224,7 @@ class HMM_Single:
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
 
-        self.means: list[list[NDArray[np.float32]]] = []
+        self.means: list[list[FloatArray]] = []
         self._init()
 
         prev_groups = None
@@ -369,9 +370,7 @@ class HMM_Single:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict_score(
-        self, target: NDArray[np.float32]
-    ) -> Tuple[List[int], np.float32]:
+    def predict_score(self, target: FloatArray) -> Tuple[List[int], np.float32]:
         """
         Take a target sequence and return similarity with the training samples.
         """
@@ -406,7 +405,7 @@ class HMM:
 
     def fit(
         self,
-        templates_for_each_label: list[list[NDArray[np.float32]]],
+        templates_for_each_label: list[list[FloatArray]],
         labels: List[int],
     ):
         """
@@ -430,12 +429,12 @@ class HMM:
             hmm = HMM_Single(templates, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
 
-    def predict(self, test_samples_list: list[NDArray[np.float32]]):
+    def predict(self, test_samples_list: list[FloatArray]):
         result = [self._predict(samples) for samples in test_samples_list]
 
         return result
 
-    def _predict(self, samples: NDArray[np.float32]):
+    def _predict(self, samples: FloatArray):
         scores = [
             (hmm.predict_score(samples)[1], l)
             for hmm, l in zip(self._hmm_instances, self.labels)
