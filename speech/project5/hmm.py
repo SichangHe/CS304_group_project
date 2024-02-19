@@ -404,6 +404,7 @@ class HMM_Single:
             self.transition_matrix[i, i] = (total - self.n_samples) / total
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
+        # TODO: Deal with the last state exiting.
 
     def predict_score(self, target: FloatArray):
         """
