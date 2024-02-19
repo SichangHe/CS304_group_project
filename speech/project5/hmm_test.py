@@ -15,8 +15,10 @@ class TestAudio(unittest.TestCase):
         mean3 = np.random.normal(1, 1, 39).astype(np.float32)
         mean4 = np.random.normal(-1, 1, 39).astype(np.float32)
         mean5 = np.random.normal(1, 2, 39).astype(np.float32)
-        covariance = np.eye(39)
-        covariance = np.abs(np.diag(np.diag(np.random.normal(2, 2, (39, 39)))))
+        covariance = np.eye(39, dtype=np.float32)
+        covariance = np.abs(
+            np.diag(np.diag(np.random.normal(2, 2, (39, 39)).astype(np.float32)))
+        )
         num_samples = 200
         samples = np.random.multivariate_normal(mean1, covariance, num_samples).astype(
             np.float32

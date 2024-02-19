@@ -3,7 +3,7 @@
 import argparse
 from dataclasses import dataclass
 from logging import debug
-from typing import Iterable, List, Tuple
+from typing import Iterable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -202,7 +202,7 @@ class HMMState:
 class LossNode:
     state_node: HMMState
     prev_end_loss_node: "LossNode | None"
-    loss: float = 1.0
+    loss: float
 
     def copying_update(
         self,
@@ -232,14 +232,14 @@ class LossNode:
 
 class HMM_Single:
     n_states: int
-    transition_matrix: FloatArray
+    transition_matrix: NDArray[np.float64]
     grouped_data: NDArray[np.int64]
     label: int
     states: list[HMMState]
-    _raw_data: List[FloatArray]
+    _raw_data: list[FloatArray]
     _slice_array: NDArray
 
-    def __init__(self, label: int, data: List[FloatArray], n_states=5, n_gaussians=4):
+    def __init__(self, label: int, data: list[FloatArray], n_states=5, n_gaussians=4):
         """
         Fits the model to the provided training data using segmental K-means.
 
@@ -253,7 +253,7 @@ class HMM_Single:
         self._raw_data = data
         self.n_states = n_states
         self.n_samples = len(data)
-        self.transition_matrix = np.zeros((n_states, n_states), dtype=np.float32)
+        self.transition_matrix = np.zeros((n_states, n_states))
         self.states = []
         parent = None
         for s in range(self.n_states):
@@ -273,7 +273,7 @@ class HMM_Single:
         prev_groups = None
         current_n_gaussians = 1
         while current_n_gaussians <= n_gaussians:
-            self._update_new(current_n_gaussians)
+            self._update(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self.grouped_data):
                 # Converge.
                 current_n_gaussians *= 2
@@ -286,21 +286,6 @@ class HMM_Single:
         )
 
     def _update(self, n_gaussians: int):
-        self._calculate_slice_array()
-        self._calculate_mean_variance(n_gaussians)
-        self._calculate_transition_matrix()
-        alignment_result = []
-        for i in range(self.n_samples):
-            a, _ = align_sequence(
-                self._raw_data[i], self.means, self.variances, self.transition_matrix
-            )
-            # print(a)
-            alignment_result.append(a)
-        self.grouped_data = np.array(
-            list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
-        )
-
-    def _update_new(self, n_gaussians: int):
         self._calculate_slice_array()
         self._calculate_mean_variance(n_gaussians)
         self._calculate_transition_matrix()
@@ -336,8 +321,6 @@ class HMM_Single:
                 list(map(lambda x: slice(*x), zip(group, group[1:])))
                 for group in self.grouped_data
             ],
-            # FIXME:
-            # dtype=np.float32,
         )
 
     def _calculate_mean_variance(self, n_gaussians: int):
@@ -385,7 +368,7 @@ class HMM_Single:
                     # careful when a state only has one associated frame
                     if d.shape[0] != 1
                     else np.eye(d.shape[1])
-                )
+                ).astype(np.float32)
                 for d in grouped_flat_state_data
             ]
 
@@ -399,7 +382,7 @@ class HMM_Single:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def predict_score(self, target: FloatArray) -> Tuple[List[int], np.float32]:
+    def predict_score(self, target: FloatArray):
         """
         Take a target sequence and return similarity with the training samples.
         """
@@ -421,7 +404,7 @@ class HMM:
         self,
         n_states=5,
         n_gaussians=4,
-        hmm_instances: List[HMM_Single] = [],
+        hmm_instances: list[HMM_Single] = [],
     ):
         self.n_states = n_states
         self.n_gaussians = n_gaussians
@@ -430,7 +413,7 @@ class HMM:
     def fit(
         self,
         templates_for_each_label: list[list[FloatArray]],
-        labels: List[int],
+        labels: list[int],
     ):
         """
         Fits the model to the given training data using segmental K-means.
@@ -468,7 +451,7 @@ class HMM:
     def from_template_file_names_and_labels(
         cls,
         template_file_names_for_each_label: list[list[str]],
-        labels: List[int],
+        labels: list[int],
         n_states=5,
         n_gaussians=4,
     ):
