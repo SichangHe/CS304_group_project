@@ -422,19 +422,16 @@ def single_hmm_w_template_file_names(
 
 
 class HMM:
-    labels: List[int]
 
     def __init__(
         self,
         n_states=5,
         n_gaussians=4,
         hmm_instances: List[HMM_Single] = [],
-        labels: list[int] = [],
     ):
         self.n_states = n_states
         self.n_gaussians = n_gaussians
         self._hmm_instances = hmm_instances
-        self.labels = labels
 
     def fit(
         self,
@@ -455,7 +452,6 @@ class HMM:
             Target vector relative to X.
         """
         assert len(templates_for_each_label) == len(labels)
-        self.labels = labels
 
         for templates, label in zip(templates_for_each_label, labels):
             debug(f"Calculating single HMM for number {label}.")
@@ -469,8 +465,7 @@ class HMM:
 
     def _predict(self, samples: FloatArray):
         scores = [
-            (hmm.predict_score(samples)[1], l)
-            for hmm, l in zip(self._hmm_instances, self.labels)
+            (hmm.predict_score(samples)[1], hmm.label) for hmm in self._hmm_instances
         ]
 
         return max(scores, key=lambda x: x[0])[1]
@@ -497,7 +492,6 @@ class HMM:
             n_states=n_states,
             n_gaussians=n_gaussians,
             hmm_instances=hmm_instances,
-            labels=labels,
         )
 
 
