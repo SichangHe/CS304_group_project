@@ -459,8 +459,7 @@ class HMM:
 
     def _predict(self, samples: FloatArray):
         losses = [
-            (hmm.predict_score(samples)[1], l)
-            for hmm, l in zip(self._hmm_instances, self.labels)
+            (hmm.predict_score(samples)[1], hmm.label) for hmm in self._hmm_instances
         ]
 
         return min(losses, key=lambda x: x[0])[1]
