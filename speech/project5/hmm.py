@@ -235,6 +235,7 @@ class HMM_Single:
     transition_matrix: FloatArray
     grouped_data: NDArray[np.int64]
     label: int
+    states: list[HMMState]
     _raw_data: List[FloatArray]
     _slice_array: NDArray
 
@@ -253,8 +254,20 @@ class HMM_Single:
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states), dtype=np.float32)
+        self.states = []
+        parent = None
+        for s in range(self.n_states):
+            state = HMMState(
+                parent=parent,
+                mean=[],
+                covariance=[],
+                transition={},
+                nth_state=s,
+                label=self.label,
+            )
+            parent = state
+            self.states.append(state)
 
-        self.means: list[list[FloatArray]] = []
         self._init()
 
         prev_groups = None
@@ -292,30 +305,16 @@ class HMM_Single:
         self._calculate_mean_variance(n_gaussians)
         self._calculate_transition_matrix()
 
-        assert self.n_states == len(self.means)
-        assert self.n_states == len(self.variances)
-
-        states: list[HMMState] = []
-        parent = None
         for s in range(self.n_states):
-            state = HMMState(
-                parent=parent,
-                mean=self.means[s],
-                covariance=self.variances[s],
-                transition={
-                    states[i]: v
-                    for i, v in enumerate(self.transition_matrix[s])
-                    if v > 0
-                },
-                nth_state=s,
-                label=self.label,
-            )
-            parent = state
-            states.append(state)
+            self.states[s].transition = {
+                self.states[i]: v
+                for i, v in enumerate(self.transition_matrix[s])
+                if v > 0
+            }
 
         alignment_result = []
         for i in range(self.n_samples):
-            a, _ = align_sequence_new(self._raw_data[i], states)
+            a, _ = align_sequence_new(self._raw_data[i], self.states)
             alignment_result.append(a)
         self.grouped_data = np.array(
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
@@ -337,15 +336,11 @@ class HMM_Single:
                 list(map(lambda x: slice(*x), zip(group, group[1:])))
                 for group in self.grouped_data
             ],
-            dtype=np.float32,
+            # FIXME:
+            # dtype=np.float32,
         )
 
     def _calculate_mean_variance(self, n_gaussians: int):
-        prev_means = self.means
-
-        self.means = []  # [(39,); n_gaussian; n_state]
-        self.variances = []
-
         for state in range(self.n_states):
             state_slices = self._slice_array[:, state]
             state_data = [d[s] for s, d in zip(state_slices, self._raw_data)]
@@ -357,7 +352,7 @@ class HMM_Single:
                 new_means = new_means[np.newaxis, :]
                 assert new_means.shape == (1, 39)
             else:
-                prev_means_for_state = np.asarray(prev_means[state])
+                prev_means_for_state = np.asarray(self.states[state].mean)
                 if prev_means_for_state.shape[0] == n_gaussians:
                     # Last iteration with the same `n_gaussians` did not converge
                     new_means = prev_means_for_state
@@ -393,8 +388,9 @@ class HMM_Single:
                 )
                 for d in grouped_flat_state_data
             ]
-            self.means.append(avg)
-            self.variances.append(var)
+
+            self.states[state].mean = avg
+            self.states[state].covariance = var
 
     def _calculate_transition_matrix(self):
         for i in range(self.n_states):
@@ -407,9 +403,7 @@ class HMM_Single:
         """
         Take a target sequence and return similarity with the training samples.
         """
-        return align_sequence(
-            target, self.means, self.variances, self.transition_matrix
-        )
+        return align_sequence_new(target, self.states)
 
 
 def single_hmm_w_template_file_names(
@@ -464,11 +458,12 @@ class HMM:
         return result
 
     def _predict(self, samples: FloatArray):
-        scores = [
-            (hmm.predict_score(samples)[1], hmm.label) for hmm in self._hmm_instances
+        losses = [
+            (hmm.predict_score(samples)[1], l)
+            for hmm, l in zip(self._hmm_instances, self.labels)
         ]
 
-        return max(scores, key=lambda x: x[0])[1]
+        return min(losses, key=lambda x: x[0])[1]
 
     @classmethod
     def from_template_file_names_and_labels(
