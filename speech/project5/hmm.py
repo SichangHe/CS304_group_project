@@ -124,6 +124,7 @@ class HMMState:
     weight: list[float]
     transition: dict["HMMState", float]
     """Transition probability"""
+    nth_state: int
     label: int | None
     """The digit associated with the state.
     `None` if the state is the first state."""
@@ -135,7 +136,9 @@ class HMMState:
 
     @classmethod
     def root(cls):
-        return cls(mean=[], covariance=[], transition={}, label=None)
+        return cls(
+            mean=[], covariance=[], transition={}, label=None, weight=[], nth_state=-1
+        )
 
     def __hash__(self) -> int:
         return id(self)
@@ -150,6 +153,7 @@ def clone_hmm_states(hmm_states: list[HMMState]):
             mean=state.mean,
             covariance=state.covariance,
             transition=state.transition,
+            nth_state=state,
             label=state.label,
             parent=state.parent,
         )
@@ -218,7 +222,9 @@ def align_sequence_new(
                 if combined_min_loss < round_min_loss + beam_width:
                     round_min_loss = min(round_min_loss, combined_min_loss)
                     new_loss_node = min_loss_node.copying_update(
-                        state_node=node, loss=combined_min_loss
+                        state_node=node,
+                        loss=combined_min_loss,
+                        prev_end_loss_node=prev_loss_node,
                     )
 
                     # TODO: Handle final HMMState node.
@@ -236,7 +242,7 @@ def align_sequence_new(
     maybe_prev_loss: LossNode | None = prev_losses[-1]
     alignment = []
     while maybe_prev_loss is not None:
-        alignment.append(maybe_prev_loss.state_node.label)
+        alignment.append(maybe_prev_loss.state_node.nth_state)
         maybe_prev_loss = maybe_prev_loss.prev_end_loss_node
 
     alignment.reverse()
@@ -317,6 +323,7 @@ class HMM_Single:
                 mean=[],
                 covariance=[],
                 transition={},
+                nth_state=state,
                 label=self.label,
             )
             parent = state

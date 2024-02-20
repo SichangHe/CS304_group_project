@@ -50,6 +50,8 @@ class TestAudio(unittest.TestCase):
             mean=[mean1],
             covariance=[np.diag(covariance.T)],
             transition={},
+            weight=[1, 1, 1, 1, 1],
+            nth_state=0,
         )
         n1 = HMMState(
             label=1,
@@ -57,6 +59,8 @@ class TestAudio(unittest.TestCase):
             mean=[mean2],
             covariance=[np.diag(covariance.T)],
             transition={},
+            weight=[1, 1, 1, 1, 1],
+            nth_state=1,
         )
         n2 = HMMState(
             label=2,
@@ -64,6 +68,8 @@ class TestAudio(unittest.TestCase):
             mean=[mean3],
             covariance=[np.diag(covariance.T)],
             transition={},
+            weight=[1, 1, 1, 1, 1],
+            nth_state=2,
         )
         n3 = HMMState(
             label=3,
@@ -71,6 +77,8 @@ class TestAudio(unittest.TestCase):
             mean=[mean4],
             covariance=[np.diag(covariance.T)],
             transition={},
+            weight=[1, 1, 1, 1, 1],
+            nth_state=3,
         )
         n4 = HMMState(
             label=4,
@@ -78,6 +86,8 @@ class TestAudio(unittest.TestCase):
             mean=[mean5],
             covariance=[np.diag(covariance.T)],
             transition={},
+            weight=[1, 1, 1, 1, 1],
+            nth_state=4,
         )
         root.transition = {n0: 1.0}
         n0.transition = {n0: 0.5, n1: 0.5}
