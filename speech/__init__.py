@@ -10,3 +10,4 @@ logging.basicConfig(level=os.environ.get("PYTHON_LOG", "WARN").upper())
 T = TypeVar("T")
 
 FloatArray = NDArray[np.float32]
+DoubleArray = NDArray[np.float64]

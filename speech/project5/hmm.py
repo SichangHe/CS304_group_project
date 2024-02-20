@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 from scipy.stats import multivariate_normal  # type: ignore
 from sklearn.cluster import KMeans  # type: ignore
 
-from speech import FloatArray
+from speech import DoubleArray, FloatArray
 from speech.project2.main import NUMBERS
 from speech.project3 import (
     HARD_TEMPLATE_INDEXES,
@@ -25,7 +25,7 @@ MINUS_INF = -INF_FLOAT32
 
 # TODO: Make a negative log version.
 def multivariate_gaussian_pdf_diag_cov(
-    x: FloatArray, mean: FloatArray, cov: FloatArray
+    x: FloatArray, mean: FloatArray, cov: DoubleArray
 ) -> np.float64:
     """
     Compute the probability density function (PDF) of a multivariate Gaussian distribution with a diagonal covariance matrix.
@@ -119,7 +119,7 @@ def align_sequence(sequence, means, covariances, transition_probs):
 class HMMState:
     means: list[FloatArray]
     """n_gaussians of mean vectors. Also used for K-means iteration."""
-    covariances: list[FloatArray]
+    covariances: list[DoubleArray]
     """n_gaussians of diagonal of covariance matrix"""
     weights: list[float]
     transition_loss: dict["HMMState", float]
@@ -595,7 +595,6 @@ class HMM:
         n_gaussians=4,
     ):
         assert len(template_file_names_for_each_label) == len(labels)
-        root = HMMState.root()
         hmm_instances = []
         for template_file_names, label in zip(
             template_file_names_for_each_label, labels
