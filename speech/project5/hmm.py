@@ -122,8 +122,6 @@ class HMMState:
     covariances: list[FloatArray]
     """n_gaussians of diagonal of covariance matrix"""
     weights: list[float]
-    transition: dict["HMMState", float]
-    """Transition probability"""
     transition_loss: dict["HMMState", float]
     """Negative log transition probability."""
     nth_state: int
@@ -142,7 +140,6 @@ class HMMState:
             means=[],
             covariances=[],
             weights=[],
-            transition={},
             transition_loss={},
             nth_state=-1,
             label=None,
@@ -163,7 +160,6 @@ def clone_hmm_states(hmm_states: list[HMMState]):
         new_state = HMMState(
             means=state.means,
             covariances=state.covariances,
-            transition=state.transition,
             transition_loss=state.transition_loss,
             nth_state=state.nth_state,
             weights=state.weights,
@@ -174,10 +170,6 @@ def clone_hmm_states(hmm_states: list[HMMState]):
         new_states.append(new_state)
 
     for new_state in new_states:
-        new_state.transition = {
-            state_map.get(state, state): prob
-            for state, prob in new_state.transition.items()
-        }
         new_state.transition_loss = {
             state_map.get(state, state): prob
             for state, prob in new_state.transition_loss.items()
@@ -399,7 +391,6 @@ class HMM_Single:
                 means=[],
                 covariances=[],
                 weights=[],
-                transition={},
                 transition_loss={},
                 nth_state=s,
                 label=self.label,
@@ -429,14 +420,6 @@ class HMM_Single:
         self._calculate_mean_variance(n_gaussians)
         self._calculate_transition_matrix()
 
-        for s in range(self.n_states):
-            self.states[s].transition = {
-                self.states[i]: v
-                for i, v in enumerate(self.transition_matrix[s])
-                if v > 0
-            }
-
-        # print(self.transition_matrix)
         for s in range(self.n_states):
             self.states[s].transition_loss = {
                 self.states[i]: -np.log(v)

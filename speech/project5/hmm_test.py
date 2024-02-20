@@ -50,7 +50,6 @@ class TestAudio(unittest.TestCase):
             means=[mean1],
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
-            transition={},
             transition_loss={},
             nth_state=0,
         )
@@ -60,7 +59,6 @@ class TestAudio(unittest.TestCase):
             means=[mean2],
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
-            transition={},
             transition_loss={},
             nth_state=1,
         )
@@ -70,7 +68,6 @@ class TestAudio(unittest.TestCase):
             means=[mean3],
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
-            transition={},
             transition_loss={},
             nth_state=2,
         )
@@ -80,7 +77,6 @@ class TestAudio(unittest.TestCase):
             means=[mean4],
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
-            transition={},
             transition_loss={},
             nth_state=3,
         )
@@ -90,7 +86,6 @@ class TestAudio(unittest.TestCase):
             means=[mean5],
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
-            transition={},
             transition_loss={},
             nth_state=4,
         )
