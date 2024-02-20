@@ -123,6 +123,7 @@ class HMMState:
     weights: list[float]
     transition: dict["HMMState", float]
     """Transition probability"""
+    log_transition_transposed: dict["HMMState", float]
     nth_state: int
     label: int | None
     """The digit associated with the state.
@@ -140,6 +141,7 @@ class HMMState:
             covariances=[],
             weights=[],
             transition={},
+            log_transition_transposed={},
             nth_state=-1,
             label=None,
         )
@@ -259,8 +261,8 @@ def align_sequence_train(
     np.seterr(divide="ignore")
 
     # initialize prev_losses with first state
-    prev_losses: list[LossNode] = [
-        LossNode(
+    prev_losses: dict[HMMState, LossNode] = {
+        hmm_states[0]: LossNode(
             state_node=hmm_states[0],
             prev_end_loss_node=None,
             loss=-(
@@ -279,42 +281,44 @@ def align_sequence_train(
                 )
             ),
         )
-    ]
+    }
 
-    current_losses: list[LossNode] = []
+    current_losses: dict[HMMState, LossNode] = {}
     for t in range(1, sequence_length):
-        current_losses = []
+        current_losses = {}
         for node in hmm_states:
             combined_losses: list[tuple[LossNode, float]] = []
-
-            # TODO: Optimize by skipping calculations when not needed.
-            for prev_loss in prev_losses:
-                if transition_probability := prev_loss.state_node.transition.get(node):
-                    combined_losses.append(
-                        (prev_loss, -np.log(transition_probability) + prev_loss.loss)
-                    )
-            emission_loss = -max(
-                np.log(
-                    multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
-                )
-                + np.log(weight)
-                for mean, cov, weight in zip(node.means, node.covariances, node.weights)
-            )
+            for k, v in node.log_transition_transposed.items():
+                if l := prev_losses.get(k):
+                    combined_losses.append((l, -v + l.loss))
 
             if len(combined_losses) > 0:
-                best_loss_node, min_loss = min(combined_losses, key=lambda x: x[1])
-                current_losses.append(
-                    LossNode(
-                        state_node=node,
-                        prev_end_loss_node=best_loss_node,
-                        loss=min_loss + emission_loss,
+                emission_loss = -max(
+                    np.log(
+                        multivariate_gaussian_pdf_diag_cov(
+                            sequence[t], mean=mean, cov=cov
+                        )
                     )
+                    + np.log(weight)
+                    for mean, cov, weight in zip(
+                        node.means, node.covariances, node.weights
+                    )
+                )
+                best_loss_node, min_loss = min(combined_losses, key=lambda x: x[1])
+                current_losses.update(
+                    {
+                        node: LossNode(
+                            state_node=node,
+                            prev_end_loss_node=best_loss_node,
+                            loss=min_loss + emission_loss,
+                        )
+                    }
                 )
 
         prev_losses = current_losses
 
     # backtrack
-    prev_loss = current_losses[-1]
+    prev_loss = list(current_losses.values())[-1]
     alignment = [prev_loss.state_node.nth_state]
     while maybe_prev := prev_loss.prev_end_loss_node:
         prev_loss = maybe_prev
@@ -322,7 +326,7 @@ def align_sequence_train(
 
     alignment.reverse()
 
-    return alignment, current_losses[-1].loss
+    return alignment, list(current_losses.values())[-1].loss
 
 
 @dataclass
@@ -397,6 +401,7 @@ class HMM_Single:
                 covariances=[],
                 weights=[],
                 transition={},
+                log_transition_transposed={},
                 nth_state=s,
                 label=self.label,
             )
@@ -429,6 +434,14 @@ class HMM_Single:
             self.states[s].transition = {
                 self.states[i]: v
                 for i, v in enumerate(self.transition_matrix[s])
+                if v > 0
+            }
+
+        # print(self.transition_matrix)
+        for s in range(self.n_states):
+            self.states[s].log_transition_transposed = {
+                self.states[i]: np.log(v)
+                for i, v in enumerate(self.transition_matrix[:, s])
                 if v > 0
             }
 

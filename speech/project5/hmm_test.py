@@ -44,7 +44,6 @@ class TestAudio(unittest.TestCase):
         print(score)
         print(alignment)
 
-        root = HMMState.root()
         n0 = HMMState(
             label=None,
             parent=None,
@@ -52,6 +51,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
+            log_transition_transposed={},
             nth_state=0,
         )
         n1 = HMMState(
@@ -61,6 +61,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
+            log_transition_transposed={},
             nth_state=1,
         )
         n2 = HMMState(
@@ -70,6 +71,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
+            log_transition_transposed={},
             nth_state=2,
         )
         n3 = HMMState(
@@ -79,6 +81,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
+            log_transition_transposed={},
             nth_state=3,
         )
         n4 = HMMState(
@@ -88,14 +91,14 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
+            log_transition_transposed={},
             nth_state=4,
         )
-        root.transition = {n0: 1.0}
-        n0.transition = {n0: 0.5, n1: 0.5}
-        n1.transition = {n1: 0.5, n2: 0.5}
-        n2.transition = {n2: 0.5, n3: 0.5}
-        n3.transition = {n3: 0.5, n4: 0.5}
-        n4.transition = {n4: 0.5}
+        n0.log_transition_transposed = {n0: 0.5}
+        n1.log_transition_transposed = {n1: 0.5, n0: 0.5}
+        n2.log_transition_transposed = {n2: 0.5, n1: 0.5}
+        n3.log_transition_transposed = {n3: 0.5, n2: 0.5}
+        n4.log_transition_transposed = {n4: 0.5, n3: 0.5}
         n1.parent = n0
         n2.parent = n1
         n3.parent = n2
