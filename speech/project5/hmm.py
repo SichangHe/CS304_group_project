@@ -205,6 +205,7 @@ def _align_sequence_and_hmm_states(
                             min_loss_node = prev_loss_node
             if min_loss_node is not None and min_loss < round_min_loss + beam_width:
                 # weighted gaussians
+                # TODO: Should this be `max`?
                 emission_loss = -sum(
                     np.log(
                         multivariate_gaussian_pdf_diag_cov(
