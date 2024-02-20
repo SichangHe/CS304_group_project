@@ -51,7 +51,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
-            log_transition_transposed={},
+            transition_loss={},
             nth_state=0,
         )
         n1 = HMMState(
@@ -61,7 +61,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
-            log_transition_transposed={},
+            transition_loss={},
             nth_state=1,
         )
         n2 = HMMState(
@@ -71,7 +71,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
-            log_transition_transposed={},
+            transition_loss={},
             nth_state=2,
         )
         n3 = HMMState(
@@ -81,7 +81,7 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
-            log_transition_transposed={},
+            transition_loss={},
             nth_state=3,
         )
         n4 = HMMState(
@@ -91,14 +91,14 @@ class TestAudio(unittest.TestCase):
             covariances=[np.diag(covariance.T)],
             weights=[1.0],
             transition={},
-            log_transition_transposed={},
+            transition_loss={},
             nth_state=4,
         )
-        n0.log_transition_transposed = {n0: 0.5}
-        n1.log_transition_transposed = {n1: 0.5, n0: 0.5}
-        n2.log_transition_transposed = {n2: 0.5, n1: 0.5}
-        n3.log_transition_transposed = {n3: 0.5, n2: 0.5}
-        n4.log_transition_transposed = {n4: 0.5, n3: 0.5}
+        n0.transition_loss = {n0: 0.5}
+        n1.transition_loss = {n1: 0.5, n0: 0.5}
+        n2.transition_loss = {n2: 0.5, n1: 0.5}
+        n3.transition_loss = {n3: 0.5, n2: 0.5}
+        n4.transition_loss = {n4: 0.5, n3: 0.5}
         n1.parent = n0
         n2.parent = n1
         n3.parent = n2
@@ -108,6 +108,7 @@ class TestAudio(unittest.TestCase):
         alignment2, score2 = align_sequence_train(samples[0:40], states)
         print("Alignment and score with new implementation:")
         pprint(alignment2)
+        print(score2)
 
 
 unittest.main() if __name__ == "__main__" else None

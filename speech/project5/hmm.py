@@ -23,6 +23,7 @@ from speech.project3 import (
 MINUS_INF = -INF_FLOAT32
 
 
+# TODO: Make a negative log version.
 def multivariate_gaussian_pdf_diag_cov(
     x: FloatArray, mean: FloatArray, cov: FloatArray
 ) -> np.float64:
@@ -123,7 +124,8 @@ class HMMState:
     weights: list[float]
     transition: dict["HMMState", float]
     """Transition probability"""
-    log_transition_transposed: dict["HMMState", float]
+    transition_loss: dict["HMMState", float]
+    """Negative log transition probability."""
     nth_state: int
     label: int | None
     """The digit associated with the state.
@@ -141,7 +143,7 @@ class HMMState:
             covariances=[],
             weights=[],
             transition={},
-            log_transition_transposed={},
+            transition_loss={},
             nth_state=-1,
             label=None,
         )
@@ -162,6 +164,7 @@ def clone_hmm_states(hmm_states: list[HMMState]):
             means=state.means,
             covariances=state.covariances,
             transition=state.transition,
+            transition_loss=state.transition_loss,
             nth_state=state.nth_state,
             weights=state.weights,
             label=state.label,
@@ -175,6 +178,10 @@ def clone_hmm_states(hmm_states: list[HMMState]):
             state_map.get(state, state): prob
             for state, prob in new_state.transition.items()
         }
+        new_state.transition_loss = {
+            state_map.get(state, state): prob
+            for state, prob in new_state.transition_loss.items()
+        }
         if new_state.parent is not None:
             new_state.parent = state_map.get(new_state.parent, new_state.parent)
 
@@ -186,15 +193,15 @@ def _align_sequence_and_hmm_states(
     beam_width=1000.0,
 ):
     """align a sequence vs a hmm model"""
-    sequence_length = len(sequence)
-
     np.seterr(divide="ignore")
 
     # Similar to `Trie._match_word`.
-    prev_losses: list[LossNode] = [LossNode(state_node=root_state)]
+    prev_losses: dict[HMMState, LossNode] = {
+        root_state: LossNode(state_node=root_state)
+    }
 
-    for t in range(sequence_length):
-        current_losses: list[LossNode] = []
+    for index, sample in enumerate(sequence):
+        current_losses: dict[HMMState, LossNode] = {}
         round_min_loss = np.inf
 
         for node in hmm_states:
@@ -202,26 +209,19 @@ def _align_sequence_and_hmm_states(
             min_loss = np.inf
             min_loss_node: LossNode | None = None
 
-            for prev_loss_node in prev_losses:
-                if transition_probability := prev_loss_node.state_node.transition.get(
-                    node
-                ):
-                    if prev_loss_node.loss < min_loss:
-                        # TODO: Just have a negative log loss matrix, bro.
-                        accumulated_loss = (
-                            -np.log(transition_probability) + prev_loss_node.loss
-                        )
-                        if accumulated_loss < min_loss:
-                            min_loss = accumulated_loss
-                            min_loss_node = prev_loss_node
+            for from_node, cost in node.transition_loss.items():
+                if prev_loss_node := prev_losses.get(from_node):
+                    accumulated_loss = -cost + prev_loss_node.loss
+                    if accumulated_loss < min_loss:
+                        min_loss = accumulated_loss
+                        min_loss_node = prev_loss_node
+
             if min_loss_node is not None and min_loss < round_min_loss + beam_width:
                 # weighted gaussians
                 # TODO: Should this be `max`?
                 emission_loss = -sum(
                     np.log(
-                        multivariate_gaussian_pdf_diag_cov(
-                            sequence[t], mean=mean, cov=cov
-                        )
+                        multivariate_gaussian_pdf_diag_cov(sample, mean=mean, cov=cov)
                     )
                     + np.log(weight)
                     for mean, cov, weight in zip(
@@ -235,18 +235,17 @@ def _align_sequence_and_hmm_states(
                     new_loss_node = min_loss_node.copying_update(
                         state_node=node,
                         loss=combined_min_loss,
-                        prev_end_loss_node=prev_loss_node,
                     )
 
-                    # TODO: Handle final HMMState node.
-                    current_losses.append(new_loss_node)
+                    # TODO: Handle final HMMState node (use `index`).
+                    current_losses[node] = new_loss_node
 
         round_threshold = round_min_loss + beam_width
-        prev_losses = [
-            loss_node
-            for loss_node in current_losses
+        prev_losses = {
+            node: loss_node
+            for node, loss_node in current_losses.items()
             if loss_node.loss <= round_threshold
-        ]
+        }
 
     return prev_losses
 
@@ -288,9 +287,9 @@ def align_sequence_train(
         current_losses = {}
         for node in hmm_states:
             combined_losses: list[tuple[LossNode, float]] = []
-            for k, v in node.log_transition_transposed.items():
+            for k, v in node.transition_loss.items():
                 if l := prev_losses.get(k):
-                    combined_losses.append((l, -v + l.loss))
+                    combined_losses.append((l, v + l.loss))
 
             if len(combined_losses) > 0:
                 emission_loss = -max(
@@ -401,7 +400,7 @@ class HMM_Single:
                 covariances=[],
                 weights=[],
                 transition={},
-                log_transition_transposed={},
+                transition_loss={},
                 nth_state=s,
                 label=self.label,
             )
@@ -439,8 +438,8 @@ class HMM_Single:
 
         # print(self.transition_matrix)
         for s in range(self.n_states):
-            self.states[s].log_transition_transposed = {
-                self.states[i]: np.log(v)
+            self.states[s].transition_loss = {
+                self.states[i]: -np.log(v)
                 for i, v in enumerate(self.transition_matrix[:, s])
                 if v > 0
             }
