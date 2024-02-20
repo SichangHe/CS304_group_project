@@ -1,6 +1,7 @@
 """Run with `python3 -m speech.project5.hmm_test`."""
 
 import unittest
+from pprint import pprint
 
 import numpy as np
 
@@ -47,46 +48,46 @@ class TestAudio(unittest.TestCase):
         n0 = HMMState(
             label=None,
             parent=None,
-            mean=[mean1],
-            covariance=[np.diag(covariance.T)],
+            means=[mean1],
+            covariances=[np.diag(covariance.T)],
+            weights=[1.0],
             transition={},
-            weight=[1, 1, 1, 1, 1],
             nth_state=0,
         )
         n1 = HMMState(
             label=1,
             parent=None,
-            mean=[mean2],
-            covariance=[np.diag(covariance.T)],
+            means=[mean2],
+            covariances=[np.diag(covariance.T)],
+            weights=[1.0],
             transition={},
-            weight=[1, 1, 1, 1, 1],
             nth_state=1,
         )
         n2 = HMMState(
             label=2,
             parent=None,
-            mean=[mean3],
-            covariance=[np.diag(covariance.T)],
+            means=[mean3],
+            covariances=[np.diag(covariance.T)],
+            weights=[1.0],
             transition={},
-            weight=[1, 1, 1, 1, 1],
             nth_state=2,
         )
         n3 = HMMState(
             label=3,
             parent=None,
-            mean=[mean4],
-            covariance=[np.diag(covariance.T)],
+            means=[mean4],
+            covariances=[np.diag(covariance.T)],
+            weights=[1.0],
             transition={},
-            weight=[1, 1, 1, 1, 1],
             nth_state=3,
         )
         n4 = HMMState(
             label=4,
             parent=None,
-            mean=[mean5],
-            covariance=[np.diag(covariance.T)],
+            means=[mean5],
+            covariances=[np.diag(covariance.T)],
+            weights=[1.0],
             transition={},
-            weight=[1, 1, 1, 1, 1],
             nth_state=4,
         )
         root.transition = {n0: 1.0}
@@ -103,8 +104,7 @@ class TestAudio(unittest.TestCase):
 
         alignment2, score2 = align_sequence_train(samples[0:40], states)
         print("Alignment and score with new implementation:")
-        print(score2)
-        print(alignment2)
+        pprint(alignment2)
 
 
 unittest.main() if __name__ == "__main__" else None

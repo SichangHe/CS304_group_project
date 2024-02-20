@@ -3,7 +3,6 @@
 import argparse
 from dataclasses import dataclass
 from logging import debug
-from typing import Iterable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -117,11 +116,11 @@ def align_sequence(sequence, means, covariances, transition_probs):
 
 @dataclass
 class HMMState:
-    mean: list[FloatArray]
-    """n_gaussians of mean vectors."""
-    covariance: list[FloatArray]
+    means: list[FloatArray]
+    """n_gaussians of mean vectors. Also used for K-means iteration."""
+    covariances: list[FloatArray]
     """n_gaussians of diagonal of covariance matrix"""
-    weight: list[float]
+    weights: list[float]
     transition: dict["HMMState", float]
     """Transition probability"""
     nth_state: int
@@ -132,16 +131,24 @@ class HMMState:
     """The state is the first state if the `parent` is `None`."""
 
     def is_non_emiting(self):
-        return len(self.mean) == 0
+        return len(self.means) == 0
 
     @classmethod
     def root(cls):
         return cls(
-            mean=[], covariance=[], transition={}, label=None, weight=[], nth_state=-1
+            means=[],
+            covariances=[],
+            weights=[],
+            transition={},
+            nth_state=-1,
+            label=None,
         )
 
     def __hash__(self) -> int:
         return id(self)
+
+    def __repr__(self) -> str:
+        return f"HMMState{id(self)}(`{self.label}` with {len(self.means)} Gaussians)"
 
 
 def clone_hmm_states(hmm_states: list[HMMState]):
@@ -150,10 +157,11 @@ def clone_hmm_states(hmm_states: list[HMMState]):
     new_states: list[HMMState] = []
     for state in hmm_states:
         new_state = HMMState(
-            mean=state.mean,
-            covariance=state.covariance,
+            means=state.means,
+            covariances=state.covariances,
             transition=state.transition,
-            nth_state=state,
+            nth_state=state.nth_state,
+            weights=state.weights,
             label=state.label,
             parent=state.parent,
         )
@@ -169,7 +177,7 @@ def clone_hmm_states(hmm_states: list[HMMState]):
             new_state.parent = state_map.get(new_state.parent, new_state.parent)
 
 
-def align_sequence_new(
+def _align_sequence_and_hmm_states(
     sequence: FloatArray,
     root_state: HMMState,
     hmm_states: list[HMMState],
@@ -206,6 +214,7 @@ def align_sequence_new(
                             min_loss_node = prev_loss_node
             if min_loss_node is not None and min_loss < round_min_loss + beam_width:
                 # weighted gaussians
+                # TODO: Should this be `max`?
                 emission_loss = -sum(
                     np.log(
                         multivariate_gaussian_pdf_diag_cov(
@@ -214,7 +223,7 @@ def align_sequence_new(
                     )
                     + np.log(weight)
                     for mean, cov, weight in zip(
-                        node.mean, node.covariance, node.weight
+                        node.means, node.covariances, node.weights
                     )
                 )
 
@@ -237,17 +246,7 @@ def align_sequence_new(
             if loss_node.loss <= round_threshold
         ]
 
-    # TODO: Similar to `Trie.match_word_single`.
-    # What is this? Getting [-1] is obviously wrong.
-    maybe_prev_loss: LossNode | None = prev_losses[-1]
-    alignment = []
-    while maybe_prev_loss is not None:
-        alignment.append(maybe_prev_loss.state_node.nth_state)
-        maybe_prev_loss = maybe_prev_loss.prev_end_loss_node
-
-    alignment.reverse()
-
-    return alignment, prev_losses[-1].loss
+    return prev_losses
 
 
 def align_sequence_train(
@@ -264,10 +263,19 @@ def align_sequence_train(
         LossNode(
             state_node=hmm_states[0],
             prev_end_loss_node=None,
-            loss=-np.log(
+            loss=-(
                 max(
-                    multivariate_gaussian_pdf_diag_cov(sequence[0], mean=mean, cov=cov)
-                    for mean, cov in zip(hmm_states[0].mean, hmm_states[0].covariance)
+                    np.log(
+                        multivariate_gaussian_pdf_diag_cov(
+                            sequence[0], mean=mean, cov=cov
+                        )
+                    )
+                    + np.log(weight)
+                    for mean, cov, weight in zip(
+                        hmm_states[0].means,
+                        hmm_states[0].covariances,
+                        hmm_states[0].weights,
+                    )
                 )
             ),
         )
@@ -290,7 +298,7 @@ def align_sequence_train(
                     multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
                 )
                 + np.log(weight)
-                for mean, cov, weight in zip(node.mean, node.covariance, node.weight)
+                for mean, cov, weight in zip(node.means, node.covariances, node.weights)
             )
 
             if len(combined_losses) > 0:
@@ -385,12 +393,12 @@ class HMM_Single:
         for s in range(self.n_states):
             state = HMMState(
                 parent=parent,
-                mean=[],
-                covariance=[],
+                means=[],
+                covariances=[],
+                weights=[],
                 transition={},
                 nth_state=s,
                 label=self.label,
-                weight=[],
             )
             parent = state
             self.states.append(state)
@@ -462,7 +470,7 @@ class HMM_Single:
                 new_means = new_means[np.newaxis, :]
                 assert new_means.shape == (1, 39)
             else:
-                prev_means_for_state = np.asarray(self.states[state].mean)
+                prev_means_for_state = np.asarray(self.states[state].means)
                 if prev_means_for_state.shape[0] == n_gaussians:
                     # Last iteration with the same `n_gaussians` did not converge
                     new_means = prev_means_for_state
@@ -502,9 +510,9 @@ class HMM_Single:
                 for d in grouped_flat_state_data
             ]
 
-            self.states[state].mean = avg
-            self.states[state].covariance = var
-            self.states[state].weight = weights
+            self.states[state].means = avg
+            self.states[state].covariances = var
+            self.states[state].weights = weights
 
     def _calculate_transition_matrix(self):
         for i in range(self.n_states):
@@ -580,6 +588,7 @@ class HMM:
             (hmm.predict_score(samples)[1], hmm.label) for hmm in self._hmm_instances
         ]
 
+        # TODO: Doublecheck.
         return min(losses, key=lambda x: x[0])[1]
 
     @classmethod
