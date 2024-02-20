@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from speech.project5.hmm import HMMState, align_sequence, align_sequence_new
+from speech.project5.hmm import HMMState, align_sequence, align_sequence_train
 
 
 class TestAudio(unittest.TestCase):
@@ -101,7 +101,7 @@ class TestAudio(unittest.TestCase):
         n4.parent = n3
         states = [n0, n1, n2, n3, n4]
 
-        alignment2, score2 = align_sequence_new(samples[0:40], root, states)
+        alignment2, score2 = align_sequence_train(samples[0:40], states)
         print("Alignment and score with new implementation:")
         print(score2)
         print(alignment2)

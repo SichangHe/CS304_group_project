@@ -250,6 +250,73 @@ def align_sequence_new(
     return alignment, prev_losses[-1].loss
 
 
+def align_sequence_train(
+    sequence: FloatArray,
+    hmm_states: list[HMMState],
+):
+    """align a sequence vs a hmm model"""
+    sequence_length = len(sequence)
+
+    np.seterr(divide="ignore")
+
+    # initialize prev_losses with first state
+    prev_losses: list[LossNode] = [
+        LossNode(
+            state_node=hmm_states[0],
+            prev_end_loss_node=None,
+            loss=-np.log(
+                max(
+                    multivariate_gaussian_pdf_diag_cov(sequence[0], mean=mean, cov=cov)
+                    for mean, cov in zip(hmm_states[0].mean, hmm_states[0].covariance)
+                )
+            ),
+        )
+    ]
+
+    current_losses: list[LossNode] = []
+    for t in range(1, sequence_length):
+        current_losses = []
+        for node in hmm_states:
+            combined_losses: list[tuple[LossNode, float]] = []
+
+            # TODO: Optimize by skipping calculations when not needed.
+            for prev_loss in prev_losses:
+                if transition_probability := prev_loss.state_node.transition.get(node):
+                    combined_losses.append(
+                        (prev_loss, -np.log(transition_probability) + prev_loss.loss)
+                    )
+            emission_loss = -max(
+                np.log(
+                    multivariate_gaussian_pdf_diag_cov(sequence[t], mean=mean, cov=cov)
+                )
+                + np.log(weight)
+                for mean, cov, weight in zip(node.mean, node.covariance, node.weight)
+            )
+
+            if len(combined_losses) > 0:
+                best_loss_node, min_loss = min(combined_losses, key=lambda x: x[1])
+                current_losses.append(
+                    LossNode(
+                        state_node=node,
+                        prev_end_loss_node=best_loss_node,
+                        loss=min_loss + emission_loss,
+                    )
+                )
+
+        prev_losses = current_losses
+
+    # backtrack
+    prev_loss = current_losses[-1]
+    alignment = [prev_loss.state_node.nth_state]
+    while maybe_prev := prev_loss.prev_end_loss_node:
+        prev_loss = maybe_prev
+        alignment.append(prev_loss.state_node.nth_state)
+
+    alignment.reverse()
+
+    return alignment, current_losses[-1].loss
+
+
 @dataclass
 class LossNode:
     state_node: HMMState
@@ -296,7 +363,6 @@ class HMM_Single:
         self,
         label: int,
         data: list[FloatArray],
-        root: HMMState,
         n_states=5,
         n_gaussians=4,
     ):
@@ -311,25 +377,23 @@ class HMM_Single:
         """
         self.label = label
         self._raw_data = data
-        self.root = root
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
         self.states = []
-        parent = root
-        for _ in range(self.n_states):
+        parent = None
+        for s in range(self.n_states):
             state = HMMState(
                 parent=parent,
                 mean=[],
                 covariance=[],
                 transition={},
-                nth_state=state,
+                nth_state=s,
                 label=self.label,
+                weight=[],
             )
             parent = state
             self.states.append(state)
-        # `root` transit to to start state cost-free.
-        root.transition[self.states[0]] = 1.0
 
         self._init()
 
@@ -362,7 +426,7 @@ class HMM_Single:
 
         alignment_result = []
         for i in range(self.n_samples):
-            a, _ = align_sequence_new(self._raw_data[i], self.root, self.states)
+            a, _ = align_sequence_train(self._raw_data[i], self.states)
             alignment_result.append(a)
         self.grouped_data = np.array(
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
@@ -434,7 +498,7 @@ class HMM_Single:
                     # careful when a state only has one associated frame
                     if d.shape[0] != 1
                     else np.eye(d.shape[1])
-                ).astype(np.float32)
+                )
                 for d in grouped_flat_state_data
             ]
 
@@ -454,12 +518,11 @@ class HMM_Single:
         """
         Take a target sequence and return similarity with the training samples.
         """
-        return align_sequence_new(target, self.root, self.states)
+        return align_sequence_train(target, self.states)
 
 
 def single_hmm_w_template_file_names(
     label: int,
-    root: HMMState,
     template_file_names: list[str],
     n_states: int,
     n_gaussians: int,
@@ -467,7 +530,7 @@ def single_hmm_w_template_file_names(
     template_mfcc_s = [
         boosted_mfcc_from_file(file_name) for file_name in template_file_names
     ]
-    return HMM_Single(label, template_mfcc_s, root, n_states, n_gaussians)
+    return HMM_Single(label, template_mfcc_s, n_states, n_gaussians)
 
 
 class HMM:
@@ -477,9 +540,7 @@ class HMM:
         n_states=5,
         n_gaussians=4,
         hmm_instances: list[HMM_Single] = [],
-        root=HMMState.root(),
     ):
-        self.root = root
         self.n_states = n_states
         self.n_gaussians = n_gaussians
         self._hmm_instances = hmm_instances
@@ -506,9 +567,7 @@ class HMM:
 
         for templates, label in zip(templates_for_each_label, labels):
             debug(f"Calculating single HMM for number {label}.")
-            hmm = HMM_Single(
-                label, templates, self.root, self.n_states, self.n_gaussians
-            )
+            hmm = HMM_Single(label, templates, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
 
     def predict(self, test_samples_list: list[FloatArray]):
@@ -539,14 +598,13 @@ class HMM:
         ):
             debug(f"Calculating single HMM for number {label}.")
             hmm_single = single_hmm_w_template_file_names(
-                label, root, template_file_names, n_states, n_gaussians
+                label, template_file_names, n_states, n_gaussians
             )
             hmm_instances.append(hmm_single)
         return cls(
             n_states=n_states,
             n_gaussians=n_gaussians,
             hmm_instances=hmm_instances,
-            root=root,
         )
 
 
