@@ -129,12 +129,39 @@ class HMMState:
     parent: "HMMState | None" = None
     """The state is the first state if the `parent` is `None`."""
 
+    def is_non_emiting(self):
+        return len(self.mean) == 0
+
     @classmethod
     def root(cls):
         return cls(mean=[], covariance=[], transition={}, label=None)
 
     def __hash__(self) -> int:
         return id(self)
+
+
+def clone_hmm_states(hmm_states: list[HMMState]):
+    """Clone a series of HMMStates preserving their relationships."""
+    state_map: dict[HMMState, HMMState] = {}
+    new_states: list[HMMState] = []
+    for state in hmm_states:
+        new_state = HMMState(
+            mean=state.mean,
+            covariance=state.covariance,
+            transition=state.transition,
+            label=state.label,
+            parent=state.parent,
+        )
+        state_map[state] = new_state
+        new_states.append(new_state)
+
+    for new_state in new_states:
+        new_state.transition = {
+            state_map.get(state, state): prob
+            for state, prob in new_state.transition.items()
+        }
+        if new_state.parent is not None:
+            new_state.parent = state_map.get(new_state.parent, new_state.parent)
 
 
 def align_sequence_new(
