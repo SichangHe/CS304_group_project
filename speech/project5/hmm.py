@@ -121,6 +121,7 @@ class HMMState:
     """n_gaussians of mean vectors."""
     covariance: list[FloatArray]
     """n_gaussians of diagonal of covariance matrix"""
+    weight: list[float]
     transition: dict["HMMState", float]
     """Transition probability"""
     label: int | None
@@ -200,14 +201,19 @@ def align_sequence_new(
                             min_loss = accumulated_loss
                             min_loss_node = prev_loss_node
             if min_loss_node is not None and min_loss < round_min_loss + beam_width:
-                emission_loss = -np.log(
-                    max(
+                # weighted gaussians
+                emission_loss = -sum(
+                    np.log(
                         multivariate_gaussian_pdf_diag_cov(
                             sequence[t], mean=mean, cov=cov
                         )
-                        for mean, cov in zip(node.mean, node.covariance)
+                    )
+                    + np.log(weight)
+                    for mean, cov, weight in zip(
+                        node.mean, node.covariance, node.weight
                     )
                 )
+
                 combined_min_loss = min_loss + emission_loss
                 if combined_min_loss < round_min_loss + beam_width:
                     round_min_loss = min(round_min_loss, combined_min_loss)
@@ -401,10 +407,13 @@ class HMM_Single:
             assert new_means.shape == (n_gaussians, 39), new_means.shape
             kmeans = KMeans(n_clusters=n_gaussians, init=new_means)  # type: ignore
             kmeans = kmeans.fit(flat_state_data)
-            labels: Iterable[int] | None = kmeans.labels_
+            labels: NDArray[np.int32] | None = kmeans.labels_
             assert labels is not None
             groups = [
                 [True if _ == i else False for _ in labels] for i in range(n_gaussians)
+            ]
+            weights = [
+                list(labels).count(elem) / len(labels) for elem in range(n_gaussians)
             ]
             grouped_flat_state_data = [
                 flat_state_data[g] for g in groups
@@ -424,6 +433,7 @@ class HMM_Single:
 
             self.states[state].mean = avg
             self.states[state].covariance = var
+            self.states[state].weight = weights
 
     def _calculate_transition_matrix(self):
         for i in range(self.n_states):
