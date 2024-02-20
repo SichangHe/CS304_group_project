@@ -121,7 +121,7 @@ class HMMState:
     """n_gaussians of mean vectors."""
     covariance: list[FloatArray]
     """n_gaussians of diagonal of covariance matrix"""
-    weight: list[float]
+    weights: list[float]
     transition: dict["HMMState", float]
     """Transition probability"""
     label: int | None
@@ -150,6 +150,7 @@ def clone_hmm_states(hmm_states: list[HMMState]):
             mean=state.mean,
             covariance=state.covariance,
             transition=state.transition,
+            weights=state.weights,
             label=state.label,
             parent=state.parent,
         )
@@ -210,7 +211,7 @@ def align_sequence_new(
                     )
                     + np.log(weight)
                     for mean, cov, weight in zip(
-                        node.mean, node.covariance, node.weight
+                        node.mean, node.covariance, node.weights
                     )
                 )
 
@@ -433,7 +434,7 @@ class HMM_Single:
 
             self.states[state].mean = avg
             self.states[state].covariance = var
-            self.states[state].weight = weights
+            self.states[state].weights = weights
 
     def _calculate_transition_matrix(self):
         for i in range(self.n_states):
