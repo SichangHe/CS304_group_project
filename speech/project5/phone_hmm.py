@@ -15,22 +15,22 @@ def build_hmm_graph(digit_hmms: list[HMM_Single], silence_hmm_state: HMMState):
             for hmm_single in digit_hmms
             if (hmm_single.label is not None and hmm_single.label > 1)
         ]
-    ] + [
+    ] + [  # Other digits.
         [clone_hmm_states(hmm_single.states) for hmm_single in digit_hmms]
         for _ in range(7)
-    ]  # Other digits.
+    ]
 
-    # TODO: Handle silence around non_emitting_states[3]
+    # Handle silence around non_emitting_states[3]
     # Jump from non_emitting_states[3] to the silence state and back.
     silence_hmm_state.transition_loss[non_emitting_states[3]] = 0
-    for digit_states in digit_state_layers[4]:
-        digit_states[0].transition_loss[silence_hmm_state] = silence_hmm_state.exit_loss
+    non_emitting_states[3].transition_loss[
+        silence_hmm_state
+    ] = silence_hmm_state.exit_loss
 
     for prev_non_emitting_state, digit_state_layer, next_non_emitting_state in zip(
         non_emitting_states, digit_state_layers, non_emitting_states[1:]
     ):
         for digit_states in digit_state_layer:
-            # TODO: Add transition loss between non-emitting states and digit states.
             digit_states[0].transition_loss[prev_non_emitting_state] = 0.0
             next_non_emitting_state.transition_loss[digit_states[-1]] = digit_states[
                 -1

@@ -74,10 +74,10 @@ def build_digit_hmms():
 
 def main() -> None:
     digit_hmms = build_digit_hmms()
-    silence_single_hmms = load_silence_hmms()
+    silence_single_hmm = load_silence_hmms()
 
     non_emitting_states, emitting_states = build_hmm_graph(
-        digit_hmms, silence_single_hmms
+        digit_hmms, silence_single_hmm
     )
     debug(
         "non_emitting_states=%s",
