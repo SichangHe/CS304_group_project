@@ -279,7 +279,7 @@ def _align_sequence_and_hmm_states(
         debug("intermediate_losses=%s", intermediate_losses)
         for state, intermediate_loss in intermediate_losses.items():
             if (
-                prev_losses.get(state) is None
+                prev_losses.get(state) is None # beginning state
                 or intermediate_loss.loss < prev_losses[state].loss
             ):
                 prev_losses[state] = intermediate_loss
