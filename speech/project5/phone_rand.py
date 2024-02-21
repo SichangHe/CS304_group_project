@@ -1,6 +1,8 @@
 """Recognize 25 valid random telephone numbers and report accuracy.
 Run as `python3 -m speech.project5.phone_rand`."""
 
+from logging import debug
+
 from speech.project2.main import NUMBERS
 from speech.project3 import TEMPLATE_INDEXES, boosted_mfcc_from_file
 from speech.project5.hmm import (
@@ -56,12 +58,17 @@ def main() -> None:
     ]
 
     non_emitting_states, emitting_states = build_hmm_graph(single_hmms)
+    debug(
+        "non_emitting_states=%s",
+        [(state, state.transition_loss) for state in non_emitting_states],
+    )
+    debug("emitting_states=%s", emitting_states)
 
     for number in TELEPHONE_NUMBERS:
         print(f"Recognizing `{number}`.")
         mfcc = boosted_mfcc_from_file(recording_for_number(number))
         recognition = match_sequence_against_hmm_states(
-            mfcc, non_emitting_states, emitting_states, beam_width=10.0
+            mfcc, non_emitting_states, emitting_states, beam_width=1500.0
         )
         print(f"Recognized as `{recognition}`.")
         # TODO: Compare the recognition with the expected number.

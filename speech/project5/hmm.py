@@ -188,14 +188,14 @@ def clone_hmm_states(hmm_states: list[HMMState]):
 
 
 def _align_sequence_round(
-    sample: FloatArray,
+    sample: FloatArray | None,
     hmm_state: HMMState,
     round_min_loss: float,
     prev_losses: dict[HMMState, "LossNode"],
     current_losses: dict[HMMState, "LossNode"],
     beam_width: float,
-    emitting: bool,
 ):
+    """Aligning non-emitting state if `sample` is `None`."""
     # Similar to `Trie._match_word_round`.
     min_loss = np.inf
     min_loss_node: LossNode | None = None
@@ -208,32 +208,39 @@ def _align_sequence_round(
                 min_loss_node = prev_loss_node
 
     if min_loss_node is not None and min_loss < round_min_loss + beam_width:
-        # weighted gaussians
-        assert (
-            len(hmm_state.means) == len(hmm_state.covariances) == len(hmm_state.weights)
-        )
-        emission_loss = (
-            min(
-                multivariate_gaussian_negative_log_pdf_diag_cov(
-                    sample, mean=mean, cov=cov
-                )
-                - np.log(weight)
-                for mean, cov, weight in zip(
-                    hmm_state.means, hmm_state.covariances, hmm_state.weights
-                )
+        if sample is None:
+            combined_min_loss = min_loss
+        else:
+            # weighted gaussians
+            assert (
+                len(hmm_state.means)
+                == len(hmm_state.covariances)
+                == len(hmm_state.weights)
             )
-            if len(hmm_state.means) > 0
-            else 0
-        )
+            emission_loss = (
+                min(
+                    multivariate_gaussian_negative_log_pdf_diag_cov(
+                        sample, mean=mean, cov=cov
+                    )
+                    - np.log(weight)
+                    for mean, cov, weight in zip(
+                        hmm_state.means, hmm_state.covariances, hmm_state.weights
+                    )
+                )
+                if len(hmm_state.means) > 0
+                else 0
+            )
+            combined_min_loss = min_loss + emission_loss
 
-        combined_min_loss = min_loss + emission_loss
         if combined_min_loss < round_min_loss + beam_width:
             round_min_loss = min(round_min_loss, combined_min_loss)
             new_loss_node = min_loss_node.copying_update(
                 state_node=hmm_state,
                 loss=combined_min_loss,
                 prev_end_loss_node=(
-                    min_loss_node.prev_end_loss_node if emitting else min_loss_node
+                    min_loss_node
+                    if sample is None  # Non-emitting state
+                    else min_loss_node.prev_end_loss_node
                 ),
             )
 
@@ -262,14 +269,14 @@ def _align_sequence_and_hmm_states(
         round_min_loss = np.inf
         for state in non_emitting_states:
             round_min_loss = _align_sequence_round(
-                sample,
+                None,
                 state,
                 round_min_loss,
                 prev_losses,
                 intermediate_losses,
                 beam_width,
-                False,
             )
+        debug("intermediate_losses=%s", intermediate_losses)
         for state, intermediate_loss in intermediate_losses.items():
             if (
                 prev_losses.get(state) is None
@@ -287,8 +294,8 @@ def _align_sequence_and_hmm_states(
                 prev_losses,
                 current_losses,
                 beam_width,
-                True,
             )
+        debug("current_losses=%s", current_losses)
 
         round_threshold = round_min_loss + beam_width
         prev_losses = {
@@ -296,8 +303,19 @@ def _align_sequence_and_hmm_states(
             for node, loss_node in current_losses.items()
             if loss_node.loss <= round_threshold
         }
+        debug("Filtered previous_losses=%s", prev_losses)
 
-    return prev_losses
+    final_losses: dict[HMMState, LossNode] = {}
+    for state in non_emitting_states:
+        _ = _align_sequence_round(
+            None,
+            state,
+            np.inf,
+            prev_losses,
+            final_losses,
+            beam_width,
+        )
+    return prev_losses, final_losses
 
 
 def match_sequence_against_hmm_states(
@@ -309,9 +327,10 @@ def match_sequence_against_hmm_states(
     """Match a sequence against a sequence of HMM states.
     The first non-emitting state should be the beginning state,
     and the last non-emitting state should be the end state."""
-    last_losses = _align_sequence_and_hmm_states(
+    _, last_losses = _align_sequence_and_hmm_states(
         sequence, non_emitting_states, emitting_states, beam_width
     )
+    debug("last_losses=%s", last_losses)
 
     min_finished_loss_node = last_losses[non_emitting_states[-1]]
     return min_finished_loss_node.backtrack()
@@ -419,6 +438,12 @@ class LossNode:
                 reversed_words.append(word)
             current = current.prev_end_loss_node
         return list(reversed(reversed_words))
+
+    def __repr__(self) -> str:
+        prev_end_loss_node = (
+            self.prev_end_loss_node.state_node if self.prev_end_loss_node else None
+        )
+        return f"LossNode({self.state_node}, prev_end_loss_node={prev_end_loss_node} loss={self.loss:.2f})"
 
 
 class HMM_Single:
@@ -641,7 +666,7 @@ class HMM:
         assert len(templates_for_each_label) == len(labels)
 
         for templates, label in zip(templates_for_each_label, labels):
-            debug(f"Calculating single HMM for number {label}.")
+            debug("Calculating single HMM for number `%s`.", label)
             hmm = HMM_Single(label, templates, self.n_states, self.n_gaussians)
             self._hmm_instances.append(hmm)
 
