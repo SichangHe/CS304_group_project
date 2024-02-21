@@ -145,6 +145,7 @@ class HMMState:
             transition_loss={},
             nth_state=-1,
             label=None,
+            exit_prob=0,
         )
 
     def __hash__(self) -> int:
