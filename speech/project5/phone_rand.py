@@ -45,6 +45,10 @@ TELEPHONE_NUMBERS = [
 ]
 
 
+def avg(lst: list[float]) -> float:
+    return sum(lst) / len(lst)
+
+
 def recording_for_number(number: str) -> str:
     """Return the recording file for the given number."""
     return f"recordings/{number}.wav"
@@ -87,7 +91,7 @@ def main() -> None:
 
     recognitions = []
     distances = []
-    normalized_distances = []
+    word_accuracies = []
     for number in TELEPHONE_NUMBERS:
         print(f"Recognizing `{number}`.")
         mfcc = boosted_mfcc_from_file(recording_for_number(number))
@@ -98,29 +102,24 @@ def main() -> None:
         print(f"Recognized as `{recognition}`.")
         recognitions.append(recognition)
         distance = levenshtein_distance(number, recognition)
-        normalized_distance = distance / len(number)
+        word_accuracy = max(0.0, (len(number) - distance) * 100.0 / len(number))
         distances.append(distance)
-        normalized_distances.append(normalized_distance)
-        print(
-            f"Levenshtein distance: {distance}, distance per digit: {normalized_distance}"
-        )
+        word_accuracies.append(word_accuracy)
+        print(f"Levenshtein distance: {distance}, word accuracy: {word_accuracy:.2f}")
     n_correct_sentence = sum(1 for d in distances if d == 0)
     sentence_accuracy = n_correct_sentence * 100.0 / len(TELEPHONE_NUMBERS)
     n_correct_digits = sum(
         len(number) - d for number, d in zip(TELEPHONE_NUMBERS, distances)
     )
-    word_accuracy = (
-        n_correct_digits * 100.0 / sum(len(number) for number in TELEPHONE_NUMBERS)
-    )
     print(
         f"""
 Sentence accuracy: {sentence_accuracy:.2f}%—{n_correct_sentence} telephone numbers were recognized correctly.
-Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized correctly."""
+Average word accuracy: {avg(word_accuracies):.2f}%—{n_correct_digits} digits were recognized correctly."""
     )
 
     ax: Axes
     fig, ax = plt.subplots()
-    bars = ax.bar(TELEPHONE_NUMBERS, normalized_distances)
+    bars = ax.bar(TELEPHONE_NUMBERS, word_accuracies)
     for bar, recognition in zip(bars, recognitions):
         height = bar.get_height()
         ax.text(
@@ -133,7 +132,7 @@ Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized 
         )
     ax.grid()
     ax.set_xlabel("Telephone Number")
-    ax.set_ylabel("Word Error Rate")
+    ax.set_ylabel("% Accurate Word")
     plt.xticks(ha="center", rotation=60)
     plt.show(block=True)
     fig.savefig("telephone_number_recognition.png", bbox_inches="tight")

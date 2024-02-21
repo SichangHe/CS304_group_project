@@ -8,7 +8,7 @@ HALF_LOSS = -np.log(0.5)
 """Negative log probability of a half."""
 
 
-def build_hmm_graph(digit_hmms: list[HMM_Single]):
+def build_hmm_graph(digit_hmms: list[HMM_Single], transition_loss=HALF_LOSS):
     """Connect HMM states to create the unrestricted number recognizer."""
     non_emitting_state = HMMState.root()
     # Defensively copy the input.
@@ -18,9 +18,10 @@ def build_hmm_graph(digit_hmms: list[HMM_Single]):
 
     for digit_states in digit_state_list:
         digit_states[0].transition_loss[non_emitting_state] = 0.0
-        # Extra loss to discourage insertions.
         non_emitting_state.transition_loss[digit_states[-1]] = (
-            digit_states[-1].exit_loss + HALF_LOSS
+            # Extra loss to discourage insertions.
+            digit_states[-1].exit_loss
+            + transition_loss
         )
 
     emitting_states = [
