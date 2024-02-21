@@ -59,22 +59,25 @@ def load_silence_hmms():
     return silence_single_hmms.states[0]
 
 
-def main() -> None:
+def build_digit_hmms():
     template_files_list = [
         [f"recordings/{number}{i}.wav" for i in TEMPLATE_INDEXES]
         for number in NUMBERS[:10]
     ]
-    single_hmms = [
+    return [
         single_hmm_w_template_file_names(
             number, template_files, n_states=5, n_gaussians=2
         )
         for number, template_files in zip(range(10), template_files_list)
     ]
 
+
+def main() -> None:
+    digit_hmms = build_digit_hmms()
     silence_single_hmms = load_silence_hmms()
 
     non_emitting_states, emitting_states = build_hmm_graph(
-        single_hmms, silence_single_hmms
+        digit_hmms, silence_single_hmms
     )
     debug(
         "non_emitting_states=%s",
@@ -119,7 +122,7 @@ Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized 
     ax.grid()
     ax.set_xlabel("Telephone Number")
     ax.set_ylabel("Levenshtein Distance Per Digit")
-    plt.xticks(rotation=70, ha='right')
+    plt.xticks(rotation=70, ha="right")
     plt.show(block=True)
     fig.savefig("telephone_number_recognition.png", bbox_inches="tight")
 
