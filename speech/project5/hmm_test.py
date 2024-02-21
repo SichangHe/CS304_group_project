@@ -5,7 +5,12 @@ from pprint import pprint
 
 import numpy as np
 
-from speech.project5.hmm import HMMState, align_sequence, align_sequence_train
+from speech.project5.hmm import (
+    HMMState,
+    _align_sequence_and_hmm_states,
+    align_sequence,
+    align_sequence_train,
+)
 
 
 class TestAudio(unittest.TestCase):
@@ -44,6 +49,7 @@ class TestAudio(unittest.TestCase):
         print(score)
         print(alignment)
 
+        root = HMMState.root()
         n0 = HMMState(
             label=None,
             parent=None,
@@ -89,7 +95,8 @@ class TestAudio(unittest.TestCase):
             transition_loss={},
             nth_state=4,
         )
-        n0.transition_loss = {n0: 0.5}
+        root.transition_loss = {n4: 1.0}
+        n0.transition_loss = {root: 0.0, n0: 0.5}
         n1.transition_loss = {n1: 0.5, n0: 0.5}
         n2.transition_loss = {n2: 0.5, n1: 0.5}
         n3.transition_loss = {n3: 0.5, n2: 0.5}
@@ -104,6 +111,10 @@ class TestAudio(unittest.TestCase):
         print("Alignment and score with new implementation:")
         pprint(alignment2)
         print(score2)
+
+        print("Last losses from inference:")
+        last_losses = _align_sequence_and_hmm_states(samples[0:40], [root] + states)
+        pprint(last_losses)
 
 
 unittest.main() if __name__ == "__main__" else None

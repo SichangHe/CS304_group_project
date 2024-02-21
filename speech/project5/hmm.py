@@ -180,7 +180,7 @@ def clone_hmm_states(hmm_states: list[HMMState]):
 
 def _align_sequence_round(
     sample: FloatArray,
-    node: HMMState,
+    hmm_state: HMMState,
     round_min_loss: float,
     prev_losses: dict[HMMState, "LossNode"],
     current_losses: dict[HMMState, "LossNode"],
@@ -190,7 +190,7 @@ def _align_sequence_round(
     min_loss = np.inf
     min_loss_node: LossNode | None = None
 
-    for from_node, cost in node.transition_loss.items():
+    for from_node, cost in hmm_state.transition_loss.items():
         if prev_loss_node := prev_losses.get(from_node):
             accumulated_loss = -cost + prev_loss_node.loss
             if accumulated_loss < min_loss:
@@ -203,50 +203,67 @@ def _align_sequence_round(
         emission_loss = -sum(
             np.log(multivariate_gaussian_pdf_diag_cov(sample, mean=mean, cov=cov))
             + np.log(weight)
-            for mean, cov, weight in zip(node.means, node.covariances, node.weights)
+            for mean, cov, weight in zip(
+                hmm_state.means, hmm_state.covariances, hmm_state.weights
+            )
         )
 
         combined_min_loss = min_loss + emission_loss
         if combined_min_loss < round_min_loss + beam_width:
             round_min_loss = min(round_min_loss, combined_min_loss)
             new_loss_node = min_loss_node.copying_update(
-                state_node=node,
+                state_node=hmm_state,
                 loss=combined_min_loss,
             )
 
-            if node.is_non_emiting():
-                # TODO: Loss going from one word to the next.
-                # Implement in the graph instead.
-                print("replace f new_loss_node.")
-            # TODO: Handle final HMMState node (use `index`).
+            # TODO: Loss going from one word to the next.
+            # Implement in the graph instead.
 
-            current_losses[node] = new_loss_node
+            current_losses[hmm_state] = new_loss_node
 
     return round_min_loss
 
 
 def _align_sequence_and_hmm_states(
     sequence: FloatArray,
-    root_state: HMMState,
     hmm_states: list[HMMState],
     beam_width=1000.0,
 ):
     """Align a sequence against a sequence of HMM states.
     The non-emitting states should come first in the sequence."""
     np.seterr(divide="ignore")
+    emitting_states = [state for state in hmm_states if not state.is_non_emiting()]
+    non_emitting_states = [state for state in hmm_states if state.is_non_emiting()]
 
     # Similar to `Trie._match_word`.
     prev_losses: dict[HMMState, LossNode] = {
-        root_state: LossNode(state_node=root_state)
+        non_emitting_states[0]: LossNode(state_node=non_emitting_states[0])
     }
 
     for sample in sequence:
+        intermediate_losses: dict[HMMState, LossNode] = {}
+        round_min_loss = np.inf
+        for state in non_emitting_states:
+            round_min_loss = _align_sequence_round(
+                sample,
+                state,
+                round_min_loss,
+                prev_losses,
+                intermediate_losses,
+                beam_width,
+            )
+        for state, intermediate_loss in intermediate_losses.items():
+            if (
+                prev_losses.get(state) is None
+                or intermediate_loss.loss < prev_losses[state].loss
+            ):
+                prev_losses[state] = intermediate_loss
+
         current_losses: dict[HMMState, LossNode] = {}
         round_min_loss = np.inf
-
-        for node in hmm_states:
+        for state in emitting_states:
             round_min_loss = _align_sequence_round(
-                sample, node, round_min_loss, prev_losses, current_losses, beam_width
+                sample, state, round_min_loss, prev_losses, current_losses, beam_width
             )
 
         round_threshold = round_min_loss + beam_width
