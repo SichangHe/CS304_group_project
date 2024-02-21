@@ -58,6 +58,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=0,
+            exit_prob=0
         )
         n1 = HMMState(
             label=1,
@@ -67,6 +68,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=1,
+            exit_prob=0
         )
         n2 = HMMState(
             label=2,
@@ -76,6 +78,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=2,
+            exit_prob=0
         )
         n3 = HMMState(
             label=3,
@@ -85,6 +88,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=3,
+            exit_prob=0
         )
         n4 = HMMState(
             label=4,
@@ -94,6 +98,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=4,
+            exit_prob=0
         )
         root.transition_loss = {n4: 1.0}
         n0.transition_loss = {root: 0.0, n0: 0.5}

@@ -124,6 +124,8 @@ class HMMState:
     weights: list[float]
     transition_loss: dict["HMMState", float]
     """Negative log transition probability."""
+    exit_prob: float
+    """Probability to exit the HMM, positive only if is last state of a digit."""
     nth_state: int
     label: int | None
     """The digit associated with the state.
@@ -427,6 +429,7 @@ class HMM_Single:
                 weights=[],
                 transition_loss={},
                 nth_state=s,
+                exit_prob=0,
                 label=self.label,
             )
             parent = state
@@ -454,12 +457,15 @@ class HMM_Single:
         self._calculate_mean_variance(n_gaussians)
         self._calculate_transition_matrix()
 
+        # transition loss
         for s in range(self.n_states):
             self.states[s].transition_loss = {
                 self.states[i]: -np.log(v)
                 for i, v in enumerate(self.transition_matrix[:, s])
                 if v > 0
             }
+        # exit prob
+        self.states[-1].exit_prob = 1 - np.sum(self.transition_matrix[-1])
 
         alignment_result = []
         for i in range(self.n_samples):
@@ -549,7 +555,6 @@ class HMM_Single:
             self.transition_matrix[i, i] = (total - self.n_samples) / total
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
-        # TODO: Deal with the last state exiting.
 
     def predict_score(self, target: FloatArray):
         """
