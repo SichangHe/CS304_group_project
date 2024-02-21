@@ -58,7 +58,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=0,
-            exit_loss=0
+            exit_loss=0,
         )
         n1 = HMMState(
             label=1,
@@ -68,7 +68,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=1,
-            exit_loss=0
+            exit_loss=0,
         )
         n2 = HMMState(
             label=2,
@@ -78,7 +78,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=2,
-            exit_loss=0
+            exit_loss=0,
         )
         n3 = HMMState(
             label=3,
@@ -88,7 +88,7 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=3,
-            exit_loss=0
+            exit_loss=0,
         )
         n4 = HMMState(
             label=4,
@@ -98,14 +98,14 @@ class TestAudio(unittest.TestCase):
             weights=[1.0],
             transition_loss={},
             nth_state=4,
-            exit_loss=0
+            exit_loss=0,
         )
-        root.transition_loss = {n4: 1.0}
-        n0.transition_loss = {root: 0.0, n0: 0.5}
-        n1.transition_loss = {n1: 0.5, n0: 0.5}
-        n2.transition_loss = {n2: 0.5, n1: 0.5}
-        n3.transition_loss = {n3: 0.5, n2: 0.5}
-        n4.transition_loss = {n4: 0.5, n3: 0.5}
+        root.transition_loss = {n4: 0.0}
+        n0.transition_loss = {root: 0.0, n0: -np.log(0.5)}
+        n1.transition_loss = {n1: -np.log(0.5), n0: -np.log(0.5)}
+        n2.transition_loss = {n2: -np.log(0.5), n1: -np.log(0.5)}
+        n3.transition_loss = {n3: -np.log(0.5), n2: -np.log(0.5)}
+        n4.transition_loss = {n4: -np.log(0.5), n3: -np.log(0.5)}
         n1.parent = n0
         n2.parent = n1
         n3.parent = n2
