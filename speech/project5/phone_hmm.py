@@ -3,7 +3,7 @@
 from speech.project5.hmm import HMM_Single, HMMState, clone_hmm_states
 
 
-def build_hmm_graph(digit_hmms: list[HMM_Single], silence_hmms: list[HMM_Single]):
+def build_hmm_graph(digit_hmms: list[HMM_Single], silence_hmm_state: HMMState):
     """Connect HMM states to create the telephone number recognizer."""
     non_emitting_states = [HMMState.root() for _ in range(8)]
     # Jumping over three digits.
@@ -22,15 +22,9 @@ def build_hmm_graph(digit_hmms: list[HMM_Single], silence_hmms: list[HMM_Single]
 
     # TODO: Handle silence around non_emitting_states[3]
     # Jump from non_emitting_states[3] to the silence state and back.
-    """Commenting this out for now so it runs.
-    slience_hmm = HMM_Single()
-    slience_states = slience_hmm.states
-    slience_states[0].transition_loss[non_emitting_states[3]] = 0
+    silence_hmm_state.transition_loss[non_emitting_states[3]] = 0
     for digit_states in digit_state_layers[4]:
-        digit_states[0].transition_loss[slience_states[-1]] = slience_states[
-            -1
-        ].exit_loss
-    """
+        digit_states[0].transition_loss[silence_hmm_state] = silence_hmm_state.exit_loss
 
     for prev_non_emitting_state, digit_state_layer, next_non_emitting_state in zip(
         non_emitting_states, digit_state_layers, non_emitting_states[1:]

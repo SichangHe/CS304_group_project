@@ -51,11 +51,12 @@ def recording_for_number(number: str) -> str:
 
 
 def load_silence_hmms():
-    silence_recordings_files = [f"recordings/silence{n}" for n in range(1, 10)]
+    silence_recordings_files = [f"recordings/silence{n}.wav" for n in range(1, 10)]
     silence_single_hmms = single_hmm_w_template_file_names(
         -1, silence_recordings_files, n_states=1, n_gaussians=2
     )
-    return silence_single_hmms
+    assert len(silence_single_hmms.states) == 1
+    return silence_single_hmms.states[0]
 
 
 def main() -> None:
