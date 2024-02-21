@@ -37,6 +37,7 @@ def main() -> None:
     )
     debug("emitting_states=%s", emitting_states)
 
+    recognitions = []
     distances = []
     normalized_distances = []
     for number in DIGIT_STRINGS:
@@ -47,6 +48,7 @@ def main() -> None:
         )
         recognition = "".join(map(str, recognition))
         print(f"Recognized as `{recognition}`.")
+        recognitions.append(recognition)
         distance = levenshtein_distance(number, recognition)
         normalized_distance = distance / len(number)
         distances.append(distance)
@@ -70,11 +72,21 @@ Word error rate: {word_accuracy:.2f}%."""
 
     ax: Axes
     fig, ax = plt.subplots()
-    ax.bar(DIGIT_STRINGS, normalized_distances)
+    bars = ax.bar(DIGIT_STRINGS, normalized_distances)
+    for bar, recognition in zip(bars, recognitions):
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            recognition,
+            ha="center",
+            va="bottom",
+            rotation=60,
+        )
     ax.grid()
     ax.set_xlabel("Digit String")
     ax.set_ylabel("Word Error Rate")
-    plt.xticks(rotation=70, ha="right")
+    plt.xticks(ha="center", rotation=60)
     plt.show(block=True)
     fig.savefig("digit_string_recognition.png", bbox_inches="tight")
 

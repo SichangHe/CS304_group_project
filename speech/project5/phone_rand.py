@@ -85,6 +85,7 @@ def main() -> None:
     )
     debug("emitting_states=%s", emitting_states)
 
+    recognitions = []
     distances = []
     normalized_distances = []
     for number in TELEPHONE_NUMBERS:
@@ -95,6 +96,7 @@ def main() -> None:
         )
         recognition = "".join(map(str, recognition))
         print(f"Recognized as `{recognition}`.")
+        recognitions.append(recognition)
         distance = levenshtein_distance(number, recognition)
         normalized_distance = distance / len(number)
         distances.append(distance)
@@ -118,11 +120,21 @@ Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized 
 
     ax: Axes
     fig, ax = plt.subplots()
-    ax.bar(TELEPHONE_NUMBERS, normalized_distances)
+    bars = ax.bar(TELEPHONE_NUMBERS, normalized_distances)
+    for bar, recognition in zip(bars, recognitions):
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            recognition,
+            ha="center",
+            va="bottom",
+            rotation=60,
+        )
     ax.grid()
     ax.set_xlabel("Telephone Number")
     ax.set_ylabel("Word Error Rate")
-    plt.xticks(rotation=70, ha="right")
+    plt.xticks(ha="center", rotation=60)
     plt.show(block=True)
     fig.savefig("telephone_number_recognition.png", bbox_inches="tight")
 
