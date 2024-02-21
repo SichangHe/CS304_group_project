@@ -3,7 +3,7 @@
 from speech.project5.hmm import HMM_Single, HMMState, clone_hmm_states
 
 
-def build_hmm_graph(digit_hmms: list[HMM_Single]):
+def build_hmm_graph(digit_hmms: list[HMM_Single], silence_hmms: list[HMM_Single]):
     """Connect HMM states to create the telephone number recognizer."""
     non_emitting_states = [HMMState.root() for _ in range(8)]
     # Jumping over three digits.

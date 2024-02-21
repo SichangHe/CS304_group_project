@@ -46,6 +46,14 @@ def recording_for_number(number: str) -> str:
     return f"recordings/{number}.wav"
 
 
+def load_silence_hmms():
+    silence_recordings_files = [f"recordings/silence{n}" for n in range(1, 10)]
+    silence_single_hmms = single_hmm_w_template_file_names(
+        -1, silence_recordings_files, n_states=1, n_gaussians=2
+    )
+    return silence_single_hmms
+
+
 def main() -> None:
     template_files_list = [
         [f"recordings/{number}{i}.wav" for i in TEMPLATE_INDEXES]
@@ -58,7 +66,11 @@ def main() -> None:
         for number, template_files in zip(range(10), template_files_list)
     ]
 
-    non_emitting_states, emitting_states = build_hmm_graph(single_hmms)
+    silence_single_hmms = load_silence_hmms()
+
+    non_emitting_states, emitting_states = build_hmm_graph(
+        single_hmms, silence_single_hmms
+    )
     debug(
         "non_emitting_states=%s",
         [(state, state.transition_loss) for state in non_emitting_states],
