@@ -121,7 +121,7 @@ Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized 
     ax.bar(TELEPHONE_NUMBERS, normalized_distances)
     ax.grid()
     ax.set_xlabel("Telephone Number")
-    ax.set_ylabel("Levenshtein Distance Per Digit")
+    ax.set_ylabel("Word Error Rate")
     plt.xticks(rotation=70, ha="right")
     plt.show(block=True)
     fig.savefig("telephone_number_recognition.png", bbox_inches="tight")
