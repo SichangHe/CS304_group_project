@@ -98,7 +98,7 @@ class DTWCosts:
         self.template_len = template_len
         self.node_cost = node_cost
         self.cost_columns = []
-        self.min_cost = INF_FLOAT32  # TODO: Beam Search.
+        self.min_cost = INF_FLOAT32
 
     def empty_column(self) -> NDArray[np.float32]:
         return np.full(

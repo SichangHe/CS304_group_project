@@ -194,6 +194,7 @@ def _align_sequence_round(
     prev_losses: dict[HMMState, "LossNode"],
     current_losses: dict[HMMState, "LossNode"],
     beam_width: float,
+    emitting: bool,
 ):
     # Similar to `Trie._match_word_round`.
     min_loss = np.inf
@@ -208,7 +209,6 @@ def _align_sequence_round(
 
     if min_loss_node is not None and min_loss < round_min_loss + beam_width:
         # weighted gaussians
-        # TODO: Should this be `max`?
         assert (
             len(hmm_state.means) == len(hmm_state.covariances) == len(hmm_state.weights)
         )
@@ -232,10 +232,10 @@ def _align_sequence_round(
             new_loss_node = min_loss_node.copying_update(
                 state_node=hmm_state,
                 loss=combined_min_loss,
+                prev_end_loss_node=(
+                    min_loss_node.prev_end_loss_node if emitting else min_loss_node
+                ),
             )
-
-            # TODO: Loss going from one word to the next.
-            # Implement in the graph instead.
 
             current_losses[hmm_state] = new_loss_node
 
@@ -268,6 +268,7 @@ def _align_sequence_and_hmm_states(
                 prev_losses,
                 intermediate_losses,
                 beam_width,
+                False,
             )
         for state, intermediate_loss in intermediate_losses.items():
             if (
@@ -280,7 +281,13 @@ def _align_sequence_and_hmm_states(
         round_min_loss = np.inf
         for state in emitting_states:
             round_min_loss = _align_sequence_round(
-                sample, state, round_min_loss, prev_losses, current_losses, beam_width
+                sample,
+                state,
+                round_min_loss,
+                prev_losses,
+                current_losses,
+                beam_width,
+                True,
             )
 
         round_threshold = round_min_loss + beam_width
@@ -291,6 +298,23 @@ def _align_sequence_and_hmm_states(
         }
 
     return prev_losses
+
+
+def match_sequence_against_hmm_states(
+    sequence: FloatArray,
+    non_emitting_states: list[HMMState],
+    emitting_states: list[HMMState],
+    beam_width=1000.0,
+):
+    """Match a sequence against a sequence of HMM states.
+    The first non-emitting state should be the beginning state,
+    and the last non-emitting state should be the end state."""
+    last_losses = _align_sequence_and_hmm_states(
+        sequence, non_emitting_states, emitting_states, beam_width
+    )
+
+    min_finished_loss_node = last_losses[non_emitting_states[-1]]
+    return min_finished_loss_node.backtrack()
 
 
 def align_sequence_train(
@@ -391,8 +415,8 @@ class LossNode:
         current: "LossNode | None" = self
         while current is not None:
             word = current.state_node.label
-            assert word is not None, (self, current)
-            reversed_words.append(word)
+            if word is not None:
+                reversed_words.append(word)
             current = current.prev_end_loss_node
         return list(reversed(reversed_words))
 
@@ -474,7 +498,7 @@ class HMM_Single:
                 if v > 0
             }
         # exit prob
-        self.states[-1].exit_loss = np.log(np.sum(self.transition_matrix[-1]) - 1)
+        self.states[-1].exit_loss = -np.log(1 - np.sum(self.transition_matrix[-1]))
 
         alignment_result = []
         for i in range(self.n_samples):

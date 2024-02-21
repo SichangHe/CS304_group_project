@@ -358,7 +358,6 @@ def mfcc_homebrew(
     return np.asarray(cepstra), normalize_cepstrum(mel_spectra_np)
 
 
-# TODO:
 def mfcc(audio_array: NDArray, sr=8000):
     pre_emphasized = pre_emphasis(audio_array)
     pspec = powspec(pre_emphasized, sr=sr)

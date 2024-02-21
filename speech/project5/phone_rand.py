@@ -2,11 +2,12 @@
 Run as `python3 -m speech.project5.phone_rand`."""
 
 from speech.project2.main import NUMBERS
-from speech.project3 import TEMPLATE_INDEXES
-from speech.project3.hmm import single_hmm_w_template_file_names
-from speech.project5.hmm import _align_sequence_and_hmm_states
+from speech.project3 import TEMPLATE_INDEXES, boosted_mfcc_from_file
+from speech.project5.hmm import (
+    match_sequence_against_hmm_states,
+    single_hmm_w_template_file_names,
+)
 from speech.project5.phone_hmm import build_hmm_graph
-
 
 TELEPHONE_NUMBERS = [
     "8765",
@@ -43,21 +44,27 @@ def recording_for_number(number: str) -> str:
 
 
 def main() -> None:
-    template_files = [
-        [f"recordings/{number}{i}.wav" for i in TEMPLATE_INDEXES] for number in NUMBERS
+    template_files_list = [
+        [f"recordings/{number}{i}.wav" for i in TEMPLATE_INDEXES]
+        for number in NUMBERS[:10]
     ]
     single_hmms = [
-        single_hmm_w_template_file_names(t, n_states=5, n_gaussians=2)
-        for t in template_files
+        single_hmm_w_template_file_names(
+            number, template_files, n_states=5, n_gaussians=2
+        )
+        for number, template_files in zip(range(10), template_files_list)
     ]
 
     non_emitting_states, emitting_states = build_hmm_graph(single_hmms)
-    # TODO:
-    for number_sequences in TELEPHONE_NUMBERS:
-        _align_sequence_and_hmm_states(
-            number_sequences, non_emitting_states, emitting_states
+
+    for number in TELEPHONE_NUMBERS:
+        print(f"Recognizing `{number}`.")
+        mfcc = boosted_mfcc_from_file(recording_for_number(number))
+        recognition = match_sequence_against_hmm_states(
+            mfcc, non_emitting_states, emitting_states, beam_width=10.0
         )
-        # TODO:
+        print(f"Recognized as `{recognition}`.")
+        # TODO: Compare the recognition with the expected number.
 
 
 main() if __name__ == "__main__" else None
