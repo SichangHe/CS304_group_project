@@ -5,10 +5,11 @@ from speech.project5.hmm import HMM_Single, HMMState, clone_hmm_states
 
 def build_hmm_graph(digit_hmms: list[HMM_Single]):
     """Connect HMM states to create the telephone number recognizer."""
-    # TODO: Handle silence.
     non_emitting_states = [HMMState.root() for _ in range(8)]
     # Jumping over three digits.
     non_emitting_states[3].transition_loss[non_emitting_states[0]] = 0.0
+    # TODO: Handle silence around non_emitting_states[3]
+    # Jump from non_emitting_states[3] to the silence state and back.
 
     digit_state_layers = [  # First digit.
         [
