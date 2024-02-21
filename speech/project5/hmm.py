@@ -202,7 +202,7 @@ def _align_sequence_round(
 
     for from_node, cost in hmm_state.transition_loss.items():
         if prev_loss_node := prev_losses.get(from_node):
-            accumulated_loss = -cost + prev_loss_node.loss
+            accumulated_loss = cost + prev_loss_node.loss
             if accumulated_loss < min_loss:
                 min_loss = accumulated_loss
                 min_loss_node = prev_loss_node
