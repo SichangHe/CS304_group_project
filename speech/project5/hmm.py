@@ -23,7 +23,12 @@ from speech.project3 import (
 MINUS_INF = -INF_FLOAT32
 
 
-# TODO: Make a negative log version.
+def multivariate_gaussian_negative_log_pdf_diag_cov(
+    x: FloatArray, mean: FloatArray, cov: DoubleArray
+):
+    return -np.log(multivariate_gaussian_pdf_diag_cov(x, mean, cov))
+
+
 def multivariate_gaussian_pdf_diag_cov(
     x: FloatArray, mean: FloatArray, cov: DoubleArray
 ) -> np.float64:
@@ -203,9 +208,9 @@ def _align_sequence_round(
     if min_loss_node is not None and min_loss < round_min_loss + beam_width:
         # weighted gaussians
         # TODO: Should this be `max`?
-        emission_loss = -sum(
-            np.log(multivariate_gaussian_pdf_diag_cov(sample, mean=mean, cov=cov))
-            + np.log(weight)
+        emission_loss = sum(
+            multivariate_gaussian_negative_log_pdf_diag_cov(sample, mean=mean, cov=cov)
+            - np.log(weight)
             for mean, cov, weight in zip(
                 hmm_state.means, hmm_state.covariances, hmm_state.weights
             )
@@ -293,19 +298,15 @@ def align_sequence_train(
         hmm_states[0]: LossNode(
             state_node=hmm_states[0],
             prev_end_loss_node=None,
-            loss=-(
-                max(
-                    np.log(
-                        multivariate_gaussian_pdf_diag_cov(
-                            sequence[0], mean=mean, cov=cov
-                        )
-                    )
-                    + np.log(weight)
-                    for mean, cov, weight in zip(
-                        hmm_states[0].means,
-                        hmm_states[0].covariances,
-                        hmm_states[0].weights,
-                    )
+            loss=min(
+                multivariate_gaussian_negative_log_pdf_diag_cov(
+                    sequence[0], mean=mean, cov=cov
+                )
+                - np.log(weight)
+                for mean, cov, weight in zip(
+                    hmm_states[0].means,
+                    hmm_states[0].covariances,
+                    hmm_states[0].weights,
                 )
             ),
         )
@@ -321,13 +322,11 @@ def align_sequence_train(
                     combined_losses.append((l, v + l.loss))
 
             if len(combined_losses) > 0:
-                emission_loss = -max(
-                    np.log(
-                        multivariate_gaussian_pdf_diag_cov(
-                            sequence[t], mean=mean, cov=cov
-                        )
+                emission_loss = min(
+                    multivariate_gaussian_negative_log_pdf_diag_cov(
+                        sequence[t], mean=mean, cov=cov
                     )
-                    + np.log(weight)
+                    - np.log(weight)
                     for mean, cov, weight in zip(
                         node.means, node.covariances, node.weights
                     )
