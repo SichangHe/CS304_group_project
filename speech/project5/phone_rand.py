@@ -5,6 +5,7 @@ from logging import debug
 
 from speech.project2.main import NUMBERS
 from speech.project3 import TEMPLATE_INDEXES, boosted_mfcc_from_file
+from speech.project4.segment import levenshtein_distance
 from speech.project5.hmm import (
     match_sequence_against_hmm_states,
     single_hmm_w_template_file_names,
@@ -64,14 +65,27 @@ def main() -> None:
     )
     debug("emitting_states=%s", emitting_states)
 
+    distances = []
+    normalized_distances = []
     for number in TELEPHONE_NUMBERS:
         print(f"Recognizing `{number}`.")
         mfcc = boosted_mfcc_from_file(recording_for_number(number))
         recognition = match_sequence_against_hmm_states(
             mfcc, non_emitting_states, emitting_states, beam_width=1500.0
         )
+        recognition = "".join(map(str, recognition))
         print(f"Recognized as `{recognition}`.")
+        distance = levenshtein_distance(number, recognition)
+        normalized_distance = distance / len(number)
+        distances.append(distance)
+        normalized_distances.append(normalized_distance)
+        print(
+            f"Levenshtein distance: {distance}, normalized_distance: {normalized_distance}"
+        )
         # TODO: Compare the recognition with the expected number.
+    correct_count = len([True for d in distances if d == 0])
+    accuracy = correct_count / len(TELEPHONE_NUMBERS)
+    print(f"Accuracy: {accuracy}")
 
 
 main() if __name__ == "__main__" else None
