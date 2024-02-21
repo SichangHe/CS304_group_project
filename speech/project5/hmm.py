@@ -178,13 +178,61 @@ def clone_hmm_states(hmm_states: list[HMMState]):
             new_state.parent = state_map.get(new_state.parent, new_state.parent)
 
 
+def _align_sequence_round(
+    sample: FloatArray,
+    node: HMMState,
+    round_min_loss: float,
+    prev_losses: dict[HMMState, "LossNode"],
+    current_losses: dict[HMMState, "LossNode"],
+    beam_width: float,
+):
+    # Similar to `Trie._match_word_round`.
+    min_loss = np.inf
+    min_loss_node: LossNode | None = None
+
+    for from_node, cost in node.transition_loss.items():
+        if prev_loss_node := prev_losses.get(from_node):
+            accumulated_loss = -cost + prev_loss_node.loss
+            if accumulated_loss < min_loss:
+                min_loss = accumulated_loss
+                min_loss_node = prev_loss_node
+
+    if min_loss_node is not None and min_loss < round_min_loss + beam_width:
+        # weighted gaussians
+        # TODO: Should this be `max`?
+        emission_loss = -sum(
+            np.log(multivariate_gaussian_pdf_diag_cov(sample, mean=mean, cov=cov))
+            + np.log(weight)
+            for mean, cov, weight in zip(node.means, node.covariances, node.weights)
+        )
+
+        combined_min_loss = min_loss + emission_loss
+        if combined_min_loss < round_min_loss + beam_width:
+            round_min_loss = min(round_min_loss, combined_min_loss)
+            new_loss_node = min_loss_node.copying_update(
+                state_node=node,
+                loss=combined_min_loss,
+            )
+
+            if node.is_non_emiting():
+                # TODO: Loss going from one word to the next.
+                # Implement in the graph instead.
+                print("replace f new_loss_node.")
+            # TODO: Handle final HMMState node (use `index`).
+
+            current_losses[node] = new_loss_node
+
+    return round_min_loss
+
+
 def _align_sequence_and_hmm_states(
     sequence: FloatArray,
     root_state: HMMState,
     hmm_states: list[HMMState],
     beam_width=1000.0,
 ):
-    """align a sequence vs a hmm model"""
+    """Align a sequence against a sequence of HMM states.
+    The non-emitting states should come first in the sequence."""
     np.seterr(divide="ignore")
 
     # Similar to `Trie._match_word`.
@@ -192,45 +240,14 @@ def _align_sequence_and_hmm_states(
         root_state: LossNode(state_node=root_state)
     }
 
-    for index, sample in enumerate(sequence):
+    for sample in sequence:
         current_losses: dict[HMMState, LossNode] = {}
         round_min_loss = np.inf
 
         for node in hmm_states:
-            # Similar to `Trie._match_word_round`.
-            min_loss = np.inf
-            min_loss_node: LossNode | None = None
-
-            for from_node, cost in node.transition_loss.items():
-                if prev_loss_node := prev_losses.get(from_node):
-                    accumulated_loss = -cost + prev_loss_node.loss
-                    if accumulated_loss < min_loss:
-                        min_loss = accumulated_loss
-                        min_loss_node = prev_loss_node
-
-            if min_loss_node is not None and min_loss < round_min_loss + beam_width:
-                # weighted gaussians
-                # TODO: Should this be `max`?
-                emission_loss = -sum(
-                    np.log(
-                        multivariate_gaussian_pdf_diag_cov(sample, mean=mean, cov=cov)
-                    )
-                    + np.log(weight)
-                    for mean, cov, weight in zip(
-                        node.means, node.covariances, node.weights
-                    )
-                )
-
-                combined_min_loss = min_loss + emission_loss
-                if combined_min_loss < round_min_loss + beam_width:
-                    round_min_loss = min(round_min_loss, combined_min_loss)
-                    new_loss_node = min_loss_node.copying_update(
-                        state_node=node,
-                        loss=combined_min_loss,
-                    )
-
-                    # TODO: Handle final HMMState node (use `index`).
-                    current_losses[node] = new_loss_node
+            round_min_loss = _align_sequence_round(
+                sample, node, round_min_loss, prev_losses, current_losses, beam_width
+            )
 
         round_threshold = round_min_loss + beam_width
         prev_losses = {
