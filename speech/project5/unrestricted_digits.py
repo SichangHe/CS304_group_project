@@ -44,7 +44,7 @@ def main() -> None:
         print(f"Recognizing `{number}`.")
         mfcc = boosted_mfcc_from_file(recording_for_number(number))
         recognition = match_sequence_against_hmm_states(
-            mfcc, non_emitting_states, emitting_states, beam_width=1500.0
+            mfcc, non_emitting_states, emitting_states, beam_width=4000.0
         )
         recognition = "".join(map(str, recognition))
         print(f"Recognized as `{recognition}`.")

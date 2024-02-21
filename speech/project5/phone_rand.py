@@ -53,7 +53,7 @@ def recording_for_number(number: str) -> str:
 def load_silence_hmms():
     silence_recordings_files = [f"recordings/silence{n}.wav" for n in range(1, 10)]
     silence_single_hmms = single_hmm_w_template_file_names(
-        -1, silence_recordings_files, n_states=1, n_gaussians=2
+        -1, silence_recordings_files, n_states=1, n_gaussians=4
     )
     assert len(silence_single_hmms.states) == 1
     return silence_single_hmms.states[0]
@@ -66,7 +66,7 @@ def build_digit_hmms():
     ]
     return [
         single_hmm_w_template_file_names(
-            number, template_files, n_states=5, n_gaussians=2
+            number, template_files, n_states=5, n_gaussians=4
         )
         for number, template_files in zip(range(10), template_files_list)
     ]
@@ -92,7 +92,7 @@ def main() -> None:
         print(f"Recognizing `{number}`.")
         mfcc = boosted_mfcc_from_file(recording_for_number(number))
         recognition = match_sequence_against_hmm_states(
-            mfcc, non_emitting_states, emitting_states, beam_width=1500.0
+            mfcc, non_emitting_states, emitting_states, beam_width=4000.0
         )
         recognition = "".join(map(str, recognition))
         print(f"Recognized as `{recognition}`.")
