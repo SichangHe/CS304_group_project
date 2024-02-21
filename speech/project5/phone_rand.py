@@ -33,3 +33,10 @@ TELEPHONE_NUMBERS = [
 def recording_for_number(number: str) -> str:
     """Return the recording file for the given number."""
     return f"recordings/{number}.wav"
+
+
+def main() -> None:
+    print("TODO")
+
+
+main() if __name__ == "__main__" else None
