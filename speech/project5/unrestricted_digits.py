@@ -27,7 +27,7 @@ DIGIT_STRINGS = [
     "55555",
     "37274921",
 ]
-TRANSITION_LOSSES = HALF_LOSS / 10_000 * np.linspace(1, 1_000_000, 11)
+TRANSITION_LOSSES = HALF_LOSS / 100_000 * np.linspace(1, 100_000_000, 10)
 
 
 def test(digit_hmms: list[HMM_Single], transition_loss: float):
