@@ -80,12 +80,21 @@ def main() -> None:
         distances.append(distance)
         normalized_distances.append(normalized_distance)
         print(
-            f"Levenshtein distance: {distance}, normalized_distance: {normalized_distance}"
+            f"Levenshtein distance: {distance}, distance over length: {normalized_distance}"
         )
-        # TODO: Compare the recognition with the expected number.
-    correct_count = len([True for d in distances if d == 0])
-    accuracy = correct_count / len(TELEPHONE_NUMBERS)
-    print(f"Accuracy: {accuracy}")
+    n_correct_sentence = sum(1 for d in distances if d == 0)
+    sentence_accuracy = n_correct_sentence * 100.0 / len(TELEPHONE_NUMBERS)
+    n_correct_digits = sum(
+        len(number) - d for number, d in zip(TELEPHONE_NUMBERS, distances)
+    )
+    word_accuracy = (
+        n_correct_digits * 100.0 / sum(len(number) for number in TELEPHONE_NUMBERS)
+    )
+    print(
+        f"""
+Sentence accuracy: {sentence_accuracy:.2f}%—{n_correct_sentence} telephone numbers were recognized correctly.
+Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized correctly."""
+    )
 
 
 main() if __name__ == "__main__" else None

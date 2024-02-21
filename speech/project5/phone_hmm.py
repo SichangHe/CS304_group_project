@@ -22,6 +22,7 @@ def build_hmm_graph(digit_hmms: list[HMM_Single]):
 
     # TODO: Handle silence around non_emitting_states[3]
     # Jump from non_emitting_states[3] to the silence state and back.
+    """Commenting this out for now so it runs.
     slience_hmm = HMM_Single()
     slience_states = slience_hmm.states
     slience_states[0].transition_loss[non_emitting_states[3]] = 0
@@ -29,6 +30,7 @@ def build_hmm_graph(digit_hmms: list[HMM_Single]):
         digit_states[0].transition_loss[slience_states[-1]] = slience_states[
             -1
         ].exit_loss
+    """
 
     for prev_non_emitting_state, digit_state_layer, next_non_emitting_state in zip(
         non_emitting_states, digit_state_layers, non_emitting_states[1:]
