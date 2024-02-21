@@ -3,6 +3,9 @@ Run as `python3 -m speech.project5.phone_rand`."""
 
 from logging import debug
 
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+
 from speech.project2.main import NUMBERS
 from speech.project3 import TEMPLATE_INDEXES, boosted_mfcc_from_file
 from speech.project4.segment import levenshtein_distance
@@ -12,6 +15,7 @@ from speech.project5.hmm import (
 )
 from speech.project5.phone_hmm import build_hmm_graph
 
+plt.rcParams["font.size"] = 24
 TELEPHONE_NUMBERS = [
     "8765",
     "2356",
@@ -92,7 +96,7 @@ def main() -> None:
         distances.append(distance)
         normalized_distances.append(normalized_distance)
         print(
-            f"Levenshtein distance: {distance}, distance over length: {normalized_distance}"
+            f"Levenshtein distance: {distance}, distance per digit: {normalized_distance}"
         )
     n_correct_sentence = sum(1 for d in distances if d == 0)
     sentence_accuracy = n_correct_sentence * 100.0 / len(TELEPHONE_NUMBERS)
@@ -107,6 +111,16 @@ def main() -> None:
 Sentence accuracy: {sentence_accuracy:.2f}%—{n_correct_sentence} telephone numbers were recognized correctly.
 Word accuracy: {word_accuracy:.2f}%—{n_correct_digits} digits were recognized correctly."""
     )
+
+    ax: Axes
+    fig, ax = plt.subplots()
+    ax.bar(TELEPHONE_NUMBERS, normalized_distances)
+    ax.grid()
+    ax.set_xlabel("Telephone Number")
+    ax.set_ylabel("Levenshtein Distance Per Digit")
+    plt.xticks(rotation=70, ha='right')
+    plt.show(block=True)
+    fig.savefig("telephone_number_recognition.png", bbox_inches="tight")
 
 
 main() if __name__ == "__main__" else None
