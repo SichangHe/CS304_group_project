@@ -118,7 +118,7 @@ class TestAudio(unittest.TestCase):
         print(score2)
 
         print("Last losses from inference:")
-        last_losses = _align_sequence_and_hmm_states(samples[0:40], [root] + states)
+        last_losses = _align_sequence_and_hmm_states(samples[0:40], [root], states)
         pprint(last_losses)
 
 

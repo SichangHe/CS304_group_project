@@ -243,14 +243,13 @@ def _align_sequence_round(
 
 def _align_sequence_and_hmm_states(
     sequence: FloatArray,
-    hmm_states: list[HMMState],
+    non_emitting_states: list[HMMState],
+    emitting_states: list[HMMState],
     beam_width=1000.0,
 ):
     """Align a sequence against a sequence of HMM states.
-    The non-emitting states should come first in the sequence."""
+    The first non-emitting state should be the beginning state."""
     np.seterr(divide="ignore")
-    emitting_states = [state for state in hmm_states if not state.is_non_emiting()]
-    non_emitting_states = [state for state in hmm_states if state.is_non_emiting()]
 
     # Similar to `Trie._match_word`.
     prev_losses: dict[HMMState, LossNode] = {
