@@ -208,12 +208,21 @@ def _align_sequence_round(
     if min_loss_node is not None and min_loss < round_min_loss + beam_width:
         # weighted gaussians
         # TODO: Should this be `max`?
-        emission_loss = sum(
-            multivariate_gaussian_negative_log_pdf_diag_cov(sample, mean=mean, cov=cov)
-            - np.log(weight)
-            for mean, cov, weight in zip(
-                hmm_state.means, hmm_state.covariances, hmm_state.weights
+        assert (
+            len(hmm_state.means) == len(hmm_state.covariances) == len(hmm_state.weights)
+        )
+        emission_loss = (
+            min(
+                multivariate_gaussian_negative_log_pdf_diag_cov(
+                    sample, mean=mean, cov=cov
+                )
+                - np.log(weight)
+                for mean, cov, weight in zip(
+                    hmm_state.means, hmm_state.covariances, hmm_state.weights
+                )
             )
+            if len(hmm_state.means) > 0
+            else 0
         )
 
         combined_min_loss = min_loss + emission_loss
