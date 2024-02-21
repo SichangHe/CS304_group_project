@@ -129,12 +129,13 @@ class HMMState:
     weights: list[float]
     transition_loss: dict["HMMState", float]
     """Negative log transition probability."""
-    exit_prob: float
-    """Probability to exit the HMM, positive only if is last state of a digit."""
     nth_state: int
     label: int | None
     """The digit associated with the state.
     `None` if the state is the first state."""
+    exit_loss: float = 0.0
+    """Negative log probability to exit the HMM, positive only if is last state
+    of a digit."""
     parent: "HMMState | None" = None
     """The state is the first state if the `parent` is `None`."""
 
@@ -150,7 +151,6 @@ class HMMState:
             transition_loss={},
             nth_state=-1,
             label=None,
-            exit_prob=0,
         )
 
     def __hash__(self) -> int:
@@ -184,6 +184,7 @@ def clone_hmm_states(hmm_states: list[HMMState]):
         }
         if new_state.parent is not None:
             new_state.parent = state_map.get(new_state.parent, new_state.parent)
+    return new_states
 
 
 def _align_sequence_round(
@@ -437,7 +438,7 @@ class HMM_Single:
                 weights=[],
                 transition_loss={},
                 nth_state=s,
-                exit_prob=0,
+                exit_loss=0,
                 label=self.label,
             )
             parent = state
@@ -473,7 +474,7 @@ class HMM_Single:
                 if v > 0
             }
         # exit prob
-        self.states[-1].exit_prob = 1 - np.sum(self.transition_matrix[-1])
+        self.states[-1].exit_loss = np.log(np.sum(self.transition_matrix[-1]) - 1)
 
         alignment_result = []
         for i in range(self.n_samples):
