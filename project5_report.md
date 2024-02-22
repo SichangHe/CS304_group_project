@@ -52,10 +52,6 @@ After the last MFCC feature vector is processed,
 this "teleportation" process is repeated so that the HMM graph reaches the final
 non-emitting state.
 
-<!-- TODO: Move to Problem 1. -->
-Consequently,
-for a 10-digit number, our graph comprised 10 * 50 + 11 = 511 states.
-
 Similar to project 3,
 we traversed the feature sequence and updated the losses along the way.
 We also handle the non-emitting states similarly to how we handled the emitting
@@ -68,11 +64,14 @@ In our testing, we found a beam width of 4000 to be good enough.
 In this problem,
 our recognize telephone numbers consisting of either 4 or 7 digits.
 Because the input search space is well-defined,
-we first build an acyclic graph connecting seven layers of digit HMMs. To
-connect each layer, we specify eight non-emitting states in between,
+we first build an acyclic graph connecting seven layers of digit HMMs,
+with the first layer only having digits 2 ~ 9.
+The ability to have multiple layers of digit HMMs is achieved by cloning the HMM
+states in a way that preserves the transition losses among them.
+To connect each layer, we specify eight non-emitting states in between,
 and record an exit loss for the last state of HMM states corresponding to each
 digit for the transition loss from the non-emitting states to the next digit
-layers.
+layers. In total, our HMM graph has $(7 + 6 × 10) × 5 + 8 = 343$ HMM states.
 
 A separate cost-free transition from the first non-emitting state to the
 non-emitting state before the forth digit layer is added to enable recognizing
@@ -107,7 +106,7 @@ Sentence accuracy represented the percentage of correctly recognized whole
 sequences,
 while average word accuracy measured the percentage of individual digits
 correctly recognized using the 1 - Levenshtein distance divided by the length of
-the target word.
+the target word, with a lower bound of 0.
 
 We conducted experiments using different configurations of HMMs trained with
 varying templates and Gaussians. Here are the results:
