@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from speech.project2.main import NUMBERS
-from speech.project3 import TEMPLATE_INDEXES, boosted_mfcc_from_file
+from speech.project3 import boosted_mfcc_from_file
 from speech.project4.segment import levenshtein_distance
 from speech.project5.hmm import (
     match_sequence_against_hmm_states,
@@ -16,6 +16,7 @@ from speech.project5.hmm import (
 from speech.project5.phone_hmm import build_hmm_graph
 
 plt.rcParams["font.size"] = 24
+ALL_TRAINING_INDEXES = range(20)
 TELEPHONE_NUMBERS = [
     "8765",
     "2356",
@@ -65,7 +66,7 @@ def load_silence_hmms():
 
 def build_digit_hmms():
     template_files_list = [
-        [f"recordings/{number}{i}.wav" for i in TEMPLATE_INDEXES]
+        [f"recordings/{number}{i}.wav" for i in ALL_TRAINING_INDEXES]
         for number in NUMBERS[:10]
     ]
     return [
