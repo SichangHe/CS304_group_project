@@ -11,6 +11,9 @@ connecting the models trained in project 3.
 Mimicking the trie nodes in lexical trees in project 4,
 we take each state in the HMMs corresponding to each digit as a node in the
 graph and connect them to form a graph of HMM states.
+The graph is composed of layers of digit HMMs,
+with each layer having 10 digits to consider,
+and each digit having 5 states (that is 50 states per layer).
 The graph is then used to recognize continuous speech,
 similar to how the trie was used to spellcheck and segment the stings.
 
@@ -49,38 +52,35 @@ After the last MFCC feature vector is processed,
 this "teleportation" process is repeated so that the HMM graph reaches the final
 non-emitting state.
 
-In each layer of digit HMMs,
-there are 10 possible digits to consider.
-With each digit consisting of 5 states,
-a total of 50 states are associated with each layer.
 <!-- TODO: Move to Problem 1. -->
 Consequently,
 for a 10-digit number, our graph comprised 10 * 50 + 11 = 511 states.
 
 Similar to project 3,
-we traversed the feature sequence and updated the losses along the way. However,
-in this project,
-we needed to account for the presence of the non-emitting state.
-
-During each round of the traversal,
-we use a beam width to consider only losses smaller than minimum loss at this
-round plus beam width.
-This significantly reduce computation complexity while not influencing the
-results much.
+we traversed the feature sequence and updated the losses along the way.
+We also handle the non-emitting states similarly to how we handled the emitting
+states in each round,
+and reset the round-minimum loss after considering all non-emitting states.
+In our testing, we found a beam width of 4000 to be good enough.
 
 ## Problem 1
 
 In this problem,
-our objective was to recognize telephone numbers consisting of either 3 or 7
-digits. To address this requirement, we made the following modifications:
+our recognize telephone numbers consisting of either 4 or 7 digits.
+Because the input search space is well-defined,
+we first build an acyclic graph connecting seven layers of digit HMMs. To
+connect each layer, we specify eight non-emitting states in between,
+and record an exit loss for the last state of HMM states corresponding to each
+digit for the transition loss from the non-emitting states to the next digit
+layers.
 
-1. We add an exit loss after the non-emitting state following the third position.
-This allowed us to identify the end of a 3-digit number and initiate the
-recognition process.
+A separate cost-free transition from the first non-emitting state to the
+non-emitting state before the forth digit layer is added to enable recognizing
+4-digit numbers.
 
-2. Additionally, we introduced a silence HMM state following the third state.
-This state helped improve the recognition accuracy by capturing pauses or breaks
-between digits.
+Additionally, we introduce a silence HMM state and allow transition between it
+and the fourth non-emitting state.
+This state helps allow a pause between the first three digits and the last four.
 
 ### Result
 
