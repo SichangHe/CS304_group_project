@@ -13,6 +13,8 @@ from speech.project5.hmm import match_sequence_against_hmm_states
 from speech.project5.phone_rand import build_digit_hmms
 from speech.project5.unrestricted_hmm import build_hmm_graph
 
+BEST_TRANSITION_LOSS = 385.0817700584015
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Unrestricted digits recognition demo")
@@ -23,7 +25,7 @@ def main() -> None:
 
     digit_hmms = build_digit_hmms()
     non_emitting_states, emitting_states = build_hmm_graph(
-        digit_hmms, transition_loss=539.1144753091734
+        digit_hmms, transition_loss=BEST_TRANSITION_LOSS
     )
 
     byte_queue: Queue[bytes | None] = Queue()

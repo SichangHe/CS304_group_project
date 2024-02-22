@@ -3,6 +3,7 @@
 import argparse
 from dataclasses import dataclass
 from logging import debug
+from cache_to_disk import cache_to_disk
 
 import numpy as np
 from numpy.typing import NDArray
@@ -621,6 +622,7 @@ class HMM_Single:
         return align_sequence_train(target, self.states)
 
 
+@cache_to_disk(2)
 def single_hmm_w_template_file_names(
     label: int,
     template_file_names: list[str],
