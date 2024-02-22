@@ -4,6 +4,12 @@ presentation:
   height: 1080
 ---
 
+<style>
+.reveal img {
+  max-height: 100vh;
+}
+</style>
+
 <!-- slide -->
 
 # COMPSCI 304 group project 5: From Single-Word to Multi-Word Speech Recognition
