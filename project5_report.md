@@ -173,3 +173,13 @@ recognition.](./assets/project5/digit_string_recognition.png)
 
 Like before, the model struggles with the digit 7 and 9,
 as well as long digit strings.
+
+# Conclusion
+
+In this project, we built a continuous speech recognition system using HMMs.
+We constructed a graph of HMM states by connecting the models trained in project
+3, and used it to recognize continuous speech.
+We also introduced non-emitting states to connect multiple layers of digit HMMs,
+introduced a silence HMM state to allow a pause between digits,
+and implemented an insertion penalty to discourage digit insertion during
+unrestricted digit string recognition.
