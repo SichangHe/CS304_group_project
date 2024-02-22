@@ -24,7 +24,7 @@ we modified the HMM states from project 3 to include the transition loss
 from previous states to the current state,
 as opposed to the previous implementation where we record the transition
 probabilities from the current state to the new states.
-This change makes it more each to chain HMM states corresponding to different
+This change makes it easier to chain HMM states corresponding to different
 digits together.
 It also allows fewer lookup operations when walking the HMM graph.
 
@@ -61,8 +61,7 @@ In our testing, we found a beam width of 4000 to be good enough.
 
 ## Problem 1
 
-In this problem,
-our recognize telephone numbers consisting of either 4 or 7 digits.
+In this problem, we recognize telephone numbers consisting of either 4 or 7 digits.
 Because the input search space is well-defined,
 we first build an acyclic graph connecting seven layers of digit HMMs,
 with the first layer only having digits 2 ~ 9.
