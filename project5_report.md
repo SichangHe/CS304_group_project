@@ -43,8 +43,7 @@ In this problem,
 our objective was to recognize telephone numbers consisting of either 3 or 7
 digits. To address this requirement, we made the following modifications:
 
-1.
-We add an exit loss after the non-emitting state following the third position.
+1. We add an exit loss after the non-emitting state following the third position.
 This allowed us to identify the end of a 3-digit number and initiate the
 recognition process.
 
