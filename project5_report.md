@@ -10,10 +10,16 @@ In terms of the state representation, each position in the speech sequence had 1
 
 Similar to project 3, we traversed the feature sequence and updated the losses along the way. However, in this project, we needed to account for the presence of the non-emitting state.
 
-### Problem 1
+During each round of the travsersal, we use a beam width to consider only losses smaller than minimum loss at this round plus beam width. This significantly reduce computation complexity while not influencing the results much.
+
+## Problem 1
 
 In this problem we need to recognize either 3 or 7 digit number. To address this requirement, we add an exit loss after the non-emitting state after the third position. Additionally, we introduced a silence HMM state following the third state.
 
-### Problem 2
+### Result
+
+## Problem 2
 
 The second problem did not impose any specific constraints, allowing us to utilize the connected HMM state graph directly for recognition.
+
+### Result
