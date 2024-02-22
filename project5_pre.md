@@ -126,4 +126,31 @@ We measured the accuracy of our system using two metrics:
 
 <!-- slide -->
 
+### Problem 2
+
+The second problem did not impose any specific constraints,
+allowing us to utilize the connected HMM state graph directly for recognition.
+
+<!-- slide -->
+
+### Finding best transition loss
+
+- We use single digit HMMs trained with 20 templates and 4 Gaussians. 
+- We explored various transition losses and identified the transition loss that yielded the best results.
+
+![Transition losses vs digit
+accuracy.](./assets/project5/transition_losses_vs_digit_accuracy.png)
+
+<!-- slide -->
+
+### Result 
+
+Best transition loss: 385.0817700584015 Sentence accuracy: 50.00%.
+Average word error rate: 10.69%.
+
+![Unrestricted digit string
+recognition.](./assets/project5/digit_string_recognition.png)
+
+<!-- slide -->
+
 ## Demo
