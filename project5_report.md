@@ -14,6 +14,17 @@ graph and connect them to form a graph of HMM states.
 The graph is then used to recognize continuous speech,
 similar to how the trie was used to spellcheck and segment the stings.
 
+To match MFCC features against the HMM states in a similar fashion as we matched
+strings against the trie nodes in project 4,
+we modified the HMM states from project 3 to include the transition loss
+(defined as the negative log transition probabilities)
+from previous states to the current state,
+as opposed to the previous implementation where we record the transition
+probabilities from the current state to the new states.
+This change makes it more each to chain HMM states corresponding to different
+digits together.
+It also allows fewer lookup operations when walking the HMM graph.
+
 To establish connections between two individual digits,
 we introduce a non-emitting state.
 This state is inserted between the last state of the previous digit and the
@@ -26,6 +37,17 @@ By starting with a non-emitting state,
 using non-emitting states to connect multiple layers of digit HMMs,
 and ending with another non-emitting state,
 we allow recognizing speech with multiple digits.
+
+To handle non-emitting states,
+we distinguish non-emitting states and process all of them before we match each
+MFCC feature vector against the emitting states.
+The resulting loss nodes (please refer to project 4 for the design of loss
+nodes) are compared to the previous losses and used to replace them if smaller,
+that is,
+these states are "teleported" before matching the next MFCC feature vector.
+After the last MFCC feature vector is processed,
+this "teleportation" process is repeated so that the HMM graph reaches the final
+non-emitting state.
 
 In each layer of digit HMMs,
 there are 10 possible digits to consider.
@@ -40,7 +62,7 @@ we traversed the feature sequence and updated the losses along the way. However,
 in this project,
 we needed to account for the presence of the non-emitting state.
 
-During each round of the travsersal,
+During each round of the traversal,
 we use a beam width to consider only losses smaller than minimum loss at this
 round plus beam width.
 This significantly reduce computation complexity while not influencing the
@@ -52,7 +74,9 @@ In this problem,
 our objective was to recognize telephone numbers consisting of either 3 or 7
 digits. To address this requirement, we made the following modifications:
 
-1. We add an exit loss after the non-emitting state following the third position. This allowed us to identify the end of a 3-digit number and initiate the recognition process.
+1. We add an exit loss after the non-emitting state following the third position.
+This allowed us to identify the end of a 3-digit number and initiate the
+recognition process.
 
 2. Additionally, we introduced a silence HMM state following the third state.
 This state helped improve the recognition accuracy by capturing pauses or breaks
