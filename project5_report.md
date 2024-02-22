@@ -1,6 +1,6 @@
 # Project 5 Report
 
-## From Single Word to Continuous Speech Recognition
+## From Single-Word to Multi-Word Speech Recognition
 
 In this project,
 we build a continuous speech recognition system using Hidden Markov Models
@@ -14,16 +14,25 @@ graph and connect them to form a graph of HMM states.
 The graph is then used to recognize continuous speech,
 similar to how the trie was used to spellcheck and segment the stings.
 
-To establish connections between the individual digits,
+To establish connections between two individual digits,
 we introduce a non-emitting state.
 This state is inserted between the last state of the previous digit and the
-first state of the next digit with a transition loss.
-This non-emitting state allows recognition of continuous speech.
+first state of the next digit.
+Non-emitting states are identical to the emitting states,
+except that they do not contain the label for a corresponding digit,
+nor parameters for the Gaussian mixtures,
+so they do not emit any observation losses.
+By starting with a non-emitting state,
+using non-emitting states to connect multiple layers of digit HMMs,
+and ending with another non-emitting state,
+we allow recognizing speech with multiple digits.
 
-In terms of the state representation,
-each position in the speech sequence had 10 possible digits to consider.
+In each layer of digit HMMs,
+there are 10 possible digits to consider.
 With each digit consisting of 5 states,
-a total of 50 states were associated with each position. Consequently,
+a total of 50 states are associated with each layer.
+<!-- TODO: Move to Problem 1. -->
+Consequently,
 for a 10-digit number, our graph comprised 10 * 50 + 11 = 511 states.
 
 Similar to project 3,
@@ -43,9 +52,7 @@ In this problem,
 our objective was to recognize telephone numbers consisting of either 3 or 7
 digits. To address this requirement, we made the following modifications:
 
-1. We add an exit loss after the non-emitting state following the third position.
-This allowed us to identify the end of a 3-digit number and initiate the
-recognition process.
+1. We add an exit loss after the non-emitting state following the third position. This allowed us to identify the end of a 3-digit number and initiate the recognition process.
 
 2. Additionally, we introduced a silence HMM state following the third state.
 This state helped improve the recognition accuracy by capturing pauses or breaks
