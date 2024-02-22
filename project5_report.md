@@ -83,7 +83,7 @@ This state helps allow a pause between the first three digits and the last four.
 
 ### Result
 
-We record wav files of telephone numbers,
+We recorded 25 `.wav` files of telephone numbers,
 the sequence can either be 4 or 7 digits long.
 Here is a sample of the telephone numbers we used:
 
@@ -144,10 +144,17 @@ presumably because of training data with less variation.
 
 ## Problem 2
 
-The second problem did not impose any specific constraints,
-allowing us to utilize the connected HMM state graph directly for recognition.
+In this problem, the digit strings do not have any specific constraints,
+so we simply connect one non-emitting state to one digit layer,
+allowing transitions from the HMM states at the end of the digit layer to the
+non-emitting state,
+from the non-emitting state to HMM states at the beginning of the digit layer.
 
-### Result
+The "insertion penalty" is implemented by adding an extra transition loss at the
+transition loss from the last digit HMM states to the non-emitting state.
+This mechanism discourages digit insertion during recognition.
+
+### Empirical Optimal Transition Loss
 
 In this experiment,
 we use single digit HMMs trained with 20 templates and 4 Gaussians. We explored
@@ -157,8 +164,12 @@ best results.
 ![Transition losses vs digit
 accuracy.](./assets/project5/transition_losses_vs_digit_accuracy.png)
 
-Best transition loss: 385.0817700584015 Sentence accuracy: 50.00%.
-Average word error rate: 10.69%.
+The observed best transition loss is 385.08,
+where the sentence accuracy is 50.00%, and the average word error rate: 10.69%,
+as shown in the figure below.
 
 ![Unrestricted digit string
 recognition.](./assets/project5/digit_string_recognition.png)
+
+Like before, the model struggles with the digit 7 and 9,
+as well as long digit strings.
