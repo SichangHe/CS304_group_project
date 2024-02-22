@@ -137,6 +137,10 @@ varying templates and Gaussians. Here are the results:
 
 We find that increasing the number of Gaussians slightly increase the accuracy
 and using more training data significantly increase the accuracy.
+We also note that the model has a tendency to recognize 4-digit numbers as
+7-digit numbers due to a lack of transition loss between digits,
+and it particularly struggles with the digit 7 and 9,
+presumably because of training data with less variation.
 
 ## Problem 2
 
