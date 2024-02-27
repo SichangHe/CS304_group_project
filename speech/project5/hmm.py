@@ -2,6 +2,7 @@
 
 import argparse
 from dataclasses import dataclass
+from itertools import groupby
 from logging import debug
 
 import numpy as np
@@ -452,6 +453,7 @@ class HMM_Single:
     transition_matrix: NDArray[np.float64]
     label: int
     states: list[HMMState]
+    n_gaussians: int
     _grouped_data: NDArray[np.int64]
     _raw_data: list[FloatArray]
     _slice_array: NDArray
@@ -478,9 +480,10 @@ class HMM_Single:
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
+        self.n_gaussians = n_gaussians
         self.continuous = True if hmm_states else False
 
-        current_n_gaussians = n_gaussians if self.continuous else 1
+        current_n_gaussians = self.n_gaussians if self.continuous else 1
 
         if self.continuous:
             self.states = hmm_states
@@ -507,7 +510,7 @@ class HMM_Single:
 
         if not self.continuous:
             self._update_parameters(current_n_gaussians)
-        while current_n_gaussians <= n_gaussians:
+        while current_n_gaussians <= self.n_gaussians:
             self._update(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self._grouped_data):
                 # Converge.
@@ -627,12 +630,32 @@ class HMM_Single:
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
 
-    def to_HMM_singles() -> list["HMM_Single"]:
+    def to_HMM_singles(self) -> list["HMM_Single"]:
         """
         Convert to a list of HMM_Single.
         Used for continuous speech training.
         """
-        pass
+        if not self.continuous:
+            raise Exception("to_HMM_singles only works for training continuous speech.")
+
+        # TODO: handle silence hmm
+
+        grouped_states = [
+            list(group) for _, group in groupby(self.states, lambda item: item.label)
+        ]
+
+        hmm_singles = [
+            HMM_Single(
+                label=index,
+                data=None,
+                n_states=self.n_states,
+                n_gaussians=self.n_gaussians,
+                hmm_states=states,
+            )
+            for index, states in enumerate(grouped_states)
+        ]
+
+        return hmm_singles
 
     def predict_score(self, target: FloatArray):
         """
