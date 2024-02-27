@@ -280,7 +280,7 @@ def _align_sequence_and_hmm_states(
         debug("intermediate_losses=%s", intermediate_losses)
         for state, intermediate_loss in intermediate_losses.items():
             if (
-                prev_losses.get(state) is None # beginning state
+                prev_losses.get(state) is None  # beginning state
                 or intermediate_loss.loss < prev_losses[state].loss
             ):
                 prev_losses[state] = intermediate_loss
@@ -448,12 +448,11 @@ class LossNode:
 
 
 class HMM_Single:
-    root: HMMState
     n_states: int
     transition_matrix: NDArray[np.float64]
-    grouped_data: NDArray[np.int64]
     label: int
     states: list[HMMState]
+    _grouped_data: NDArray[np.int64]
     _raw_data: list[FloatArray]
     _slice_array: NDArray
 
@@ -463,6 +462,7 @@ class HMM_Single:
         data: list[FloatArray],
         n_states=5,
         n_gaussians=4,
+        hmm_states: list[HMMState] = None,
     ):
         """
         Fits the model to the provided training data using segmental K-means.
@@ -478,36 +478,41 @@ class HMM_Single:
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
-        self.states = []
-        parent = None
-        for s in range(self.n_states):
-            state = HMMState(
-                parent=parent,
-                means=[],
-                covariances=[],
-                weights=[],
-                transition_loss={},
-                nth_state=s,
-                exit_loss=0,
-                label=self.label,
-            )
-            parent = state
-            self.states.append(state)
 
-        self._init()
+        current_n_gaussians = n_gaussians if hmm_states else 1
+
+        if hmm_states:
+            self.states = hmm_states
+        else:
+            self.states = []
+            parent = None
+            for s in range(self.n_states):
+                state = HMMState(
+                    parent=parent,
+                    means=[],
+                    covariances=[],
+                    weights=[],
+                    transition_loss={},
+                    nth_state=s,
+                    exit_loss=0,
+                    label=self.label,
+                )
+                parent = state
+                self.states.append(state)
+
+            self._init()
 
         prev_groups = None
-        current_n_gaussians = 1
         while current_n_gaussians <= n_gaussians:
             self._update(current_n_gaussians)
-            if prev_groups is not None and np.all(prev_groups == self.grouped_data):
+            if prev_groups is not None and np.all(prev_groups == self._grouped_data):
                 # Converge.
                 current_n_gaussians *= 2
-            prev_groups = self.grouped_data
+            prev_groups = self._grouped_data
 
     def _init(self):
         ls = [_.shape[0] for _ in self._raw_data]
-        self.grouped_data = np.array(
+        self._grouped_data = np.array(
             [np.linspace(0, l, self.n_states + 1).astype(int) for l in ls]
         )
 
@@ -530,7 +535,7 @@ class HMM_Single:
         for i in range(self.n_samples):
             a, _ = align_sequence_train(self._raw_data[i], self.states)
             alignment_result.append(a)
-        self.grouped_data = np.array(
+        self._grouped_data = np.array(
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
         )
 
@@ -548,7 +553,7 @@ class HMM_Single:
         self._slice_array = np.asarray(
             [
                 list(map(lambda x: slice(*x), zip(group, group[1:])))
-                for group in self.grouped_data
+                for group in self._grouped_data
             ],
         )
 
@@ -614,6 +619,13 @@ class HMM_Single:
             self.transition_matrix[i, i] = (total - self.n_samples) / total
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
+
+    def to_HMM_singles() -> list["HMM_Single"]:
+        """
+        Convert to a list of HMM_Single.
+        Used for continuous speech training.
+        """
+        pass
 
     def predict_score(self, target: FloatArray):
         """
