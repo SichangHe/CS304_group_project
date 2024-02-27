@@ -503,6 +503,9 @@ class HMM_Single:
             self._init()
 
         prev_groups = None
+
+        if not hmm_states:
+            self._update_parameters(current_n_gaussians)
         while current_n_gaussians <= n_gaussians:
             self._update(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self._grouped_data):
@@ -517,10 +520,6 @@ class HMM_Single:
         )
 
     def _update(self, n_gaussians: int):
-        self._calculate_slice_array()
-        self._calculate_mean_variance(n_gaussians)
-        self._calculate_transition_matrix()
-
         # transition loss
         for s in range(self.n_states):
             self.states[s].transition_loss = {
@@ -538,6 +537,13 @@ class HMM_Single:
         self._grouped_data = np.array(
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
         )
+
+        self._update_parameters(n_gaussians)
+
+    def _update_parameters(self, n_gaussians):
+        self._calculate_slice_array()
+        self._calculate_mean_variance(n_gaussians)
+        self._calculate_transition_matrix()
 
     def _state_list_2_grouped_data(self, a):
         prev = a[0]
