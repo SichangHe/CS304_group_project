@@ -3,9 +3,9 @@
 import argparse
 from dataclasses import dataclass
 from logging import debug
-from cache_to_disk import cache_to_disk
 
 import numpy as np
+from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal  # type: ignore
 from sklearn.cluster import KMeans  # type: ignore
@@ -478,10 +478,11 @@ class HMM_Single:
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((n_states, n_states))
+        self.continuous = True if hmm_states else False
 
-        current_n_gaussians = n_gaussians if hmm_states else 1
+        current_n_gaussians = n_gaussians if self.continuous else 1
 
-        if hmm_states:
+        if self.continuous:
             self.states = hmm_states
         else:
             self.states = []
@@ -504,7 +505,7 @@ class HMM_Single:
 
         prev_groups = None
 
-        if not hmm_states:
+        if not self.continuous:
             self._update_parameters(current_n_gaussians)
         while current_n_gaussians <= n_gaussians:
             self._update(current_n_gaussians)
