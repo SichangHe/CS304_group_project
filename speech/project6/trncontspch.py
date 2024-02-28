@@ -6,7 +6,7 @@ from typing import Final
 from speech import FloatArray
 from speech.project2.main import NUMBERS
 from speech.project3 import boosted_mfcc_from_file
-from speech.project5.hmm import HMM_Single, HMMState
+from speech.project5.hmm import HMM_Single, HMMState, clone_hmm_states
 from speech.project5.phone_rand import (
     ALL_TRAINING_INDEXES,
     build_digit_hmms,
@@ -15,24 +15,33 @@ from speech.project5.phone_rand import (
 from speech.project6.digit_sequences import INDEXES, SEQUENCES
 
 
-# FIXME: Copy the input digits, and return list of states.
-def hmm_states_from_sequence(sequence: str, digit_hmms: dict[int, HMM_Single]):
-    silence_states = [load_silence_hmms(), load_silence_hmms()]
-    sequence_hmm_states = [digit_hmms[int(digit)].states for digit in sequence]
+def hmm_states_from_sequence(
+    sequence: str, digit_hmms: list[HMM_Single], silence_hmm: HMMState
+) -> list[HMMState]:
+    """Connect `digit_hmms` for digits `sequence` and pad with silence at both
+    ends."""
+    sequence_hmm_state_lists = [
+        # Defensive copy.
+        clone_hmm_states(digit_hmms[int(digit)].states)
+        for digit in sequence
+    ]
+    ## Connect digits.
+    for prev_states, next_states in zip(
+        sequence_hmm_state_lists, sequence_hmm_state_lists[1:]
+    ):
+        next_states[0].transition_loss[prev_states[-1]] = prev_states[-1].exit_loss
 
-    silence_to_digit_loss = 100
-    stay_silence_loss = 100
-    transition_loss = 100
+    ## Insert silence.
+    # Defensive copy silence states.
+    start_silence_state = clone_hmm_states([silence_hmm])[0]
+    end_silence_state = clone_hmm_states([silence_hmm])[0]
+    digit_states = [
+        states for state_list in sequence_hmm_state_lists for states in state_list
+    ]
+    digit_states[0].transition_loss[start_silence_state] = start_silence_state.exit_loss
+    end_silence_state.transition_loss[digit_states[-1]] = digit_states[-1].exit_loss
 
-    sequence_hmm_states[0][0].transition_loss[silence_states[0]] = silence_to_digit_loss
-    silence_states[0].transition_loss[silence_states[0]] = stay_silence_loss
-    silence_states[1].transition_loss[sequence_hmm_states[-1][0]] = sequence_hmm_states[
-        -1
-    ][0].exit_loss
-    silence_states[1].transition_loss[silence_states[1]] = stay_silence_loss
-
-    for prev, next in zip(sequence_hmm_states, sequence_hmm_states[1:]):
-        next[0].transition_loss[prev[-1]] = transition_loss
+    return [start_silence_state] + digit_states + [end_silence_state]
 
 
 def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
@@ -52,6 +61,7 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
         ]
         for sequence in SEQUENCES
     }
+    silence_hmm = load_silence_hmms()
 
     digit_hmms: dict[int, HMM_Single] = {}
     digit_features: dict[int, list[FloatArray]] = {}
@@ -70,8 +80,9 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
             digit: features for digit, features in isolated_digit_features.items()
         }
 
+        digit_hmm_list = [digit_hmms[digit] for digit in range(10)]
         for sequence, features in sequence_features.items():
-            hmm_states = hmm_states_from_sequence(sequence, digit_hmms)
+            hmm_states = hmm_states_from_sequence(sequence, digit_hmm_list, silence_hmm)
             # TODO: Align sequence against `hmm_states` and add the resulting
             # features to `digit_features`.
 
