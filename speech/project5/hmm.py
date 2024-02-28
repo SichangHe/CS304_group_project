@@ -409,7 +409,9 @@ def align_sequence_train(
     return alignment, list(current_losses.values())[-1].loss
 
 
-def align_sequence_cont_train(sequence: FloatArray, hmm_states: list[HMMState]):
+def align_sequence_cont_train(
+    sequence: FloatArray, hmm_states: list[HMMState], beam_width=2000.0
+):
     """align a sequence vs a hmm model"""
     sequence_length = len(sequence)
 
@@ -437,6 +439,7 @@ def align_sequence_cont_train(sequence: FloatArray, hmm_states: list[HMMState]):
     current_losses: dict[HMMState, LossNode] = {}
     for t in range(1, sequence_length):
         current_losses = {}
+        round_min_loss = np.inf
         for node in hmm_states:
             combined_losses: list[tuple[LossNode, float]] = []
             for k, v in node.transition_loss.items():
@@ -452,19 +455,32 @@ def align_sequence_cont_train(sequence: FloatArray, hmm_states: list[HMMState]):
                         node.means, node.covariances, node.weights
                     )
                 )
+
+                if emission_loss == np.inf:
+                    continue
+
                 best_loss_node, min_loss = min(combined_losses, key=lambda x: x[1])
-                current_losses.update(
-                    {
-                        node: LossNode(
-                            state_node=node,
-                            prev_end_loss_node=best_loss_node,
-                            loss=min_loss + emission_loss,
-                        )
-                    }
-                )
+                potential_loss = min_loss + emission_loss
+                round_min_loss = min(round_min_loss, potential_loss)
+                current_losses = {
+                    k: v
+                    for k, v in current_losses.items()
+                    if v.loss < round_min_loss + beam_width
+                }
+                if potential_loss < round_min_loss + beam_width:
+                    current_losses.update(
+                        {
+                            node: LossNode(
+                                state_node=node,
+                                prev_end_loss_node=best_loss_node,
+                                loss=potential_loss,
+                            )
+                        }
+                    )
 
         prev_losses = current_losses
 
+    print(current_losses)
     prev_loss = current_losses[hmm_states[-1]]
     alignment = [(prev_loss.state_node.label, prev_loss.state_node.nth_state)]
     while maybe_prev := prev_loss.prev_end_loss_node:
@@ -482,9 +498,18 @@ def align_sequence_cont_train(sequence: FloatArray, hmm_states: list[HMMState]):
     sequence_dict: dict[int, FloatArray] = {
         k: np.stack([sequence[g[0]] for g in v])
         for k, v in grouped_indiced_alignment.items()
+        if k != -1
     }
 
-    return sequence_dict, current_losses[hmm_states[-1]].loss
+    alignment_dict: dict[int, FloatArray] = {
+        k: np.stack([g[0] for g in v])
+        for k, v in grouped_indiced_alignment.items()
+        if k != -1
+    }
+
+    alignment_slice = {k: (v[0], v[-1]) for k, v in alignment_dict.items()}
+
+    return sequence_dict, alignment_slice, current_losses[hmm_states[-1]].loss
 
 
 @dataclass
