@@ -480,7 +480,6 @@ def align_sequence_cont_train(
 
         prev_losses = current_losses
 
-    print(current_losses)
     prev_loss = current_losses[hmm_states[-1]]
     alignment = [(prev_loss.state_node.label, prev_loss.state_node.nth_state)]
     while maybe_prev := prev_loss.prev_end_loss_node:
@@ -555,25 +554,9 @@ class HMM_Single:
     transition_matrix: NDArray[np.float64]
     label: int
     states: list[HMMState]
-    n_gaussians: int
-    features: list[dict[str, list[FloatArray]]]
-    """
-    [
-        {   
-            // digit 0
-            "isolated_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-            "isolated_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-            "continuous_0_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-            "continuous_0_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-        },
-        {
-            // digit 1
-            ...
-        },
-    ]
-    """
-    _grouped_data: NDArray[np.int64]
+    
     _raw_data: list[FloatArray]
+    _grouped_data: NDArray[np.int64]
     _slice_array: NDArray
 
     def __init__(
@@ -582,7 +565,6 @@ class HMM_Single:
         data: list[FloatArray],
         n_states=5,
         n_gaussians=4,
-        hmm_states: list[HMMState] = None,
     ):
         """
         Fits the model to the provided training data using segmental K-means.
@@ -598,38 +580,27 @@ class HMM_Single:
         self.n_states = n_states
         self.n_samples = len(data)
         self.transition_matrix = np.zeros((self.n_states, self.n_states))
-        self.n_gaussians = n_gaussians
-        self.continuous = True if hmm_states else False
-        self.features = [{} for _ in range(11)]
+        self.states = []
+        parent = None
+        for s in range(self.n_states):
+            state = HMMState(
+                parent=parent,
+                means=[],
+                covariances=[],
+                weights=[],
+                transition_loss={},
+                nth_state=s,
+                exit_loss=0,
+                label=self.label,
+            )
+            parent = state
+            self.states.append(state)
 
-        current_n_gaussians = self.n_gaussians if self.continuous else 1
-
-        if self.continuous:
-            self.states = hmm_states
-        else:
-            self.states = []
-            parent = None
-            for s in range(self.n_states):
-                state = HMMState(
-                    parent=parent,
-                    means=[],
-                    covariances=[],
-                    weights=[],
-                    transition_loss={},
-                    nth_state=s,
-                    exit_loss=0,
-                    label=self.label,
-                )
-                parent = state
-                self.states.append(state)
-
-            self._init()
+        self._init()
 
         prev_groups = None
-
-        if not self.continuous:
-            self._update_parameters(current_n_gaussians)
-        while current_n_gaussians <= self.n_gaussians:
+        current_n_gaussians = 1
+        while current_n_gaussians <= n_gaussians:
             self._update(current_n_gaussians)
             if prev_groups is not None and np.all(prev_groups == self._grouped_data):
                 # Converge.
@@ -643,6 +614,10 @@ class HMM_Single:
         )
 
     def _update(self, n_gaussians: int):
+        self._calculate_slice_array()
+        self._calculate_mean_variance(n_gaussians)
+        self._calculate_transition_matrix()
+
         # transition loss
         for s in range(self.n_states):
             self.states[s].transition_loss = {
@@ -661,14 +636,6 @@ class HMM_Single:
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
         )
 
-        self._save_features()
-        self._update_parameters(n_gaussians)
-
-    def _update_parameters(self, n_gaussians):
-        self._calculate_slice_array()
-        self._calculate_mean_variance(n_gaussians)
-        self._calculate_transition_matrix()
-
     def _state_list_2_grouped_data(self, a):
         prev = a[0]
         r = [prev]
@@ -686,13 +653,6 @@ class HMM_Single:
                 for group in self._grouped_data
             ],
         )
-
-    def _save_features(self):
-        for sequence_idx, sequence_slices in enumerate(self._slice_array):
-            sequence_grouped_features = [
-                self._raw_data[sequence_idx][slice] for slice in sequence_slices
-            ]
-            self.features[self.label][sequence_idx] = sequence_grouped_features
 
     def _calculate_mean_variance(self, n_gaussians: int):
         for state in range(self.n_states):
@@ -756,33 +716,6 @@ class HMM_Single:
             self.transition_matrix[i, i] = (total - self.n_samples) / total
             if i + 1 < self.n_states:
                 self.transition_matrix[i, i + 1] = self.n_samples / total
-
-    def to_HMM_singles(self) -> list["HMM_Single"]:
-        """
-        Convert to a list of HMM_Single.
-        Used for continuous speech training.
-        """
-        if not self.continuous:
-            raise Exception("to_HMM_singles only works for training continuous speech.")
-
-        # TODO: handle silence hmm
-
-        grouped_states = [
-            list(group) for _, group in groupby(self.states, lambda item: item.label)
-        ]
-
-        hmm_singles = [
-            HMM_Single(
-                label=index,
-                data=None,
-                n_states=self.n_states,
-                n_gaussians=self.n_gaussians,
-                hmm_states=states,
-            )
-            for index, states in enumerate(grouped_states)
-        ]
-
-        return hmm_singles
 
     def predict_score(self, target: FloatArray):
         """
