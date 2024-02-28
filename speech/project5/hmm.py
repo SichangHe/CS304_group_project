@@ -20,7 +20,6 @@ from speech.project3 import (
     TEST_INDEXES,
     boosted_mfcc_from_file,
 )
-from speech.project6.trncontspch import hmm_states_from_sequence
 
 MINUS_INF = -INF_FLOAT32
 
@@ -410,9 +409,7 @@ def align_sequence_train(
     return alignment, list(current_losses.values())[-1].loss
 
 
-def align_sequence_cont_train(
-    sequence: FloatArray, hmm_states: list[HMMState], silence_states: list[HMMState]
-):
+def align_sequence_cont_train(sequence: FloatArray, hmm_states: list[HMMState]):
     """align a sequence vs a hmm model"""
     sequence_length = len(sequence)
 
@@ -420,8 +417,8 @@ def align_sequence_cont_train(
 
     # initialize prev_losses with silence state
     prev_losses: dict[HMMState, LossNode] = {
-        silence_states[0]: LossNode(
-            state_node=silence_states[0],
+        hmm_states[0]: LossNode(
+            state_node=hmm_states[0],
             prev_end_loss_node=None,
             loss=min(
                 multivariate_gaussian_negative_log_pdf_diag_cov(
@@ -429,9 +426,9 @@ def align_sequence_cont_train(
                 )
                 - np.log(weight)
                 for mean, cov, weight in zip(
-                    silence_states[0].means,
-                    silence_states[0].covariances,
-                    silence_states[0].weights,
+                    hmm_states[0].means,
+                    hmm_states[0].covariances,
+                    hmm_states[0].weights,
                 )
             ),
         )
@@ -440,7 +437,7 @@ def align_sequence_cont_train(
     current_losses: dict[HMMState, LossNode] = {}
     for t in range(1, sequence_length):
         current_losses = {}
-        for node in silence_states + hmm_states:
+        for node in hmm_states:
             combined_losses: list[tuple[LossNode, float]] = []
             for k, v in node.transition_loss.items():
                 if l := prev_losses.get(k):
@@ -468,7 +465,7 @@ def align_sequence_cont_train(
 
         prev_losses = current_losses
 
-    prev_loss = current_losses[silence_states[-1]]
+    prev_loss = current_losses[hmm_states[-1]]
     alignment = [(prev_loss.state_node.label, prev_loss.state_node.nth_state)]
     while maybe_prev := prev_loss.prev_end_loss_node:
         prev_loss = maybe_prev
@@ -476,7 +473,18 @@ def align_sequence_cont_train(
 
     alignment.reverse()
 
-    return alignment, current_losses[silence_states[-1]].loss
+    indiced_alignment = list(enumerate(alignment))
+    indiced_alignment.sort(key=lambda x: x[1][0])
+    grouped_indiced_alignment = {
+        digit: list([(g[0], g[1][1]) for g in group])
+        for digit, group in groupby(indiced_alignment, lambda x: x[1][0])
+    }
+    sequence_dict: dict[int, FloatArray] = {
+        k: np.stack([sequence[g[0]] for g in v])
+        for k, v in grouped_indiced_alignment.items()
+    }
+
+    return sequence_dict, current_losses[hmm_states[-1]].loss
 
 
 @dataclass
@@ -756,82 +764,6 @@ class HMM_Single:
         Take a target sequence and return similarity with the training samples.
         """
         return align_sequence_train(target, self.states)
-
-
-class """ ContinuousHMM """:
-    n_states: int
-    transition_matrix: NDArray[np.float64]
-    label: int
-    hmm_singles: list[HMM_Single]
-    n_gaussians: int
-    features: list[dict[str, list[FloatArray]]]
-    """
-    [
-        {   
-            // digit 0
-            "isolated_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-            "isolated_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-            "continuous_0_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-            "continuous_0_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
-        },
-        {
-            // digit 1
-            ...
-        },
-    ]
-    """
-    _grouped_data: NDArray[np.int64]
-    _raw_data: list[FloatArray]
-    _slice_array: NDArray
-
-    def __init__(
-        self,
-        hmm_singles: list[HMM_Single],
-        features: list[dict[str, list[FloatArray]]],
-        n_states=5,
-        n_gaussians=4,
-    ):
-        """
-        Fits the model to the provided training data using segmental K-means.
-
-        Parameters:
-        data: The training data.
-            It should have the shape (N, l) or (N, l, d), where N is the number of training samples
-            and l is the length of each training sample.
-            Each training sample can be a scalar or a vector.
-        """
-        self.n_states = n_states
-        self.transition_matrix = np.zeros((self.n_states, self.n_states))
-        self.n_gaussians = n_gaussians
-        self.features = features
-        self.hmm_singles = hmm_singles
-
-    def _save_features(
-        self, alignment: dict[int, list[slice]], feature, sequence_id: str
-    ):
-        for k, v in alignment.items():
-            digit_grouped_features = [feature[s] for s in v]
-            self.features[k][id] = digit_grouped_features
-
-    def add_sequences(self, sequences: list[FloatArray], label: str, ids: list[str]):
-        """
-        Train a list of sequences.
-        label is string of ground truth, such as "13579"
-        """
-        states, silence_states = hmm_states_from_sequence(label, self.hmm_singles)
-
-        # TODO: iterate until convergence
-        for sequence, sequence_id in zip(sequences, ids):
-            alignment, score = align_sequence_cont_train(
-                sequence, states, silence_states
-            )
-            # alignment: {1: [slice(0, 15), slice(15, 30), slice(30, 45), slice(45, 60), slice(60, 75)]}
-            # update features using the alignment
-            self._save_features(alignment, sequence, sequence_id)
-        # TODO: update self.hmm_singles using new grouped features
-
-    def _update_hmm_singles(self):
-        pass
 
 
 def single_hmm_w_template_file_names(
