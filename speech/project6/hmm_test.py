@@ -21,8 +21,8 @@ class TestAudio(unittest.TestCase):
         print(score)
 
     def test_save_features(self):
-        digit_hmms = build_digit_hmms()
-        print(digit_hmms[1].features[1])
+        digit_hmms = build_digit_hmms(indices=[1, 2, 3, 4, 5])
+        print(digit_hmms[1].features[1].values())
 
 
 unittest.main() if __name__ == "__main__" else None

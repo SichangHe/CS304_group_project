@@ -654,9 +654,11 @@ class HMM_Single:
         )
 
     def _save_features(self):
-        for i, _ in enumerate(self._slice_array):
-            digit_grouped_features = [self._raw_data[slice] for slice in _]
-            self.features[self.label][i] = digit_grouped_features
+        for sequence_idx, sequence_slices in enumerate(self._slice_array):
+            sequence_grouped_features = [
+                self._raw_data[sequence_idx][slice] for slice in sequence_slices
+            ]
+            self.features[self.label][sequence_idx] = sequence_grouped_features
 
     def _calculate_mean_variance(self, n_gaussians: int):
         for state in range(self.n_states):

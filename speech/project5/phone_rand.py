@@ -64,10 +64,9 @@ def load_silence_hmms():
     return silence_single_hmms.states[0]
 
 
-def build_digit_hmms():
+def build_digit_hmms(indices=ALL_TRAINING_INDEXES):
     template_files_list = [
-        [f"recordings/{number}{i}.wav" for i in ALL_TRAINING_INDEXES]
-        for number in NUMBERS[:10]
+        [f"recordings/{number}{i}.wav" for i in indices] for number in NUMBERS[:10]
     ]
     return [
         single_hmm_w_template_file_names(
