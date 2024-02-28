@@ -14,10 +14,10 @@ from speech.project6.trncontspch import hmm_states_from_sequence
 class TestAudio(unittest.TestCase):
     def test_continuous_alignment(self):
         digit_hmms = build_digit_hmms()
-        states = hmm_states_from_sequence("165890", digit_hmms)
+        states = hmm_states_from_sequence("165890", digit_hmms, load_silence_hmms())
         np.random.seed(0)
         samples = boosted_mfcc_from_file("recordings/123456.wav")
-        alignment, score = align_sequence_cont_train(samples, states)
+        alignment, slice, score = align_sequence_cont_train(samples, states)
         print(alignment, score)
 
     def test_save_features(self):

@@ -1,14 +1,18 @@
 """Training digit HMMs from continuous speech.
 Run as `python3 -m speech.project6.trncontspch`"""
 
-from functools import reduce
+import itertools
 from typing import Final
 
 from speech import FloatArray
 from speech.project2.main import NUMBERS
 from speech.project3 import boosted_mfcc_from_file
-from speech.project5.hmm import HMM_Single, align_sequence_cont_train, clone_hmm_states
-from speech.project5.hmm import HMM_Single, HMMState, clone_hmm_states
+from speech.project5.hmm import (
+    HMM_Single,
+    HMMState,
+    align_sequence_cont_train,
+    clone_hmm_states,
+)
 from speech.project5.phone_rand import (
     ALL_TRAINING_INDEXES,
     build_digit_hmms,
@@ -70,9 +74,13 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
     new_digit_features = {
         digit: features for digit, features in isolated_digit_features.items()
     }
-    while new_digit_features != digit_features:
+    alignment = {}
+    new_alignment = {}
+
+    while not tolerate_alignment_diff(new_alignment, alignment):
         # Did not converge. Train again.
         digit_features = new_digit_features
+        alignment = new_alignment
         digit_hmms = {
             digit: HMM_Single(digit, features, n_states, n_gaussians)
             for digit, features in digit_features.items()
@@ -81,6 +89,7 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
         new_digit_features = {
             digit: features for digit, features in isolated_digit_features.items()
         }
+        new_alignment = {}
 
         digit_hmm_list = [digit_hmms[digit] for digit in range(10)]
         for sequence, features in sequence_features.items():
@@ -89,20 +98,42 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
                 align_sequence_cont_train(feature, hmm_states)[0]
                 for feature in features
             ]
+            alignment_list = [
+                align_sequence_cont_train(feature, hmm_states)[1]
+                for feature in features
+            ]
             concatenated_feature_dict = {
                 k: [d[k] for d in feature_list if k in d]
                 for k in feature_list[0].keys()
             }
-            # TODO: Align sequence against `hmm_states` and add the resulting
-            # features to `digit_features`.
+            concatenated_alignment_dict = {
+                k: [d[k] for d in alignment_list if k in d]
+                for k in alignment_list[0].keys()
+            }
+            for key in new_digit_features:
+                new_digit_features[key] = (
+                    new_digit_features[key] + concatenated_feature_dict[key]
+                )
+            for key in concatenated_alignment_dict:
+                new_alignment[key] = (
+                    new_alignment.get(key, []) + concatenated_alignment_dict[key]
+                )
 
     return digit_hmms
 
 
+def tolerate_alignment_diff(a, b, eps=0.05):
+    if len(a) == 0 or len(b) == 0:
+        return False
+    l1 = list(itertools.chain.from_iterable(a.values()))
+    l2 = list(itertools.chain.from_iterable(b.values()))
+    assert len(l1) == len(l2)
+    print(f"Diff: {sum(x != y for x, y in zip(l1, l2))}, Total: {len(l1)}")
+    return sum(x != y for x, y in zip(l1, l2)) / len(l1) < eps
+
+
 def main() -> None:
-    digit_hmms = build_digit_hmms()
-    for sequence in SEQUENCES:
-        emitting_states, silence_states = hmm_states_from_sequence(sequence, digit_hmms)
+    train_digit_sequences()
 
 
 main() if __name__ == "__main__" else None
