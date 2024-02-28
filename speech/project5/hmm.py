@@ -6,7 +6,6 @@ from itertools import groupby
 from logging import debug
 
 import numpy as np
-from cache_to_disk import cache_to_disk
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal  # type: ignore
 from sklearn.cluster import KMeans  # type: ignore
@@ -523,6 +522,22 @@ class HMM_Single:
     label: int
     states: list[HMMState]
     n_gaussians: int
+    features: list[dict[str, list[FloatArray]]]
+    """
+    [
+        {   
+            // digit 0
+            "isolated_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+            "isolated_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+            "continuous_0_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+            "continuous_0_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+        },
+        {
+            // digit 1
+            ...
+        },
+    ]
+    """
     _grouped_data: NDArray[np.int64]
     _raw_data: list[FloatArray]
     _slice_array: NDArray
@@ -548,9 +563,10 @@ class HMM_Single:
         self._raw_data = data
         self.n_states = n_states
         self.n_samples = len(data)
-        self.transition_matrix = np.zeros((n_states, n_states))
+        self.transition_matrix = np.zeros((self.n_states, self.n_states))
         self.n_gaussians = n_gaussians
         self.continuous = True if hmm_states else False
+        self.features = [{} for _ in range(11)]
 
         current_n_gaussians = self.n_gaussians if self.continuous else 1
 
@@ -611,6 +627,7 @@ class HMM_Single:
             list(map(lambda x: self._state_list_2_grouped_data(x), alignment_result))
         )
 
+        self._save_features()
         self._update_parameters(n_gaussians)
 
     def _update_parameters(self, n_gaussians):
@@ -635,6 +652,11 @@ class HMM_Single:
                 for group in self._grouped_data
             ],
         )
+
+    def _save_features(self):
+        for i, _ in enumerate(self._slice_array):
+            digit_grouped_features = [self._raw_data[slice] for slice in _]
+            self.features[self.label][i] = digit_grouped_features
 
     def _calculate_mean_variance(self, n_gaussians: int):
         for state in range(self.n_states):
@@ -733,7 +755,6 @@ class HMM_Single:
         return align_sequence_train(target, self.states)
 
 
-@cache_to_disk(2)
 def single_hmm_w_template_file_names(
     label: int,
     template_file_names: list[str],

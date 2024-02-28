@@ -16,11 +16,13 @@ class TestAudio(unittest.TestCase):
         states, silence_states = hmm_states_from_sequence("165890", digit_hmms)
         np.random.seed(0)
         samples = boosted_mfcc_from_file("recordings/123456.wav")
-        alignment, score = align_sequence_cont_train(
-            samples, states, silence_states
-        )
+        alignment, score = align_sequence_cont_train(samples, states, silence_states)
         print(alignment)
         print(score)
+
+    def test_save_features(self):
+        digit_hmms = build_digit_hmms()
+        print(digit_hmms[1].features[1])
 
 
 unittest.main() if __name__ == "__main__" else None
