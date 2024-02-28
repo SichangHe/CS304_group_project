@@ -20,6 +20,7 @@ from speech.project3 import (
     TEST_INDEXES,
     boosted_mfcc_from_file,
 )
+from speech.project6.trncontspch import hmm_states_from_sequence
 
 MINUS_INF = -INF_FLOAT32
 
@@ -755,6 +756,82 @@ class HMM_Single:
         Take a target sequence and return similarity with the training samples.
         """
         return align_sequence_train(target, self.states)
+
+
+class """ ContinuousHMM """:
+    n_states: int
+    transition_matrix: NDArray[np.float64]
+    label: int
+    hmm_singles: list[HMM_Single]
+    n_gaussians: int
+    features: list[dict[str, list[FloatArray]]]
+    """
+    [
+        {   
+            // digit 0
+            "isolated_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+            "isolated_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+            "continuous_0_0": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+            "continuous_0_1": [features of state 0, features of state 1, features of state 2, features of state 3, features of state 4],
+        },
+        {
+            // digit 1
+            ...
+        },
+    ]
+    """
+    _grouped_data: NDArray[np.int64]
+    _raw_data: list[FloatArray]
+    _slice_array: NDArray
+
+    def __init__(
+        self,
+        hmm_singles: list[HMM_Single],
+        features: list[dict[str, list[FloatArray]]],
+        n_states=5,
+        n_gaussians=4,
+    ):
+        """
+        Fits the model to the provided training data using segmental K-means.
+
+        Parameters:
+        data: The training data.
+            It should have the shape (N, l) or (N, l, d), where N is the number of training samples
+            and l is the length of each training sample.
+            Each training sample can be a scalar or a vector.
+        """
+        self.n_states = n_states
+        self.transition_matrix = np.zeros((self.n_states, self.n_states))
+        self.n_gaussians = n_gaussians
+        self.features = features
+        self.hmm_singles = hmm_singles
+
+    def _save_features(
+        self, alignment: dict[int, list[slice]], feature, sequence_id: str
+    ):
+        for k, v in alignment.items():
+            digit_grouped_features = [feature[s] for s in v]
+            self.features[k][id] = digit_grouped_features
+
+    def add_sequences(self, sequences: list[FloatArray], label: str, ids: list[str]):
+        """
+        Train a list of sequences.
+        label is string of ground truth, such as "13579"
+        """
+        states, silence_states = hmm_states_from_sequence(label, self.hmm_singles)
+
+        # TODO: iterate until convergence
+        for sequence, sequence_id in zip(sequences, ids):
+            alignment, score = align_sequence_cont_train(
+                sequence, states, silence_states
+            )
+            # alignment: {1: [slice(0, 15), slice(15, 30), slice(30, 45), slice(45, 60), slice(60, 75)]}
+            # update features using the alignment
+            self._save_features(alignment, sequence, sequence_id)
+        # TODO: update self.hmm_singles using new grouped features
+
+    def _update_hmm_singles(self):
+        pass
 
 
 def single_hmm_w_template_file_names(
