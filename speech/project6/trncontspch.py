@@ -7,15 +7,22 @@ from speech.project6.digit_sequences import SEQUENCES
 
 
 def hmm_states_from_sequence(sequence: str, digit_hmms: list[HMM_Single]):
-    silence_states = [load_silence_hmms() for _ in range(len(sequence) + 1)]
+    silence_states = [load_silence_hmms(), load_silence_hmms()]
     sequence_hmm_states = [digit_hmms[int(digit)].states for digit in sequence]
-    for i, sequence_hmm_state in enumerate(sequence_hmm_states):
-        sequence_hmm_state[0].transition_loss[silence_states[i]] = 0
-        silence_states[i].transition_loss[silence_states[i]] = 100  # TODO
-        silence_states[i + 1].transition_loss[sequence_hmm_state[-1]] = (
-            sequence_hmm_state[-1].exit_loss
-        )
-    silence_states[-1].transition_loss[silence_states[-1]] = 100 # TODO
+
+    silence_to_digit_loss = 100
+    stay_silence_loss = 100
+    transition_loss = 100
+
+    sequence_hmm_states[0][0].transition_loss[silence_states[0]] = silence_to_digit_loss
+    silence_states[0].transition_loss[silence_states[0]] = stay_silence_loss
+    silence_states[1].transition_loss[sequence_hmm_states[-1][0]] = sequence_hmm_states[
+        -1
+    ][0].exit_loss
+    silence_states[1].transition_loss[silence_states[1]] = stay_silence_loss
+
+    for prev, next in zip(sequence_hmm_states, sequence_hmm_states[1:]):
+        next[0].transition_loss[prev[-1]] = transition_loss
 
     return [state for states in sequence_hmm_states for state in states], silence_states
 
