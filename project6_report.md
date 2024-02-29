@@ -1,5 +1,18 @@
 # Project 6 Report
 
+## Implementation
+
+1. Initialize the Hidden Markov Model (HMM) with isolated word features.
+
+2. Proceed to segment the continuous speech feature vectors by connecting the HMM states. This segmentation
+process divides the continuous speech feature vectors into separate parts, each corresponding to a specific digit.
+
+3. Use the separated digit feature vectors, along with the original isolated word features used in step 1,
+to train a new isolated word HMMs.
+
+4. If convergence is not achieved (i.e., the alignment of continuous speech feature vectors for each
+digit does not remain unchanged), return to step 2.
+
 ## Alternative Approaches
 
 Before we adopted the approach documented in the lecture slides,
