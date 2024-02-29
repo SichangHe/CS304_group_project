@@ -74,8 +74,8 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
     new_digit_features = {
         digit: features for digit, features in isolated_digit_features.items()
     }
-    alignment = {}
-    new_alignment = {}
+    alignment: dict[int, list[tuple[int, int]]] = {}
+    new_alignment: dict[int, list[tuple[int, int]]] = {}
 
     while not tolerate_alignment_diff(new_alignment, alignment):
         # Did not converge. Train again.
@@ -94,14 +94,12 @@ def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
         digit_hmm_list = [digit_hmms[digit] for digit in range(10)]
         for sequence, features in sequence_features.items():
             hmm_states = hmm_states_from_sequence(sequence, digit_hmm_list, silence_hmm)
-            feature_list = [
-                align_sequence_cont_train(feature, hmm_states)[0]
-                for feature in features
+            result_list = [
+                align_sequence_cont_train(feature, hmm_states) for feature in features
             ]
-            alignment_list = [
-                align_sequence_cont_train(feature, hmm_states)[1]
-                for feature in features
-            ]
+            feature_list = [result[0] for result in result_list]
+            alignment_list = [result[1] for result in result_list]
+
             concatenated_feature_dict = {
                 k: [d[k] for d in feature_list if k in d]
                 for k in feature_list[0].keys()
