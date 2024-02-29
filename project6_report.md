@@ -1,18 +1,5 @@
 # Project 6 Report
 
-## Implementation
-
-1. Initialize the Hidden Markov Model (HMM) with isolated word features.
-
-2. Proceed to segment the continuous speech feature vectors by connecting the HMM states. This segmentation
-process divides the continuous speech feature vectors into separate parts, each corresponding to a specific digit.
-
-3. Use the separated digit feature vectors, along with the original isolated word features used in step 1,
-to train new isolated word HMMs.
-
-4. If convergence is not achieved (i.e., the alignment of continuous speech feature vectors for each
-digit does not remain unchanged), return to step 2.
-
 ## Alternative Approaches
 
 Before we adopted the approach documented in the lecture slides,
@@ -25,10 +12,25 @@ we brainstormed some alternative approaches:
     from all sequences.
 
 The two latter approaches may not converge, so we did not attempt them.
-We tried with the first approach,
+We experimented with the first approach,
 but it was very complicated to implement.
 
 ## Training With Continuous Speech
+
+1. Initialize the Hidden Markov Model (HMM) with isolated word features.
+
+2. Proceed to segment the continuous speech feature vectors by connecting the HMM
+states directly, without adding non-emitting states.
+This segmentation process divides the continuous speech feature vectors into
+separate parts, each corresponding to a specific digit.
+
+3. Use the separated digit feature vectors,
+along with the original isolated word features used in step 1,
+to train new isolated word HMMs.
+
+4. If convergence is not achieved (i.e.,
+the alignment of continuous speech feature vectors for each digit does not
+remain unchanged), return to step 2.
 
 It takes around 17min to train the continuous speech model with 20 isolated
 templates, all the continuous templates, and 4 Gaussians.
@@ -86,7 +88,7 @@ The new results, displayed in the diagram below, show significant improvement:
 Sentence accuracy: 70.00%—7 digit string were recognized correctly.
 Avg word error rate: 7.24%.
 
-Best transition loss: 462.09812268378744
+Best transition loss: 462.09812268378744.
 Sentence accuracy: 80.00%.
 Average word error rate: 3.27%.
 
@@ -107,3 +109,8 @@ Recognition Trained With 20 Isolated Templates, 30 Continuous Templates,
 And 4 Gaussians.](digit_string_recognition_improved.png)
 
 ## Conclusion
+
+In conclusion,
+the results of this project demonstrate that training with continuous speech can
+significantly improve the accuracy of telephone number recognition and
+unrestricted digit string recognition.
