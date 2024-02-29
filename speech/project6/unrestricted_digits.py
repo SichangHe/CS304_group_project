@@ -38,7 +38,7 @@ def main() -> None:
     ax.legend()
     plt.xticks(ha="center", rotation=60)
     plt.show(block=True)
-    fig.savefig("transition_losses_vs_digit_accuracy.png", bbox_inches="tight")
+    fig.savefig("transition_losses_vs_digit_accuracy_improved.png", bbox_inches="tight")
 
     best_transition_loss, (
         recognitions,
@@ -71,7 +71,7 @@ Average word error rate: {avg(word_error_rates):.2f}%."""
     ax.set_ylabel("% Word Error Rate")
     plt.xticks(ha="center", rotation=60)
     plt.show(block=True)
-    fig.savefig("digit_string_recognition.png", bbox_inches="tight")
+    fig.savefig("digit_string_recognition_improved.png", bbox_inches="tight")
 
 
 main() if __name__ == "__main__" else None

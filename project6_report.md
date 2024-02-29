@@ -1,9 +1,38 @@
 # Project 6 Report
 
+## Alternative Approaches
+
+Before we adopted the approach documented in the lecture slides,
+we brainstormed some alternative approaches:
+
+1. Each HMM state stores a set of groups of associated features,
+    which are updated each round.
+1. Change the means, variances, and transition losses of each state each round.
+1. Aggregate the means, variances, and transition losses of training output
+    from all sequences.
+
+The two latter approaches may not converge, so we did not attempt them.
+We tried with the first approach,
+but it was very complicated to implement.
+
 ## Training With Continuous Speech
 
 It takes around 17min to train the continuous speech model with 20 isolated
 templates, all the continuous templates, and 4 Gaussians.
+The training takes 9 iterations to converge,
+as shown in the log of the difference of feature segmenting in each round:
+
+```sh
+Diff: 222, Total: 300
+Diff: 75, Total: 300
+Diff: 66, Total: 300
+Diff: 25, Total: 300
+Diff: 16, Total: 300
+Diff: 26, Total: 300
+Diff: 22, Total: 300
+Diff: 23, Total: 300
+Diff: 0, Total: 300
+```
 
 ## Telephone Number Recognition Results
 
@@ -15,7 +44,7 @@ with single HMM trained with 20 templates for each digit with 4 Gaussians:
 Sentence accuracy: 36.00%—9 telephone numbers were recognized correctly.
 Average word accuracy: 65.00%—86.0 digits were recognized correctly.
 
-![Telephone number recognition trained with 20templates and 4
+![Telephone Number Recognition Trained With 20 Isolated Templates And 4
 Gaussians.](./assets/project5/telephone_number_recognition_20templates_4gaussians.png)
 
 The new results are much improved:
@@ -23,14 +52,40 @@ The new results are much improved:
 Sentence accuracy: 68.00%—17 telephone numbers were recognized correctly.
 Average word accuracy: 85.71%—113.0 digits were recognized correctly.
 
+![Telephone Number Recognition Trained With 20 Isolated Templates,
+30 Continuous Templates,
+And 4
+Gaussians.](telephone_number_recognition_improved.png)
+
 ## Unrestricted Digit String Recognition Results
+
+<!-- TODO: Text explanation. -->
+
+![Transition losses vs digit
+accuracy.](./assets/project5/transition_losses_vs_digit_accuracy.png)
+
+![Transition Losses And Digit Accuracy With Continuous
+Templates.](transition_losses_vs_digit_accuracy_improved.png)
 
 Comparing to the results from project 5,
 using the observed best transition loss 385.08,
 the sentence accuracy is 50.00%, and the average word error rate: 10.69%,
 as shown in the figure below.
 
-![Unrestricted digit string
-recognition.](./assets/project5/digit_string_recognition.png)
+![Unrestricted Digit String
+Recognition Trained With 20 Isolated Templates And 4 Gaussians.](./assets/project5/digit_string_recognition.png)
+
+The new results are much improved:
+
+Sentence accuracy: 70.00%—7 digit string were recognized correctly.
+Avg word error rate: 7.24%.
+
+Best transition loss: 462.09812268378744
+Sentence accuracy: 80.00%.
+Average word error rate: 3.27%.
+
+![Unrestricted Digit String
+Recognition Trained With 20 Isolated Templates, 30 Continuous Templates,
+And 4 Gaussians.](digit_string_recognition_improved.png)
 
 ## Conclusion

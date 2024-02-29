@@ -79,7 +79,7 @@ Average word accuracy: {avg(word_accuracies):.2f}%—{n_correct_digits} digits w
     ax.set_ylabel("% Accurate Word")
     plt.xticks(ha="center", rotation=60)
     plt.show(block=True)
-    fig.savefig("telephone_number_recognition.png", bbox_inches="tight")
+    fig.savefig("telephone_number_recognition_improved.png", bbox_inches="tight")
 
 
 main() if __name__ == "__main__" else None
