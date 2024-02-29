@@ -2,6 +2,9 @@
 
 ## Training With Continuous Speech
 
+It takes around 17min to train the continuous speech model with 20 isolated
+templates, all the continuous templates, and 4 Gaussians.
+
 ## Telephone Number Recognition Results
 
 We reuse the 25 `.wav` files of telephone numbers from project 5.
@@ -14,6 +17,11 @@ Average word accuracy: 65.00%—86.0 digits were recognized correctly.
 
 ![Telephone number recognition trained with 20templates and 4
 Gaussians.](./assets/project5/telephone_number_recognition_20templates_4gaussians.png)
+
+The new results are much improved:
+
+Sentence accuracy: 68.00%—17 telephone numbers were recognized correctly.
+Average word accuracy: 85.71%—113.0 digits were recognized correctly.
 
 ## Unrestricted Digit String Recognition Results
 

@@ -4,6 +4,8 @@ Run as `python3 -m speech.project6.trncontspch`"""
 import itertools
 from typing import Final
 
+from cache_to_disk import cache_to_disk
+
 from speech import FloatArray
 from speech.project2.main import NUMBERS
 from speech.project3 import boosted_mfcc_from_file
@@ -50,6 +52,7 @@ def hmm_states_from_sequence(
     return [start_silence_state] + digit_states + [end_silence_state]
 
 
+@cache_to_disk(2)
 def train_digit_sequences(n_states=5, n_gaussians=4) -> dict[int, HMM_Single]:
     """Train digit HMMs using continuous speech digit sequences, bootstrapping
     with isolated digit sequences."""
