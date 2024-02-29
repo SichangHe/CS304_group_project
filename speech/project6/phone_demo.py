@@ -1,5 +1,5 @@
 """Demo for recognizing unrestricted digits.
-Run as `python3 -m speech.project6.unrestricted_demo`."""
+Run as `python3 -m speech.project6.phone_demo`."""
 
 import argparse
 from queue import Queue
@@ -10,14 +10,12 @@ import numpy as np
 from speech.project1.main import audio_recording_thread
 from speech.project2.lib import derive_cepstrum_velocities, mfcc_homebrew
 from speech.project5.hmm import match_sequence_against_hmm_states
-from speech.project5.unrestricted_hmm import build_hmm_graph
+from speech.project5.phone_rand import build_hmm_graph, load_silence_hmms
 from speech.project6.trncontspch import train_digit_sequences
-
-BEST_TRANSITION_LOSS = 462.09812268378744
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Unrestricted digits recognition demo")
+    parser = argparse.ArgumentParser(description="Phone number recognition demo")
     parser.add_argument(
         "-o", "--output", help="Output file directory", default="output.wav"
     )
@@ -25,8 +23,9 @@ def main() -> None:
 
     digit_hmm_dict = train_digit_sequences()
     digit_hmms = [digit_hmm_dict[digit] for digit in range(10)]
+    silence_single_hmm = load_silence_hmms()
     non_emitting_states, emitting_states = build_hmm_graph(
-        digit_hmms, transition_loss=BEST_TRANSITION_LOSS
+        digit_hmms, silence_single_hmm
     )
 
     byte_queue: Queue[bytes | None] = Queue()
