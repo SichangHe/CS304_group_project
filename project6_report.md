@@ -22,7 +22,7 @@ we brainstormed some alternative approaches:
     which are updated each round.
 1. Change the means, variances, and transition losses of each state each round.
 1. Aggregate the means, variances, and transition losses of training output
-    from all sequences.
+ from all sequences.
 
 The two latter approaches may not converge, so we did not attempt them.
 We tried with the first approach,
@@ -32,7 +32,7 @@ but it was very complicated to implement.
 
 It takes around 17min to train the continuous speech model with 20 isolated
 templates, all the continuous templates, and 4 Gaussians.
-The training takes 9 iterations to converge,
+The training takes 10 iterations to converge,
 as shown in the log of the difference of feature segmenting in each round:
 
 ```sh
@@ -46,6 +46,8 @@ Diff: 22, Total: 300
 Diff: 23, Total: 300
 Diff: 0, Total: 300
 ```
+
+Please note that the first round does not have a previous alignment to show the difference, hence the log includes 9 lines for the 10 iterations.
 
 ## Telephone Number Recognition Results
 
@@ -107,3 +109,7 @@ Recognition Trained With 20 Isolated Templates, 30 Continuous Templates,
 And 4 Gaussians.](digit_string_recognition_improved.png)
 
 ## Conclusion
+
+In this project, we developed a continuous speech training system for training Hidden Markov Models (HMMs).
+The HMMs trained using this system demonstrate significantly improved accuracy compared to previous HMMs trained solely with isolated words.
+By comparing the results obtained in project 5, we observe a noticeable increase in both phone digit and unrestricted digit string recognition accuracy.
