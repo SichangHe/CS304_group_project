@@ -8,7 +8,7 @@
 process divides the continuous speech feature vectors into separate parts, each corresponding to a specific digit.
 
 3. Use the separated digit feature vectors, along with the original isolated word features used in step 1,
-to train a new isolated word HMMs.
+to train new isolated word HMMs.
 
 4. If convergence is not achieved (i.e., the alignment of continuous speech feature vectors for each
 digit does not remain unchanged), return to step 2.
@@ -81,9 +81,6 @@ In project 5, the figure below illustrates the results obtained using the best t
 ![Transition losses vs digit
 accuracy.](./assets/project5/transition_losses_vs_digit_accuracy.png)
 
-![Transition Losses And Digit Accuracy With Continuous
-Templates.](./transition_losses_vs_digit_accuracy_improved.png)
-
 The new results, displayed in the diagram below, show significant improvement:
 
 Sentence accuracy: 70.00%—7 digit string were recognized correctly.
@@ -93,7 +90,10 @@ Best transition loss: 462.09812268378744
 Sentence accuracy: 80.00%.
 Average word error rate: 3.27%.
 
-Subsequently, we compared the recognition results between project 5 and this project, which involved training an HMM with continuous speech data, using the best transition loss.
+![Transition Losses And Digit Accuracy With Continuous
+Templates.](./transition_losses_vs_digit_accuracy_improved.png)
+
+Subsequently, we compared the recognition results between project 5 and this project both using the best transition loss.
 
 The recognition result from project 5 is presented below.
 
