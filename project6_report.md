@@ -59,23 +59,19 @@ Gaussians.](telephone_number_recognition_improved.png)
 
 ## Unrestricted Digit String Recognition Results
 
-<!-- TODO: Text explanation. -->
+### Empirical Optimal Transition Loss
+
+Similar to project 5, we explored different transition losses and determined the one that produced the best outcomes.
+
+In project 5, the figure below illustrates the results obtained using the best transition loss of 385.08. The sentence accuracy was 50.00%, and the average word error rate was 10.69%.
 
 ![Transition losses vs digit
 accuracy.](./assets/project5/transition_losses_vs_digit_accuracy.png)
 
 ![Transition Losses And Digit Accuracy With Continuous
-Templates.](transition_losses_vs_digit_accuracy_improved.png)
+Templates.](./transition_losses_vs_digit_accuracy_improved.png)
 
-Comparing to the results from project 5,
-using the observed best transition loss 385.08,
-the sentence accuracy is 50.00%, and the average word error rate: 10.69%,
-as shown in the figure below.
-
-![Unrestricted Digit String
-Recognition Trained With 20 Isolated Templates And 4 Gaussians.](./assets/project5/digit_string_recognition.png)
-
-The new results are much improved:
+The new results, displayed in the diagram below, show significant improvement:
 
 Sentence accuracy: 70.00%—7 digit string were recognized correctly.
 Avg word error rate: 7.24%.
@@ -83,6 +79,15 @@ Avg word error rate: 7.24%.
 Best transition loss: 462.09812268378744
 Sentence accuracy: 80.00%.
 Average word error rate: 3.27%.
+
+Subsequently, we compared the recognition results between project 5 and this project, which involved training an HMM with continuous speech data, using the best transition loss.
+
+The recognition result from project 5 is presented below.
+
+![Unrestricted Digit String
+Recognition Trained With 20 Isolated Templates And 4 Gaussians.](./assets/project5/digit_string_recognition.png)
+
+The recognition result from this project, as depicted below, demonstrates a substantial improvement.
 
 ![Unrestricted Digit String
 Recognition Trained With 20 Isolated Templates, 30 Continuous Templates,
