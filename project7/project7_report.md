@@ -813,6 +813,80 @@ HCLGa is not stochastic
 add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri3a/final.mdl exp/tri3a/graph/HCLGa.fst 
 steps/decode.sh --cmd utils/parallel/run.pl --nj 10 --config conf/decode.config exp/tri3a/graph data/dev exp/tri3a/decode_dev
 decode.sh: feature type is lda
+steps/diagnostic/analyze_lats.sh --cmd utils/parallel/run.pl exp/tri3a/graph exp/tri3a/decode_dev
+steps/diagnostic/analyze_lats.sh: see stats in exp/tri3a/decode_dev/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(1,3,24) and mean=9.6
+steps/diagnostic/analyze_lats.sh: see stats in exp/tri3a/decode_dev/log/analyze_lattice_depth_stats.log
++ steps/score_kaldi.sh --cmd utils/parallel/run.pl data/dev exp/tri3a/graph exp/tri3a/decode_dev
+local/score.sh: line 5: steps/score_kaldi.sh: No such file or directory
+steps/decode.sh: Error: scoring failed. (ignore by '--skip-scoring true')
+steps/decode.sh --cmd utils/parallel/run.pl --nj 10 --config conf/decode.config exp/tri3a/graph data/test exp/tri3a/decode_test
+decode.sh: feature type is lda
+steps/diagnostic/analyze_lats.sh --cmd utils/parallel/run.pl exp/tri3a/graph exp/tri3a/decode_test
+steps/diagnostic/analyze_lats.sh: see stats in exp/tri3a/decode_test/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(1,4,30) and mean=12.1
+steps/diagnostic/analyze_lats.sh: see stats in exp/tri3a/decode_test/log/analyze_lattice_depth_stats.log
++ steps/score_kaldi.sh --cmd utils/parallel/run.pl data/test exp/tri3a/graph exp/tri3a/decode_test
+local/score.sh: line 5: steps/score_kaldi.sh: No such file or directory
+steps/decode.sh: Error: scoring failed. (ignore by '--skip-scoring true')
+steps/align_fmllr.sh --cmd utils/parallel/run.pl --nj 10 data/train data/lang exp/tri3a exp/tri3a_ali
+steps/align_fmllr.sh: feature type is lda
+steps/align_fmllr.sh: compiling training graphs
+steps/align_fmllr.sh: aligning data in data/train using exp/tri3a/final.mdl and speaker-independent features.
+steps/align_fmllr.sh: computing fMLLR transforms
+steps/align_fmllr.sh: doing final alignment.
+steps/align_fmllr.sh: done aligning data.
+steps/diagnostic/analyze_alignments.sh --cmd utils/parallel/run.pl data/lang exp/tri3a_ali
+steps/diagnostic/analyze_alignments.sh: see stats in exp/tri3a_ali/log/analyze_alignments.log
+2 warnings in exp/tri3a_ali/log/fmllr.*.log
+232 warnings in exp/tri3a_ali/log/align_pass2.*.log
+247 warnings in exp/tri3a_ali/log/align_pass1.*.log
+steps/train_sat.sh --cmd utils/parallel/run.pl 2500 20000 data/train data/lang exp/tri3a_ali exp/tri4a
+steps/train_sat.sh: feature type is lda
+steps/train_sat.sh: Using transforms from exp/tri3a_ali
+steps/train_sat.sh: Accumulating tree stats
+steps/train_sat.sh: Getting questions for tree clustering.
+steps/train_sat.sh: Building the tree
+steps/train_sat.sh: Initializing the model
+steps/train_sat.sh: Converting alignments from exp/tri3a_ali to use current tree
+steps/train_sat.sh: Compiling graphs of transcripts
+Pass 1
+Pass 2
+Estimating fMLLR transforms
+Pass 3
+Pass 4
+Estimating fMLLR transforms
+Pass 5
+Pass 6
+Estimating fMLLR transforms
+Pass 7
+Pass 8
+Pass 9
+Pass 10
+Aligning data
+Pass 11
+Pass 12
+Estimating fMLLR transforms
+Pass 13
+Pass 14
+Pass 15
+Pass 16
+Pass 17
+Pass 18
+Pass 19
+Pass 20
+Aligning data
+Pass 21
+Pass 22
+Pass 23
+Pass 24
+Pass 25
+Pass 26
+Pass 27
+Pass 28
+Pass 29
+Pass 30
+Aligning data
 
 ```
 
