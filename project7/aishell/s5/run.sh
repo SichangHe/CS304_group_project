@@ -12,7 +12,7 @@
 # Caution: some of the graph creation steps use quite a bit of memory, so you
 # should run this on a machine that has sufficient memory.
 
-data=/export/a05/xna/data
+data=$HOME/AISHELL-1
 data_url=www.openslr.org/resources/33
 
 . ./cmd.sh
@@ -143,10 +143,10 @@ steps/align_fmllr.sh --cmd "$train_cmd" --nj 10 \
     data/train data/lang exp/tri5a exp/tri5a_ali || exit 1
 
 # nnet3
-local/nnet3/run_tdnn.sh
+# local/nnet3/run_tdnn.sh
 
 # chain
-local/chain/run_tdnn.sh
+# local/chain/run_tdnn.sh
 
 # getting results (see RESULTS file)
 for x in exp/*/decode_test; do [ -d $x ] && grep WER $x/cer_* | utils/best_wer.sh; done 2> /dev/null

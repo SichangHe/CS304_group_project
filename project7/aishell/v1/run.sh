@@ -12,7 +12,7 @@
 # See README.txt for more info on data required.
 # Results (EER) are inline in comments below
 
-data=/export/a05/xna/data
+data=$HOME/AISHELL-1
 data_url=www.openslr.org/resources/33
 
 . ./cmd.sh
