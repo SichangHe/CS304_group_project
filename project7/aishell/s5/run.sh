@@ -42,24 +42,24 @@ utils/format_lm.sh data/lang data/local/lm/3gram-mincount/lm_unpruned.gz \
 # want to store MFCC features.
 mfccdir=mfcc
 for x in train dev test; do
-    steps/make_mfcc_pitch.sh --cmd "$train_cmd" --nj 10 data/$x exp/make_mfcc/$x $mfccdir || exit 1
+    steps/make_mfcc_pitch.sh --cmd "$train_cmd" --nj 16 data/$x exp/make_mfcc/$x $mfccdir || exit 1
     steps/compute_cmvn_stats.sh data/$x exp/make_mfcc/$x $mfccdir || exit 1
     utils/fix_data_dir.sh data/$x || exit 1
 done
 
 # Train a monophone model on delta features.
-steps/train_mono.sh --cmd "$train_cmd" --nj 10 \
+steps/train_mono.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/mono || exit 1
 
 # Decode with the monophone model.
 utils/mkgraph.sh data/lang_test exp/mono exp/mono/graph || exit 1
-steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 10 \
+steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 16 \
     exp/mono/graph data/dev exp/mono/decode_dev
-steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 10 \
+steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 16 \
     exp/mono/graph data/test exp/mono/decode_test
 
 # Get alignments from monophone system.
-steps/align_si.sh --cmd "$train_cmd" --nj 10 \
+steps/align_si.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/mono exp/mono_ali || exit 1
 
 # Train the first triphone pass model tri1 on delta + delta-delta features.
@@ -68,13 +68,13 @@ steps/train_deltas.sh --cmd "$train_cmd" \
 
 # decode tri1
 utils/mkgraph.sh data/lang_test exp/tri1 exp/tri1/graph || exit 1
-steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 10 \
+steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 16 \
     exp/tri1/graph data/dev exp/tri1/decode_dev
-steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 10 \
+steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 16 \
     exp/tri1/graph data/test exp/tri1/decode_test
 
 # align tri1
-steps/align_si.sh --cmd "$train_cmd" --nj 10 \
+steps/align_si.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/tri1 exp/tri1_ali || exit 1
 
 # train tri2 [delta+delta-deltas]
@@ -83,13 +83,13 @@ steps/train_deltas.sh --cmd "$train_cmd" \
 
 # decode tri2
 utils/mkgraph.sh data/lang_test exp/tri2 exp/tri2/graph
-steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 10 \
+steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 16 \
     exp/tri2/graph data/dev exp/tri2/decode_dev
-steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 10 \
+steps/decode.sh --cmd "$decode_cmd" --config conf/decode.config --nj 16 \
     exp/tri2/graph data/test exp/tri2/decode_test
 
 # Align training data with the tri2 model.
-steps/align_si.sh --cmd "$train_cmd" --nj 10 \
+steps/align_si.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/tri2 exp/tri2_ali || exit 1
 
 # Train the second triphone pass model tri3a on LDA+MLLT features.
@@ -98,14 +98,14 @@ steps/train_lda_mllt.sh --cmd "$train_cmd" \
 
 # Run a test decode with the tri3a model.
 utils/mkgraph.sh data/lang_test exp/tri3a exp/tri3a/graph || exit 1
-steps/decode.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+steps/decode.sh --cmd "$decode_cmd" --nj 16 --config conf/decode.config \
     exp/tri3a/graph data/dev exp/tri3a/decode_dev
-steps/decode.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+steps/decode.sh --cmd "$decode_cmd" --nj 16 --config conf/decode.config \
     exp/tri3a/graph data/test exp/tri3a/decode_test
 
 # align tri3a with fMLLR
 
-steps/align_fmllr.sh --cmd "$train_cmd" --nj 10 \
+steps/align_fmllr.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/tri3a exp/tri3a_ali || exit 1
 
 # Train the third triphone pass model tri4a on LDA+MLLT+SAT features.
@@ -116,13 +116,13 @@ steps/train_sat.sh --cmd "$train_cmd" \
 
 # decode tri4a
 utils/mkgraph.sh data/lang_test exp/tri4a exp/tri4a/graph
-steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 16 --config conf/decode.config \
     exp/tri4a/graph data/dev exp/tri4a/decode_dev
-steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 16 --config conf/decode.config \
     exp/tri4a/graph data/test exp/tri4a/decode_test
 
 # align tri4a with fMLLR
-steps/align_fmllr.sh --cmd "$train_cmd" --nj 10 \
+steps/align_fmllr.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/tri4a exp/tri4a_ali
 
 # Train tri5a, which is LDA+MLLT+SAT
@@ -133,13 +133,13 @@ steps/train_sat.sh --cmd "$train_cmd" \
 
 # decode tri5a
 utils/mkgraph.sh data/lang_test exp/tri5a exp/tri5a/graph || exit 1
-steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 16 --config conf/decode.config \
     exp/tri5a/graph data/dev exp/tri5a/decode_dev || exit 1
-steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+steps/decode_fmllr.sh --cmd "$decode_cmd" --nj 16 --config conf/decode.config \
     exp/tri5a/graph data/test exp/tri5a/decode_test || exit 1
 
 # align tri5a with fMLLR
-steps/align_fmllr.sh --cmd "$train_cmd" --nj 10 \
+steps/align_fmllr.sh --cmd "$train_cmd" --nj 16 \
     data/train data/lang exp/tri5a exp/tri5a_ali || exit 1
 
 # nnet3
