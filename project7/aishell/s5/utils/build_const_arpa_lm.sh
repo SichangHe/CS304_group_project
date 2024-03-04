@@ -9,17 +9,17 @@
 # begin configuration section
 # end configuration section
 
-[ -f path.sh ] && . ./path.sh;
+[ -f path.sh ] && . ./path.sh
 
 . utils/parse_options.sh
 
 if [ $# != 3 ]; then
-  echo "Usage: "
-  echo "  $0 [options] <arpa-lm-path> <old-lang-dir> <new-lang-dir>"
-  echo "e.g.:"
-  echo "  $0 data/local/lm/3-gram.full.arpa.gz data/lang/ data/lang_test_tgmed"
-  echo "Options"
-  exit 1;
+    echo "Usage: "
+    echo "  $0 [options] <arpa-lm-path> <old-lang-dir> <new-lang-dir>"
+    echo "e.g.:"
+    echo "  $0 data/local/lm/3-gram.full.arpa.gz data/lang/ data/lang_test_tgmed"
+    echo "Options"
+    exit 1
 fi
 
 export LC_ALL=C
@@ -33,21 +33,20 @@ mkdir -p $new_lang
 mkdir -p $new_lang
 cp -r $old_lang/* $new_lang
 
-unk=`cat $old_lang/oov.int`
-bos=`grep "^<s>\s" $old_lang/words.txt | awk '{print $2}'`
-eos=`grep "^</s>\s" $old_lang/words.txt | awk '{print $2}'`
+unk=$(cat $old_lang/oov.int)
+bos=$(grep "^<s>\s" $old_lang/words.txt | awk '{print $2}')
+eos=$(grep "^</s>\s" $old_lang/words.txt | awk '{print $2}')
 if [[ -z $bos || -z $eos ]]; then
-  echo "$0: <s> and </s> symbols are not in $old_lang/words.txt"
-  exit 1
+    echo "$0: <s> and </s> symbols are not in $old_lang/words.txt"
+    exit 1
 fi
 if [[ -z $unk ]]; then
-  echo "$0: can't find oov symbol id in $old_lang/oov.int"
-  exit 1
+    echo "$0: can't find oov symbol id in $old_lang/oov.int"
+    exit 1
 fi
 
-
 arpa-to-const-arpa --bos-symbol=$bos \
-  --eos-symbol=$eos --unk-symbol=$unk \
-  "gunzip -c $arpa_lm | utils/map_arpa_lm.pl $new_lang/words.txt|"  $new_lang/G.carpa  || exit 1;
+    --eos-symbol=$eos --unk-symbol=$unk \
+    "gunzip -c $arpa_lm | utils/map_arpa_lm.pl $new_lang/words.txt|" $new_lang/G.carpa || exit 1
 
-exit 0;
+exit 0

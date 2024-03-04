@@ -22,12 +22,12 @@
 # phones.txt to model directories, this script exits silently with status 0
 # if one of the phone symbol tables does not exist.
 
-. utils/parse_options.sh || exit 1;
+. utils/parse_options.sh || exit 1
 
 if [ $# -ne 2 ]; then
-  echo "Usage: utils/lang/check_phones_compatible.sh <phones-symbol-table1> <phones-symbol-table2>"
-  echo "e.g.: utils/lang/check_phones_compatible.sh data/lang/phones.txt exp/tri3/phones.txt"
-  exit 1;
+    echo "Usage: utils/lang/check_phones_compatible.sh <phones-symbol-table1> <phones-symbol-table2>"
+    echo "e.g.: utils/lang/check_phones_compatible.sh data/lang/phones.txt exp/tri3/phones.txt"
+    exit 1
 fi
 
 table_first=$1
@@ -35,25 +35,25 @@ table_second=$2
 
 # check if the files exist or not
 if [ ! -f $table_first ]; then
-  if [ ! -f $table_second ]; then
-    echo "$0: Error! Both of the two phones-symbol tables are absent."
-    echo "Please check your command"
-    exit 1;
-  else
-    # The phones-symbol-table1 is absent. The model directory maybe created by old script.
-    # For back compatibility, this script exits silently with status 0.
-    exit 0;
-  fi
+    if [ ! -f $table_second ]; then
+        echo "$0: Error! Both of the two phones-symbol tables are absent."
+        echo "Please check your command"
+        exit 1
+    else
+        # The phones-symbol-table1 is absent. The model directory maybe created by old script.
+        # For back compatibility, this script exits silently with status 0.
+        exit 0
+    fi
 elif [ ! -f $table_second ]; then
-  # The phones-symbol-table2 is absent. The model directory maybe created by old script.
-  # For back compatibility, this script exits silently with status 0.
-  exit 0;
+    # The phones-symbol-table2 is absent. The model directory maybe created by old script.
+    # For back compatibility, this script exits silently with status 0.
+    exit 0
 fi
 
 # Check if the two tables are the same (except for possible difference in disambiguation symbols).
 if ! cmp -s <(grep -v "^#" $table_first) <(grep -v "^#" $table_second); then
-  echo "$0: phone symbol tables $table_first and $table_second are not compatible."
-  exit 1;
+    echo "$0: phone symbol tables $table_first and $table_second are not compatible."
+    exit 1
 fi
 
-exit 0;
+exit 0

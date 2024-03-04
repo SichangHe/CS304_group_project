@@ -12,39 +12,39 @@ overlap_length=5
 echo "$0 $@"
 
 [ -f ./path.sh ] && . ./path.sh
-. parse_options.sh || exit 1;
+. parse_options.sh || exit 1
 
 if [ $# -ne 2 ]; then
-  echo "This script truncates the long audio into smaller overlapping segments"
-  echo ""
-  echo "Usage: $0 [options] <input-dir> <output-dir>"
-  echo " e.g.: $0 data/train_si284_long data/train_si284_split"
-  echo ""
-  echo "Options:"
-  echo "    --min-seg-length        # minimal segment length"
-  echo "    --seg-length            # length of segments in seconds."
-  echo "    --overlap-length        # length of overlap in seconds."
-  exit 1;
+    echo "This script truncates the long audio into smaller overlapping segments"
+    echo ""
+    echo "Usage: $0 [options] <input-dir> <output-dir>"
+    echo " e.g.: $0 data/train_si284_long data/train_si284_split"
+    echo ""
+    echo "Options:"
+    echo "    --min-seg-length        # minimal segment length"
+    echo "    --seg-length            # length of segments in seconds."
+    echo "    --overlap-length        # length of overlap in seconds."
+    exit 1
 fi
 
 input_dir=$1
 output_dir=$2
 
 for f in spk2utt text utt2spk wav.scp; do
-  [ ! -f $input_dir/$f ] && echo "$0: no such file $input_dir/$f" && exit 1;
+    [ ! -f $input_dir/$f ] && echo "$0: no such file $input_dir/$f" && exit 1
 done
 
 [ ! $seg_length -gt $overlap_length ] \
-  && echo "$0: --seg-length should be longer than --overlap-length." && exit 1;
+    && echo "$0: --seg-length should be longer than --overlap-length." && exit 1
 
 # Checks if sox is on the path.
-sox=`which sox`
-[ $? -ne 0 ] && echo "$0: sox command not found." && exit 1;
+sox=$(which sox)
+[ $? -ne 0 ] && echo "$0: sox command not found." && exit 1
 sph2pipe=$KALDI_ROOT/tools/sph2pipe_v2.5/sph2pipe
-[ ! -x $sph2pipe ] && echo "$0: sph2pipe command not found." && exit 1;
+[ ! -x $sph2pipe ] && echo "$0: sph2pipe command not found." && exit 1
 
 mkdir -p $output_dir
-cp -f $input_dir/spk2gender $output_dir/spk2gender 2>/dev/null
+cp -f $input_dir/spk2gender $output_dir/spk2gender 2> /dev/null
 cp -f $input_dir/text $output_dir/text.orig
 cp -f $input_dir/wav.scp $output_dir/wav.scp
 
@@ -138,9 +138,9 @@ cat $output_dir/wav.scp | perl -e '
 # CAVEAT: We are not dealing with channels here. Each channel should have a
 # unique file name in wav.scp.
 paste -d ' ' <(cut -d ' ' -f 1 $output_dir/wav.scp) \
-  <(cut -d ' ' -f 1 $output_dir/wav.scp) | awk '{print $1" "$2" A";}' \
-  > $output_dir/reco2file_and_channel
+    <(cut -d ' ' -f 1 $output_dir/wav.scp) | awk '{print $1" "$2" A";}' \
+    > $output_dir/reco2file_and_channel
 
 utils/fix_data_dir.sh $output_dir
 
-exit 0;
+exit 0

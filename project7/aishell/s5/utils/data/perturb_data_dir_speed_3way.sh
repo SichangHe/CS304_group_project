@@ -21,40 +21,40 @@ include_spk_prefix=true
 . utils/parse_options.sh
 
 if [ $# != 2 ]; then
-  echo "Usage: perturb_data_dir_speed_3way.sh <srcdir> <destdir>"
-  echo "Applies standard 3-way speed perturbation using factors of 0.9, 1.0 and 1.1."
-  echo "e.g.:"
-  echo " $0 [options] data/train data/train_sp"
-  echo "Note: if <destdir>/feats.scp already exists, this will refuse to run."
-  echo "Options:"
-  echo "    --always-include-prefix [true|false]   # default: false.  If set to true,"
-  echo "                                           # it will add the prefix 'sp1.0-' to"
-  echo "                                           # utterance and speaker-ids for data at"
-  echo "                                           # the original speed.  Can resolve"
-  echo "                                           # issues RE data sorting."
-  echo "    --include-spk-prefix [true|false]      # default: true. If set to true,"
-  echo "                                           # it will add the prefix 'sp-' to"
-  echo "                                           # speaker-ids, making number of speakers"
-  echo "                                           # 3 times more. This is useful for speaker"
-  echo "                                           # adaptation part of ASR."
-  exit 1
+    echo "Usage: perturb_data_dir_speed_3way.sh <srcdir> <destdir>"
+    echo "Applies standard 3-way speed perturbation using factors of 0.9, 1.0 and 1.1."
+    echo "e.g.:"
+    echo " $0 [options] data/train data/train_sp"
+    echo "Note: if <destdir>/feats.scp already exists, this will refuse to run."
+    echo "Options:"
+    echo "    --always-include-prefix [true|false]   # default: false.  If set to true,"
+    echo "                                           # it will add the prefix 'sp1.0-' to"
+    echo "                                           # utterance and speaker-ids for data at"
+    echo "                                           # the original speed.  Can resolve"
+    echo "                                           # issues RE data sorting."
+    echo "    --include-spk-prefix [true|false]      # default: true. If set to true,"
+    echo "                                           # it will add the prefix 'sp-' to"
+    echo "                                           # speaker-ids, making number of speakers"
+    echo "                                           # 3 times more. This is useful for speaker"
+    echo "                                           # adaptation part of ASR."
+    exit 1
 fi
 
 srcdir=$1
 destdir=$2
 
 if [ ! -f $srcdir/wav.scp ]; then
-  echo "$0: expected $srcdir/wav.scp to exist"
-  exit 1
+    echo "$0: expected $srcdir/wav.scp to exist"
+    exit 1
 fi
 
 if [ -f $destdir/feats.scp ]; then
-  echo "$0: $destdir/feats.scp already exists: refusing to run this (please delete $destdir/feats.scp if you want this to run)"
-  exit 1
+    echo "$0: $destdir/feats.scp already exists: refusing to run this (please delete $destdir/feats.scp if you want this to run)"
+    exit 1
 fi
 
 # we need to make sure all files in source directory are in sorted order
-utils/fix_data_dir.sh ${srcdir} || exit 1;
+utils/fix_data_dir.sh ${srcdir} || exit 1
 
 echo "$0: making sure the utt2dur and the reco2dur files are present"
 echo "... in ${srcdir}, because obtaining it after speed-perturbing"
@@ -66,24 +66,24 @@ utils/data/perturb_data_dir_speed.sh --include-spk-prefix $include_spk_prefix 0.
 utils/data/perturb_data_dir_speed.sh --include-spk-prefix $include_spk_prefix 1.1 ${srcdir} ${destdir}_speed1.1 || exit 1
 
 if $always_include_prefix; then
-  utils/copy_data_dir.sh --spk-prefix sp1.0- --utt-prefix sp1.0- ${srcdir} ${destdir}_speed1.0
-  if [ ! -f $srcdir/utt2uniq ]; then
-    cat $srcdir/utt2spk | awk  '{printf("sp1.0-%s %s\n", $1, $1);}' > ${destdir}_speed1.0/utt2uniq
-  else
-    cat $srcdir/utt2uniq | awk '{printf("sp1.0-%s %s\n", $1, $2);}' > ${destdir}_speed1.0/utt2uniq
-  fi
-  utils/data/combine_data.sh $destdir ${destdir}_speed1.0 ${destdir}_speed0.9 ${destdir}_speed1.1 || exit 1
+    utils/copy_data_dir.sh --spk-prefix sp1.0- --utt-prefix sp1.0- ${srcdir} ${destdir}_speed1.0
+    if [ ! -f $srcdir/utt2uniq ]; then
+        cat $srcdir/utt2spk | awk '{printf("sp1.0-%s %s\n", $1, $1);}' > ${destdir}_speed1.0/utt2uniq
+    else
+        cat $srcdir/utt2uniq | awk '{printf("sp1.0-%s %s\n", $1, $2);}' > ${destdir}_speed1.0/utt2uniq
+    fi
+    utils/data/combine_data.sh $destdir ${destdir}_speed1.0 ${destdir}_speed0.9 ${destdir}_speed1.1 || exit 1
 
-  rm -r ${destdir}_speed0.9 ${destdir}_speed1.1 ${destdir}_speed1.0
+    rm -r ${destdir}_speed0.9 ${destdir}_speed1.1 ${destdir}_speed1.0
 else
-  utils/data/combine_data.sh $destdir ${srcdir} ${destdir}_speed0.9 ${destdir}_speed1.1 || exit 1
-  rm -r ${destdir}_speed0.9 ${destdir}_speed1.1
+    utils/data/combine_data.sh $destdir ${srcdir} ${destdir}_speed0.9 ${destdir}_speed1.1 || exit 1
+    rm -r ${destdir}_speed0.9 ${destdir}_speed1.1
 fi
 
 echo "$0: generated 3-way speed-perturbed version of data in $srcdir, in $destdir"
 if ! utils/validate_data_dir.sh --no-feats --no-text $destdir; then
-  echo "$0: Validation failed.  If it is a sorting issue, try the option '--always-include-prefix true'."
-  exit 1
+    echo "$0: Validation failed.  If it is a sorting issue, try the option '--always-include-prefix true'."
+    exit 1
 fi
 
 exit 0

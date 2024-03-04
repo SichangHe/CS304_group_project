@@ -12,7 +12,7 @@ combine_lat=true
 combine_ali=true
 tolerance=10
 # End configuration section.
-echo "$0 $@"  # Print the command line for logging.
+echo "$0 $@" # Print the command line for logging.
 
 [[ -f path.sh ]] && . ./path.sh
 . parse_options.sh || exit 1
@@ -20,7 +20,7 @@ echo "$0 $@"  # Print the command line for logging.
 export LC_ALL=C
 
 if [[ $# -lt 3 ]]; then
-  cat >&2 <<EOF
+    cat >&2 << EOF
 Usage: $0 [options] <data> <dest-dir> <src-dir1> <src-dir2> ...
  e.g.: $0 --nj 32 data/train exp/tri3_ali_combined exp/tri3_ali_1 exp_tri3_ali_2
 Options:
@@ -40,12 +40,12 @@ proceeds with a warning if directories do not contain either alignments or
 alignment lattices. Check for files ali.1.gz and/or lat.1.gz in the <dest-dir>
 after the script completes if additional programmatic check is required.
 EOF
-  exit 1;
+    exit 1
 fi
 
 if [[ ! $combine_lat && ! $combine_ali ]]; then
-  echo "$0: at least one of --combine_lat and --combine_ali must be true"
-  exit 1
+    echo "$0: at least one of --combine_lat and --combine_ali must be true"
+    exit 1
 fi
 
 data=$1
@@ -61,56 +61,55 @@ do_lat=$combine_lat
 # different from any source; we cannot combine in-place, and a lot of damage
 # could result.
 for src in $@; do
-  if [[ "$(cd 2>/dev/null -P -- "$src" && pwd)" = \
-        "$(cd 2>/dev/null -P -- "$dest" && pwd)" ]]; then
-    echo "$0: error: Source $src is same as target $dest."
-    exit 1
-  fi
-  if $do_ali && [[ ! -f $src/ali.1.gz ]]; then
-    echo "$0: warning: Alignments (ali.*.gz) are not present in $src, not" \
-         "combining. Consider '--combine_ali false' to suppress this warning."
-    do_ali=false
-  fi
-  if $do_lat && [[ ! -f $src/lat.1.gz ]]; then
-    echo "$0: warning: Alignment lattices (lat.*.gz) are not present in $src,"\
-      "not combining. Consider '--combine_lat false' to suppress this warning."
-    do_lat=false
-  fi
+    if [[ "$(cd 2> /dev/null -P -- "$src" && pwd)" = "$(cd 2> /dev/null -P -- "$dest" && pwd)" ]]; then
+        echo "$0: error: Source $src is same as target $dest."
+        exit 1
+    fi
+    if $do_ali && [[ ! -f $src/ali.1.gz ]]; then
+        echo "$0: warning: Alignments (ali.*.gz) are not present in $src, not" \
+            "combining. Consider '--combine_ali false' to suppress this warning."
+        do_ali=false
+    fi
+    if $do_lat && [[ ! -f $src/lat.1.gz ]]; then
+        echo "$0: warning: Alignment lattices (lat.*.gz) are not present in $src," \
+            "not combining. Consider '--combine_lat false' to suppress this warning."
+        do_lat=false
+    fi
 done
 
 if ! $do_ali && ! $do_lat; then
-  echo "$0: error: Cannot combine directories."
-  exit 1
+    echo "$0: error: Cannot combine directories."
+    exit 1
 fi
 
 # Verify that required files are present in the first directory.
 for f in cmvn_opts final.mdl num_jobs phones.txt tree; do
-  if [ ! -f $first_src/$f ]; then
-    echo "$0: error: Required source file $first_src/$f is missing."
-    exit 1
-  fi
+    if [ ! -f $first_src/$f ]; then
+        echo "$0: error: Required source file $first_src/$f is missing."
+        exit 1
+    fi
 done
 
 # Verify that phones and trees are compatible in all directories, and than
 # num_jobs files are present, too.
 for src in $@; do
-  if [[ $src != $first_src ]]; then
-    if [[ ! -f $src/num_jobs ]]; then
-      echo "$0: error: Required source file $src/num_jobs is missing."
-      exit 1
+    if [[ $src != $first_src ]]; then
+        if [[ ! -f $src/num_jobs ]]; then
+            echo "$0: error: Required source file $src/num_jobs is missing."
+            exit 1
+        fi
+        if ! cmp -s $first_src/tree $src/tree; then
+            echo "$0: error: tree $src/tree is either missing or not the" \
+                "same as $first_src/tree."
+            exit 1
+        fi
+        if [[ ! -f $src/phones.txt ]]; then
+            echo "$0: error: Required source file $src/phones.txt is missing."
+            exit 1
+        fi
+        utils/lang/check_phones_compatible.sh $first_src/phones.txt \
+            $src/phones.txt || exit 1
     fi
-    if ! cmp -s $first_src/tree $src/tree; then
-      echo "$0: error: tree $src/tree is either missing or not the" \
-           "same as $first_src/tree."
-      exit 1
-    fi
-    if [[ ! -f $src/phones.txt ]]; then
-      echo "$0: error: Required source file $src/phones.txt is missing."
-      exit 1
-    fi
-    utils/lang/check_phones_compatible.sh $first_src/phones.txt \
-                                          $src/phones.txt || exit 1
-  fi
 done
 
 # All checks passed, ok to prepare directory. Copy model and other files from
@@ -121,7 +120,7 @@ rm -f $dest/{cmvn_opts,final.mdl,num_jobs,phones.txt,tree}
 $do_ali && rm -f $dest/ali.*.{gz,scp}
 $do_lat && rm -f $dest/lat.*.{gz,scp}
 cp $first_src/{cmvn_opts,final.mdl,phones.txt,tree} $dest/ || exit 1
-cp $first_src/frame_subsampling_factor $dest/ 2>/dev/null  # If present.
+cp $first_src/frame_subsampling_factor $dest/ 2> /dev/null # If present.
 echo $nj > $dest/num_jobs || exit 1
 
 # Make temporary directory, delete on signal, but not on 'exit 1'.
@@ -129,8 +128,7 @@ temp_dir=$(mktemp -d $dest/temp.XXXXXX) || exit 1
 cleanup() { rm -rf "$temp_dir"; }
 trap cleanup HUP INT TERM
 echo "$0: note: Temporary directory $temp_dir will not be deleted in case of" \
-     "script failure, so you could examine it for troubleshooting."
-
+    "script failure, so you could examine it for troubleshooting."
 
 # This function may be called twice, once to combine alignments and the second
 # time to combine lattices. The two invocations are as follows:
@@ -140,62 +138,62 @@ echo "$0: note: Temporary directory $temp_dir will not be deleted in case of" \
 # log messages and logfile names, and 'copy-int-vector'/'lattice-copy' is the
 # program used to copy corresponding objects.
 do_combine() {
-  local ark=$1 entities=$2 copy_program=$3
-  shift 3
+    local ark=$1 entities=$2 copy_program=$3
+    shift 3
 
-  echo "$0: Gathering $entities from each source directory."
-  # Assign all source gzipped archive names to an exported variable, one each
-  # per source directory, so that we can copy archives in a job per source.
-  src_id=0
-  new_id=0
-  for src in $@; do
-    src_id=$((src_id + 1))
-    nj_src=$(cat $src/num_jobs) || exit 1
-    # Create and export variable src_arcs_${src_id} for the job runner.
-    # Each numbered variable will contain the list of archives, e. g.:
-    # src_arcs_1="exp/tri3_ali/ali.1.gz exp/tri3_ali/ali.1.gz ..."
-    # ('printf' repeats its format as long as there are more arguments).
-    for src_nj_id in $(seq $nj_src); do
-      new_id=$((new_id + 1))
-      printf "$src/$ark.%d.gz" $src_nj_id > $temp_dir/src_arks.${new_id}
+    echo "$0: Gathering $entities from each source directory."
+    # Assign all source gzipped archive names to an exported variable, one each
+    # per source directory, so that we can copy archives in a job per source.
+    src_id=0
+    new_id=0
+    for src in $@; do
+        src_id=$((src_id + 1))
+        nj_src=$(cat $src/num_jobs) || exit 1
+        # Create and export variable src_arcs_${src_id} for the job runner.
+        # Each numbered variable will contain the list of archives, e. g.:
+        # src_arcs_1="exp/tri3_ali/ali.1.gz exp/tri3_ali/ali.1.gz ..."
+        # ('printf' repeats its format as long as there are more arguments).
+        for src_nj_id in $(seq $nj_src); do
+            new_id=$((new_id + 1))
+            printf "$src/$ark.%d.gz" $src_nj_id > $temp_dir/src_arks.${new_id}
+        done
     done
-  done
 
-  # Gather archives in parallel jobs.
-  $cmd JOB=1:$new_id $dest/log/gather_$entities.JOB.log \
-    $copy_program \
-      "ark:gunzip -c \$(cat $temp_dir/src_arks.JOB) |" \
-      "ark,scp:$temp_dir/$ark.JOB.ark,$temp_dir/$ark.JOB.scp" || exit 1
+    # Gather archives in parallel jobs.
+    $cmd JOB=1:$new_id $dest/log/gather_$entities.JOB.log \
+        $copy_program \
+        "ark:gunzip -c \$(cat $temp_dir/src_arks.JOB) |" \
+        "ark,scp:$temp_dir/$ark.JOB.ark,$temp_dir/$ark.JOB.scp" || exit 1
 
-  # Merge (presumed already sorted) scp's into a single script.
-  sort -m $temp_dir/$ark.*.scp > $temp_dir/$ark.scp || exit 1
+    # Merge (presumed already sorted) scp's into a single script.
+    sort -m $temp_dir/$ark.*.scp > $temp_dir/$ark.scp || exit 1
 
-  inputs=$(for n in `seq $nj`; do echo $temp_dir/$ark.$n.scp; done)
-  utils/split_scp.pl --utt2spk=$data/utt2spk $temp_dir/$ark.scp $inputs
+    inputs=$(for n in $(seq $nj); do echo $temp_dir/$ark.$n.scp; done)
+    utils/split_scp.pl --utt2spk=$data/utt2spk $temp_dir/$ark.scp $inputs
 
-  echo "$0: Splitting combined $entities into $nj archives on speaker boundary."
-  $cmd JOB=1:$nj $dest/log/chop_combined_$entities.JOB.log \
-    $copy_program \
-      "scp:$temp_dir/$ark.JOB.scp" \
-      "ark:| gzip -c > $dest/$ark.JOB.gz" || exit 1
+    echo "$0: Splitting combined $entities into $nj archives on speaker boundary."
+    $cmd JOB=1:$nj $dest/log/chop_combined_$entities.JOB.log \
+        $copy_program \
+        "scp:$temp_dir/$ark.JOB.scp" \
+        "ark:| gzip -c > $dest/$ark.JOB.gz" || exit 1
 
-  # Get some interesting stats, and signal an error if error threshold exceeded.
-  n_utt=$(wc -l <$data/utt2spk)
-  n_ali=$(wc -l <$temp_dir/$ark.scp)
-  n_ali_no_utt=$(join -j1 -v2 $data/utt2spk $temp_dir/$ark.scp | wc -l)
-  n_utt_no_ali=$(join -j1 -v1 $data/utt2spk $temp_dir/$ark.scp | wc -l)
-  n_utt_no_ali_pct=$(perl -e "print int($n_utt_no_ali/$n_utt * 100 + .5);")
-  echo "$0: Combined $n_ali $entities for $n_utt utterances." \
-       "There were $n_utt_no_ali utterances (${n_utt_no_ali_pct}%) without" \
-       "$entities, and $n_ali_no_utt $entities not matching any utterance."
+    # Get some interesting stats, and signal an error if error threshold exceeded.
+    n_utt=$(wc -l < $data/utt2spk)
+    n_ali=$(wc -l < $temp_dir/$ark.scp)
+    n_ali_no_utt=$(join -j1 -v2 $data/utt2spk $temp_dir/$ark.scp | wc -l)
+    n_utt_no_ali=$(join -j1 -v1 $data/utt2spk $temp_dir/$ark.scp | wc -l)
+    n_utt_no_ali_pct=$(perl -e "print int($n_utt_no_ali/$n_utt * 100 + .5);")
+    echo "$0: Combined $n_ali $entities for $n_utt utterances." \
+        "There were $n_utt_no_ali utterances (${n_utt_no_ali_pct}%) without" \
+        "$entities, and $n_ali_no_utt $entities not matching any utterance."
 
-  if (( $n_utt_no_ali_pct >= $tolerance )); then
-    echo "$0: error: Percentage of utterances missing $entities," \
-         "${n_utt_no_ali_pct}%, is at or above error tolerance ${tolerance}%."
-    exit 1
-  fi
+    if (($n_utt_no_ali_pct >= $tolerance)); then
+        echo "$0: error: Percentage of utterances missing $entities," \
+            "${n_utt_no_ali_pct}%, is at or above error tolerance ${tolerance}%."
+        exit 1
+    fi
 
-  return 0
+    return 0
 }
 
 # Do the actual combining. Do not check returned exit code, as
@@ -210,6 +208,6 @@ what=
 $do_ali && what+='alignments '
 $do_ali && $do_lat && what+='and '
 $do_lat && what+='lattices '
-echo "$0: Stored combined ${what}in $dest"  # No period, interferes with
-                                            # copy/paste from tty emulator.
+echo "$0: Stored combined ${what}in $dest" # No period, interferes with
+# copy/paste from tty emulator.
 exit 0

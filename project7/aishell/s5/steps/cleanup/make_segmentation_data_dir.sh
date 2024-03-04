@@ -18,28 +18,28 @@ set -e
 echo "$0 $@"
 
 [ -f ./path.sh ] && . ./path.sh
-. parse_options.sh || exit 1;
+. parse_options.sh || exit 1
 
 if [ $# -ne 3 ]; then
-  echo "This script takes the ctm file that corresponds to the data directory"
-  echo "created by steps/cleanup/split_long_utterance.sh, works out a new"
-  echo "segmentation and creates a new data directory for the new segmentation."
-  echo ""
-  echo "Usage: $0 [options] <ctm-file> <old-data-dir> <new-data-dir>"
-  echo " e.g.: $0 train_si284_split.ctm \\"
-  echo "                          data/train_si284_split data/train_si284_reseg"
-  echo "Options:"
-  echo "    --wer-cutoff            # ignore segments with WER higher than the"
-  echo "                            # specified value. -1 means no segment will"
-  echo "                            # be ignored."
-  echo "    --max-seg-length        # maximum length of new segments"
-  echo "    --min-seg-length        # minimum length of new segments"
-  echo "    --min-sil-length        # minimum length of silence as split point"
-  echo "    --time-precision        # precision for determining \"same time\""
-  echo "    --special-symbol        # special symbol to be aligned with"
-  echo "                            # inserted or deleted words"
-  echo "    --separator             # separator for aligned pairs"
-  exit 1;
+    echo "This script takes the ctm file that corresponds to the data directory"
+    echo "created by steps/cleanup/split_long_utterance.sh, works out a new"
+    echo "segmentation and creates a new data directory for the new segmentation."
+    echo ""
+    echo "Usage: $0 [options] <ctm-file> <old-data-dir> <new-data-dir>"
+    echo " e.g.: $0 train_si284_split.ctm \\"
+    echo "                          data/train_si284_split data/train_si284_reseg"
+    echo "Options:"
+    echo "    --wer-cutoff            # ignore segments with WER higher than the"
+    echo "                            # specified value. -1 means no segment will"
+    echo "                            # be ignored."
+    echo "    --max-seg-length        # maximum length of new segments"
+    echo "    --min-seg-length        # minimum length of new segments"
+    echo "    --min-sil-length        # minimum length of silence as split point"
+    echo "    --time-precision        # precision for determining \"same time\""
+    echo "    --special-symbol        # special symbol to be aligned with"
+    echo "                            # inserted or deleted words"
+    echo "    --separator             # separator for aligned pairs"
+    exit 1
 fi
 
 ctm=$1
@@ -47,16 +47,16 @@ old_data_dir=$2
 new_data_dir=$3
 
 for f in $ctm $old_data_dir/text.orig $old_data_dir/utt2spk \
-  $old_data_dir/wav.scp $old_data_dir/segments; do
-  if [ ! -f $f ]; then
-    echo "$0: expected $f to exist"
-    exit 1;
-  fi
+    $old_data_dir/wav.scp $old_data_dir/segments; do
+    if [ ! -f $f ]; then
+        echo "$0: expected $f to exist"
+        exit 1
+    fi
 done
 
 mkdir -p $new_data_dir/tmp/
 cp -f $old_data_dir/wav.scp $new_data_dir
-[ -f old_data_dir/spk2gender ] &&  cp -f $old_data_dir/spk2gender $new_data_dir
+[ -f old_data_dir/spk2gender ] && cp -f $old_data_dir/spk2gender $new_data_dir
 
 # Removes the overlapping region (in utils/split_long_utterance.sh we create
 # the segmentation with overlapping region).
@@ -155,17 +155,17 @@ cat $new_data_dir/tmp/ctm | perl -e '
 
 # Computes the Levenshtein alignment.
 align-text --special-symbol=$special_symbol --separator=$separator \
-  ark:$old_data_dir/text.orig ark:$new_data_dir/tmp/text \
-  ark,t:$new_data_dir/tmp/aligned.txt
+    ark:$old_data_dir/text.orig ark:$new_data_dir/tmp/text \
+    ark,t:$new_data_dir/tmp/aligned.txt
 
 # Creates new segmentation.
 steps/cleanup/create_segments_from_ctm.pl \
-  --max-seg-length $max_seg_length --min-seg-length $min_seg_length \
-  --min-sil-length $min_sil_length \
-  --separator $separator --special-symbol $special_symbol \
-  --wer-cutoff $wer_cutoff \
-  $new_data_dir/tmp/ctm $new_data_dir/tmp/aligned.txt \
-  $new_data_dir/segments $new_data_dir/text
+    --max-seg-length $max_seg_length --min-seg-length $min_seg_length \
+    --min-sil-length $min_sil_length \
+    --separator $separator --special-symbol $special_symbol \
+    --wer-cutoff $wer_cutoff \
+    $new_data_dir/tmp/ctm $new_data_dir/tmp/aligned.txt \
+    $new_data_dir/segments $new_data_dir/text
 
 # Now creates the new utt2spk and spk2utt file.
 cat $old_data_dir/utt2spk | perl -e '
@@ -203,4 +203,4 @@ utils/utt2spk_to_spk2utt.pl $new_data_dir/utt2spk > $new_data_dir/spk2utt
 
 utils/fix_data_dir.sh $new_data_dir
 
-exit 0;
+exit 0

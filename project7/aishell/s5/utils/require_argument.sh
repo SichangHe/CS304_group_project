@@ -19,4 +19,3 @@ if eval '[ -z "$'$name'" ]'; then
     echo "$help_message" >&2
     exit 1
 fi
-

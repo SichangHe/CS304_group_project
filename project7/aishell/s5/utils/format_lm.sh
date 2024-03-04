@@ -20,10 +20,10 @@
 set -e
 
 if [ $# -ne 4 ]; then
-  echo "Usage: $0 <lang_dir> <arpa-LM> <lexicon> <out_dir>"
-  echo "E.g.: $0 data/lang data/local/lm/foo.kn.gz data/local/dict/lexicon.txt data/lang_test"
-  echo "Convert ARPA-format language models to FSTs.";
-  exit 1;
+    echo "Usage: $0 <lang_dir> <arpa-LM> <lexicon> <out_dir>"
+    echo "E.g.: $0 data/lang data/local/lm/foo.kn.gz data/local/dict/lexicon.txt data/lang_test"
+    echo "Convert ARPA-format language models to FSTs."
+    exit 1
 fi
 
 lang_dir=$1
@@ -40,20 +40,20 @@ echo "Converting '$lm' to FST"
 # are two different directories in the filesystem
 # if they are the same, the section guarded by the test
 # would be actually harmfull (deleting the phones/ subdirectory)
-if [ -e $out_dir ] && [ ! $lang_dir -ef $out_dir ] ; then
-  if [ -e $out_dir/phones ] ; then
-    rm -r $out_dir/phones
-  fi
+if [ -e $out_dir ] && [ ! $lang_dir -ef $out_dir ]; then
+    if [ -e $out_dir/phones ]; then
+        rm -r $out_dir/phones
+    fi
 
-  for f in phones.txt words.txt topo L.fst L_disambig.fst phones oov.int oov.txt; do
-     cp -r $lang_dir/$f $out_dir
-  done
+    for f in phones.txt words.txt topo L.fst L_disambig.fst phones oov.int oov.txt; do
+        cp -r $lang_dir/$f $out_dir
+    done
 fi
 
 lm_base=$(basename $lm '.gz')
 gunzip -c $lm \
-  | arpa2fst --disambig-symbol=#0 \
-             --read-symbol-table=$out_dir/words.txt - $out_dir/G.fst
+    | arpa2fst --disambig-symbol=#0 \
+        --read-symbol-table=$out_dir/words.txt - $out_dir/G.fst
 set +e
 fstisstochastic $out_dir/G.fst
 set -e
@@ -69,17 +69,16 @@ set -e
 mkdir -p $out_dir/tmpdir.g
 awk '{if(NF==1){ printf("0 0 %s %s\n", $1,$1); }}
      END{print "0 0 #0 #0"; print "0";}' \
-     < "$lexicon" > $out_dir/tmpdir.g/select_empty.fst.txt
+    < "$lexicon" > $out_dir/tmpdir.g/select_empty.fst.txt
 
 fstcompile --isymbols=$out_dir/words.txt --osymbols=$out_dir/words.txt \
-  $out_dir/tmpdir.g/select_empty.fst.txt \
-  | fstarcsort --sort_type=olabel \
-  | fstcompose - $out_dir/G.fst > $out_dir/tmpdir.g/empty_words.fst
+    $out_dir/tmpdir.g/select_empty.fst.txt \
+    | fstarcsort --sort_type=olabel \
+    | fstcompose - $out_dir/G.fst > $out_dir/tmpdir.g/empty_words.fst
 
 fstinfo $out_dir/tmpdir.g/empty_words.fst | grep cyclic | grep -w 'y' \
-  && echo "Language model has cycles with empty words" && exit 1
+    && echo "Language model has cycles with empty words" && exit 1
 
 rm -r $out_dir/tmpdir.g
-
 
 echo "Succeeded in formatting LM: '$lm'"

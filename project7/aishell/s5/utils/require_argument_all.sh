@@ -5,4 +5,3 @@
 for i in $@; do
     . utils/require_argument.sh $i
 done
-
