@@ -33,7 +33,7 @@ use_ivectors=true
 . ./utils/parse_options.sh
 
 if ! cuda-compiled; then
-  cat <<EOF && exit 1
+    cat << EOF && exit 1
 This script is intended to be used with GPUs but you have not compiled Kaldi with CUDA
 If you want to use GPUs (and have them), go to src/, and configure and make on a machine
 where "nvcc" is installed.
@@ -46,15 +46,15 @@ train_set=train_sp
 ali_dir=${gmm_dir}_sp_ali
 graph_dir=$gmm_dir/graph
 
-local/nnet3/run_ivector_common.sh --stage $stage || exit 1;
+local/nnet3/run_ivector_common.sh --stage $stage || exit 1
 
 if [ $stage -le 7 ]; then
-  echo "$0: creating neural net configs";
+    echo "$0: creating neural net configs"
 
-  num_targets=$(tree-info $ali_dir/tree |grep num-pdfs|awk '{print $2}')
+    num_targets=$(tree-info $ali_dir/tree | grep num-pdfs | awk '{print $2}')
 
-  mkdir -p $dir/configs
-  cat <<EOF > $dir/configs/network.xconfig
+    mkdir -p $dir/configs
+    cat << EOF > $dir/configs/network.xconfig
   input dim=100 name=ivector
   input dim=43 name=input
 
@@ -72,46 +72,46 @@ if [ $stage -le 7 ]; then
   relu-batchnorm-layer name=tdnn6 dim=850
   output-layer name=output input=tdnn6 dim=$num_targets max-change=1.5
 EOF
-  steps/nnet3/xconfig_to_configs.py --xconfig-file $dir/configs/network.xconfig --config-dir $dir/configs/
+    steps/nnet3/xconfig_to_configs.py --xconfig-file $dir/configs/network.xconfig --config-dir $dir/configs/
 fi
 
 if [ $stage -le 8 ]; then
-  if [[ $(hostname -f) == *.clsp.jhu.edu ]] && [ ! -d $dir/egs/storage ]; then
-    utils/create_split_dir.pl \
-     /export/b0{5,6,7,8}/$USER/kaldi-data/egs/aishell-$(date +'%m_%d_%H_%M')/s5/$dir/egs/storage $dir/egs/storage
-  fi
+    if [[ $(hostname -f) == *.clsp.jhu.edu ]] && [ ! -d $dir/egs/storage ]; then
+        utils/create_split_dir.pl \
+            /export/b0{5,6,7,8}/$USER/kaldi-data/egs/aishell-$(date +'%m_%d_%H_%M')/s5/$dir/egs/storage $dir/egs/storage
+    fi
 
-  steps/nnet3/train_dnn.py --stage=$train_stage \
-    --cmd="$decode_cmd" \
-    --feat.online-ivector-dir exp/nnet3/ivectors_${train_set} \
-    --feat.cmvn-opts="--norm-means=false --norm-vars=false" \
-    --trainer.num-epochs $num_epochs \
-    --trainer.optimization.num-jobs-initial $num_jobs_initial \
-    --trainer.optimization.num-jobs-final $num_jobs_final \
-    --trainer.optimization.initial-effective-lrate $initial_effective_lrate \
-    --trainer.optimization.final-effective-lrate $final_effective_lrate \
-    --egs.dir "$common_egs_dir" \
-    --cleanup.remove-egs $remove_egs \
-    --cleanup.preserve-model-interval 500 \
-    --use-gpu true \
-    --feat-dir=data/${train_set}_hires \
-    --ali-dir $ali_dir \
-    --lang data/lang \
-    --reporting.email="$reporting_email" \
-    --dir=$dir  || exit 1;
+    steps/nnet3/train_dnn.py --stage=$train_stage \
+        --cmd="$decode_cmd" \
+        --feat.online-ivector-dir exp/nnet3/ivectors_${train_set} \
+        --feat.cmvn-opts="--norm-means=false --norm-vars=false" \
+        --trainer.num-epochs $num_epochs \
+        --trainer.optimization.num-jobs-initial $num_jobs_initial \
+        --trainer.optimization.num-jobs-final $num_jobs_final \
+        --trainer.optimization.initial-effective-lrate $initial_effective_lrate \
+        --trainer.optimization.final-effective-lrate $final_effective_lrate \
+        --egs.dir "$common_egs_dir" \
+        --cleanup.remove-egs $remove_egs \
+        --cleanup.preserve-model-interval 500 \
+        --use-gpu true \
+        --feat-dir=data/${train_set}_hires \
+        --ali-dir $ali_dir \
+        --lang data/lang \
+        --reporting.email="$reporting_email" \
+        --dir=$dir || exit 1
 fi
 
 if [ $stage -le 9 ]; then
-  # this version of the decoding treats each utterance separately
-  # without carrying forward speaker information.
-  for decode_set in dev test; do
-    num_jobs=`cat data/${decode_set}_hires/utt2spk|cut -d' ' -f2|sort -u|wc -l`
-    decode_dir=${dir}/decode_$decode_set
-    steps/nnet3/decode.sh --nj $num_jobs --cmd "$decode_cmd" \
-       --online-ivector-dir exp/nnet3/ivectors_${decode_set} \
-       $graph_dir data/${decode_set}_hires $decode_dir || exit 1;
-  done
+    # this version of the decoding treats each utterance separately
+    # without carrying forward speaker information.
+    for decode_set in dev test; do
+        num_jobs=$(cat data/${decode_set}_hires/utt2spk | cut -d' ' -f2 | sort -u | wc -l)
+        decode_dir=${dir}/decode_$decode_set
+        steps/nnet3/decode.sh --nj $num_jobs --cmd "$decode_cmd" \
+            --online-ivector-dir exp/nnet3/ivectors_${decode_set} \
+            $graph_dir data/${decode_set}_hires $decode_dir || exit 1
+    done
 fi
 
-wait;
-exit 0;
+wait
+exit 0
