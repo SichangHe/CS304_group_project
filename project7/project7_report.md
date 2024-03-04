@@ -12,3 +12,11 @@ We solved this by replace it with `utils/parallel/run.pl` in `cmd.sh`.
 It also prepares the (optional) silence phones and the extra questions that are
 simply all the phones.
 <!-- TODO: What is this extra questions? -->
+
+`aishell_data_prep.sh` extracts the audio file names,
+and split them into training, development, and testing sets. For each set,
+it lists <!-- the file names without the `.wav` extension in `utt.list`, -->
+the map from utterance IDs to speaker IDs in `utt2spk` and the other way around
+in `spk2utt`, the map from utterance IDs to `.wav` file paths in `wav.scp`,
+and map from utterance IDs to transcriptions in `transcripts.txt` (and
+deduplicated in `text`).
