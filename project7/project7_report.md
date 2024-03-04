@@ -12,6 +12,7 @@ We solved this by replace it with `utils/parallel/run.pl` in `cmd.sh`.
 It also prepares the (optional) silence phones and the extra questions that are
 simply all the phones.
 <!-- TODO: What is this extra questions? -->
+The resulting files are in `data/local/dict`.
 
 Output:
 
@@ -21,11 +22,12 @@ local/aishell_prepare_dict.sh: AISHELL dict preparation succeeded
 
 `aishell_data_prep.sh` extracts the audio file names,
 and split them into training, development, and testing sets. For each set,
-it lists <!-- the file names without the `.wav` extension in `utt.list`, -->
-the map from utterance IDs to speaker IDs in `utt2spk` and the other way around
-in `spk2utt`, the map from utterance IDs to `.wav` file paths in `wav.scp`,
-and map from utterance IDs to transcriptions in `transcripts.txt` (and
-deduplicated in `text`).
+it lists <!-- the file names without the `.wav` extension in `utt.list`,
+--> the map from utterance IDs to speaker IDs in `utt2spk` and the other way
+around in `spk2utt`,
+the map from utterance IDs to `.wav` file paths in `wav.scp`,
+and map from utterance IDs to transcriptions in <!-- `transcripts.txt` (and
+deduplicated in -->`text`<!-- ) -->.
 
 Output:
 
@@ -36,7 +38,8 @@ Preparing data/local/test transcriptions
 local/aishell_data_prep.sh: AISHELL data preparation succeeded
 ```
 
-`utils/prepare_lang.sh` <!-- TODO: What? -->
+`utils/prepare_lang.sh` constructs the $L$ FST based on the output of
+`local/aishell_prepare_dict.sh`.
 
 Output:
 
@@ -69,15 +72,6 @@ Checking data/local/dict/lexicon.txt
 --> text contains only allowed whitespaces
 --> data/local/dict/lexicon.txt is OK
 
-Checking data/local/dict/lexiconp.txt
---> reading data/local/dict/lexiconp.txt
---> text seems to be UTF-8 or ASCII, checking whitespaces
---> text contains only allowed whitespaces
---> data/local/dict/lexiconp.txt is OK
-
-Checking lexicon pair data/local/dict/lexicon.txt and data/local/dict/lexiconp.txt
---> lexicon pair data/local/dict/lexicon.txt and data/local/dict/lexiconp.txt match
-
 Checking data/local/dict/extra_questions.txt ...
 --> reading data/local/dict/extra_questions.txt
 --> text seems to be UTF-8 or ASCII, checking whitespaces
@@ -85,7 +79,8 @@ Checking data/local/dict/extra_questions.txt ...
 --> data/local/dict/extra_questions.txt is OK
 --> SUCCESS [validating dictionary directory data/local/dict]
 
-fstaddselfloops data/lang/phones/wdisambig_phones.int data/lang/phones/wdisambig_words.int
+**Creating data/local/dict/lexiconp.txt from data/local/dict/lexicon.txt
+fstaddselfloops data/lang/phones/wdisambig_phones.int data/lang/phones/wdisambig_words.int 
 prepare_lang.sh: validating output directory
 utils/validate_lang.pl data/lang
 Checking existence of separator file
@@ -197,15 +192,218 @@ Checking data/lang/oov.{txt, int} ...
 Rest of the output:
 
 ```
-Not creating raw N-gram counts ngrams.gz and heldout_ngrams.gz since they already exist in data/local/lm/3gram-mincount
-(remove them if you want them regenerated)
-Not doing optimization of discounting parameters since
-file data/local/lm/3gram-mincount/config.6 already exists
+Getting raw N-gram counts
+discount_ngrams: for n-gram order 1, D=0.000000, tau=0.000000 phi=1.000000
+discount_ngrams: for n-gram order 2, D=0.000000, tau=0.000000 phi=1.000000
+discount_ngrams: for n-gram order 3, D=1.000000, tau=0.000000 phi=1.000000
+Iteration 1/6 of optimizing discounting parameters
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.675000 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.675000 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=0.825000 phi=2.000000
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.900000 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.900000 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.100000 phi=2.000000
+discount_ngrams: for n-gram order 1, D=0.600000, tau=1.215000 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=1.215000 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.485000 phi=2.000000
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+Perplexity over 99496.000000 words is 571.430399
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 571.430399
+
+real    0m3.320s
+user    0m4.063s
+sys     0m0.213s
+Perplexity over 99496.000000 words is 573.088187
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 573.088187
+
+real    0m3.375s
+user    0m4.089s
+sys     0m0.268s
+Perplexity over 99496.000000 words is 571.860357
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 571.860357
+
+real    0m3.415s
+user    0m4.034s
+sys     0m0.217s
+Projected perplexity change from setting alpha=-0.413521475380432 is 571.860357->571.350704659834, reduction of 0.509652340166213
+Alpha value on iter 1 is -0.413521475380432
+Iteration 2/6 of optimizing discounting parameters
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=0.483845 phi=2.000000
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=0.645126 phi=2.000000
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=0.870921 phi=2.000000
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+Perplexity over 99496.000000 words is 570.548231
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.548231
+
+real    0m3.322s
+user    0m4.045s
+sys     0m0.210s
+Perplexity over 99496.000000 words is 570.909914
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.909914
+Perplexity over 99496.000000 words is 570.209333
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.209333
+
+real    0m3.359s
+user    0m4.065s
+sys     0m0.221s
+
+real    0m3.357s
+user    0m4.013s
+sys     0m0.192s
+optimize_alpha.pl: alpha=0.782133003937562 is too positive, limiting it to 0.7
+Projected perplexity change from setting alpha=0.7 is 570.548231->570.0658029, reduction of 0.482428099999765
+Alpha value on iter 2 is 0.7
+Iteration 3/6 of optimizing discounting parameters
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.750000
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=2.000000
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=2.350000
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+Perplexity over 99496.000000 words is 570.070852
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.070852
+
+real    0m3.257s
+user    0m3.855s
+sys     0m0.280s
+Perplexity over 99496.000000 words is 570.074175
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.074175
+
+real    0m3.271s
+user    0m4.092s
+sys     0m0.202s
+Perplexity over 99496.000000 words is 570.135232
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.135232
+
+real    0m3.310s
+user    0m3.976s
+sys     0m0.214s
+Projected perplexity change from setting alpha=-0.149743638839048 is 570.074175->570.068152268062, reduction of 0.00602273193794645
+Alpha value on iter 3 is -0.149743638839048
+Iteration 4/6 of optimizing discounting parameters
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=1.080000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.800000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+Perplexity over 99496.000000 words is 651.559076
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 651.559076
+
+real    0m2.290s
+user    0m2.684s
+sys     0m0.184s
+Perplexity over 99496.000000 words is 570.079098
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 570.079098
+
+real    0m3.273s
+user    0m3.956s
+sys     0m0.235s
+Perplexity over 99496.000000 words is 571.811721
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 571.811721
+
+real    0m3.450s
+user    0m3.991s
+sys     0m0.286s
+Projected perplexity change from setting alpha=-0.116327143544381 is 570.079098->564.672375993263, reduction of 5.40672200673657
+Alpha value on iter 4 is -0.116327143544381
+Iteration 5/6 of optimizing discounting parameters
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.395873 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.712571 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+Perplexity over 99496.000000 words is 567.980179
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 567.980179
+
+real    0m3.354s
+user    0m3.943s
+sys     0m0.245s
+Perplexity over 99496.000000 words is 567.231151
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 567.231151
+Perplexity over 99496.000000 words is 567.407206
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 567.407206
+
+real    0m3.364s
+user    0m3.919s
+sys     0m0.268s
+
+real    0m3.388s
+user    0m3.965s
+sys     0m0.273s
+Projected perplexity change from setting alpha=0.259356959958262 is 567.407206->567.206654822021, reduction of 0.20055117797915
+Alpha value on iter 5 is 0.259356959958262
+Iteration 6/6 of optimizing discounting parameters
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.664727 phi=1.750000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.664727 phi=2.000000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.664727 phi=2.350000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+Perplexity over 99496.000000 words is 567.478625
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 567.478625
+Perplexity over 99496.000000 words is 567.181130
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 567.181130
+
+real    0m3.293s
+user    0m3.991s
+sys     0m0.184s
+Perplexity over 99496.000000 words is 567.346876
+Perplexity over 99496.000000 words (excluding 0.000000 OOVs) is 567.346876
+
+real    0m3.299s
+user    0m3.945s
+sys     0m0.238s
+
+real    0m3.316s
+user    0m3.978s
+sys     0m0.247s
+optimize_alpha.pl: alpha=2.83365708509299 is too positive, limiting it to 0.7
+Projected perplexity change from setting alpha=0.7 is 567.346876->567.0372037, reduction of 0.309672299999761
+Alpha value on iter 6 is 0.7
 Final config is:
 D=0.6 tau=0.527830672157611 phi=2
 D=0.706938285164495 tau=0.664727230661135 phi=2.7
 D=0 tau=1.09671484103859 phi=1.85025636116095
-Not creating discounted N-grams file data/local/lm/3gram-mincount/ngrams_disc.gz since it already exists
+Discounting N-grams.
+discount_ngrams: for n-gram order 1, D=0.600000, tau=0.527831 phi=2.000000
+discount_ngrams: for n-gram order 2, D=0.706938, tau=0.664727 phi=2.700000
+discount_ngrams: for n-gram order 3, D=0.000000, tau=1.096715 phi=1.850256
 Computing final perplexity
 Building ARPA LM (perplexity computation is in background)
 interpolate_ngrams: 137074 words in wordslist
@@ -530,6 +728,92 @@ local/score.sh: line 5: steps/score_kaldi.sh: No such file or directory
 steps/decode.sh: Error: scoring failed. (ignore by '--skip-scoring true')
 steps/decode.sh --cmd utils/parallel/run.pl --config conf/decode.config --nj 10 exp/tri2/graph data/test exp/tri2/decode_test
 decode.sh: feature type is delta
+steps/diagnostic/analyze_lats.sh --cmd utils/parallel/run.pl exp/tri2/graph exp/tri2/decode_test
+steps/diagnostic/analyze_lats.sh: see stats in exp/tri2/decode_test/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(1,4,39) and mean=15.4
+steps/diagnostic/analyze_lats.sh: see stats in exp/tri2/decode_test/log/analyze_lattice_depth_stats.log
++ steps/score_kaldi.sh --cmd utils/parallel/run.pl data/test exp/tri2/graph exp/tri2/decode_test
+local/score.sh: line 5: steps/score_kaldi.sh: No such file or directory
+steps/decode.sh: Error: scoring failed. (ignore by '--skip-scoring true')
+steps/align_si.sh --cmd utils/parallel/run.pl --nj 10 data/train data/lang exp/tri2 exp/tri2_ali
+steps/align_si.sh: feature type is delta
+steps/align_si.sh: aligning data in data/train using model from exp/tri2, putting alignments in exp/tri2_ali
+steps/diagnostic/analyze_alignments.sh --cmd utils/parallel/run.pl data/lang exp/tri2_ali
+steps/diagnostic/analyze_alignments.sh: see stats in exp/tri2_ali/log/analyze_alignments.log
+steps/align_si.sh: done aligning data.
+steps/train_lda_mllt.sh --cmd utils/parallel/run.pl 2500 20000 data/train data/lang exp/tri2_ali exp/tri3a
+steps/train_lda_mllt.sh: Accumulating LDA statistics.
+steps/train_lda_mllt.sh: Accumulating tree stats
+steps/train_lda_mllt.sh: Getting questions for tree clustering.
+steps/train_lda_mllt.sh: Building the tree
+steps/train_lda_mllt.sh: Initializing the model
+steps/train_lda_mllt.sh: Converting alignments from exp/tri2_ali to use current tree
+steps/train_lda_mllt.sh: Compiling graphs of transcripts
+Training pass 1
+Training pass 2
+steps/train_lda_mllt.sh: Estimating MLLT
+Training pass 3
+Training pass 4
+steps/train_lda_mllt.sh: Estimating MLLT
+Training pass 5
+Training pass 6
+steps/train_lda_mllt.sh: Estimating MLLT
+Training pass 7
+Training pass 8
+Training pass 9
+Training pass 10
+Aligning data
+Training pass 11
+Training pass 12
+steps/train_lda_mllt.sh: Estimating MLLT
+Training pass 13
+Training pass 14
+Training pass 15
+Training pass 16
+Training pass 17
+Training pass 18
+Training pass 19
+Training pass 20
+Aligning data
+Training pass 21
+Training pass 22
+Training pass 23
+Training pass 24
+Training pass 25
+Training pass 26
+Training pass 27
+Training pass 28
+Training pass 29
+Training pass 30
+Aligning data
+Training pass 31
+Training pass 32
+Training pass 33
+Training pass 34
+steps/diagnostic/analyze_alignments.sh --cmd utils/parallel/run.pl data/lang exp/tri3a
+steps/diagnostic/analyze_alignments.sh: see stats in exp/tri3a/log/analyze_alignments.log
+1 warnings in exp/tri3a/log/compile_questions.log
+8 warnings in exp/tri3a/log/lda_acc.*.log
+287 warnings in exp/tri3a/log/acc.*.*.log
+1 warnings in exp/tri3a/log/build_tree.log
+1240 warnings in exp/tri3a/log/align.*.*.log
+exp/tri3a: nj=10 align prob=-48.75 over 150.18h [retry=0.3%, fail=0.0%] states=2136 gauss=20038 tree-impr=5.06 lda-sum=24.60 mllt:impr,logdet=0.95,1.39
+steps/train_lda_mllt.sh: Done training system with LDA+MLLT features in exp/tri3a
+tree-info exp/tri3a/tree 
+tree-info exp/tri3a/tree 
+make-h-transducer --disambig-syms-out=exp/tri3a/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_3_1 exp/tri3a/tree exp/tri3a/final.mdl 
+fstrmsymbols exp/tri3a/graph/disambig_tid.int 
+fsttablecompose exp/tri3a/graph/Ha.fst data/lang_test/tmp/CLG_3_1.fst 
+fstdeterminizestar --use-log=true 
+fstrmepslocal 
+fstminimizeencoded 
+fstisstochastic exp/tri3a/graph/HCLGa.fst 
+0.00048784 -0.178947
+HCLGa is not stochastic
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri3a/final.mdl exp/tri3a/graph/HCLGa.fst 
+steps/decode.sh --cmd utils/parallel/run.pl --nj 10 --config conf/decode.config exp/tri3a/graph data/dev exp/tri3a/decode_dev
+decode.sh: feature type is lda
+
 ```
 
 <!-- TODO: Output not finished yet. -->
