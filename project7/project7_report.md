@@ -147,8 +147,15 @@ ARPA format.
 `utils/format_lm.sh` converts `data/local/lm/3gram-mincount/lm_unpruned.gz`,
 a language model in the ARPA format,
 into a WFST in the OpenFst format at `data/lang_test/G.fst`.
+This is the language model WFST ($G$).
 
-<!-- TODO: `steps/train_mono.sh` -->
+`steps/train_mono.sh` trains a monophone acoustic model in `exp/mono/` from the
+training data set. It initializes GMMs based on the topology, the $L$ WFST,
+and other phone information in `data/lang/`.
+It then trains the GMMs iteratively by aligning the training data against the
+model and increasing the number of Gaussians gradually,
+and repeats this process for a fixed number (40) of rounds.
+The resulting HMM WFST model ($H$) is at `exp/mono/final.mdl`.
 
 <!-- TODO: `steps/train_deltas.sh` -->
 
