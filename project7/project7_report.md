@@ -29,19 +29,21 @@ Reference: <https://www.kaldi-asr.org/doc/data_prep.html>.
 
 Our data are downloaded into `~/AISHELL-1/` from <www.openslr.org/resources/33>.
 
-`local/aishell_prepare_dict.sh` produces the dictionary in `data/local/dict`,
+`local/aishell_prepare_dict.sh` produces the dictionary in `data/local/dict/`,
 an intermediate artifact later used to generate the language data.
-It extracts the non-silence phones from `lexicon.txt` into
-`nonsilence_phones.txt`,
-grouped by the same phones with different indexes and sorted alphabetically.
+It extracts the non-silence phones from
+`~/AISHELL-1/resource_aishell/lexicon.txt` into `nonsilence_phones.txt`,
+with the variances of the same base phones (phones with different indexes)
+grouped in each line and the base phones sorted alphabetically.
 It also prepares the (optional) silence phones in (`optional_silence.txt` and)
-`silence_phones.txt`. The extra questions, simply all the phones,
-are extracted into `extra_questions.txt`.
-<!-- TODO: What is this extra questions? -->
+`silence_phones.txt`. The extra questions for constructing the decision tree,
+simply a list of all the phone groups, are extracted into `extra_questions.txt`.
+These extra questions are useful to group the same phone together when
+constructing the decision tree later.
 
 `aishell_data_prep.sh` extracts the audio file names and other related
-information from `data_aishell/wav/` and `data_aishell/transcript` in
-`~/AISHELL-1/`, and splits them into training (`train/`), development (`dev/`),
+information from `wav/` and `transcript/` in `~/AISHELL-1/data_aishell/`,
+and splits them into training (`train/`), development (`dev/`),
 and testing (`test/`) sets under `data/local/`.
 It first dumps all `.wav` file names and dump them into
 `data/local/tmp/wav.flist` and validates the count.
@@ -57,8 +59,9 @@ deduplicated in `text`). It filters out any instances not included,
 and eventually produces the three sets containing `spk2utt`, `utt2spk`,
 `wav.scp` and `text` in `data/`.
 
-`utils/prepare_lang.sh` constructs the $L$ FST based on the output of
-`local/aishell_prepare_dict.sh`.
+`utils/prepare_lang.sh` constructs the pronunciation lexicon WFST ($L$)
+and other information about the phone set in `data/lang/`,
+based on the dictionary in `data/local/dict/`.
 
 ## Feature Extraction
 
