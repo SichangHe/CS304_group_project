@@ -226,7 +226,7 @@ There are five steps invloved.
 
     The transitions for context-dependent phones lead to structures representing the corresponding HMMs and then back to the start state. For the normal topology, the $ H $ transducer includes self-loops on the initial state for each disambiguation symbol.
 
-    The following script segment creates the $ H $ transducer without self-loops:
+    It takes two inputs: `$tree`, which contains the mapping from the phone-in-context and HMM state to `pdf-id`, and the `$model` file that contains the HMM parameters generated in steps such as `train_mono.sh` or `train_deltas.sh`. The following command produces `Ha.fst`, which represents $ H $ without self-loops.
 
     ```sh
     make-h-transducer --disambig-syms-out=$dir/disambig_tstate.list \
