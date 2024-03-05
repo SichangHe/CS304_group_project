@@ -1,2 +1,2 @@
 # GitHub Linguist ignore
-project7/aishell/ linguist-generated
+project7/aishell/** linguist-vendored
