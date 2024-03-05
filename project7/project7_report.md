@@ -66,9 +66,16 @@ and eventually produces the three sets containing `spk2utt`, `utt2spk`,
 
 <!-- TODO: `steps/make_mfcc_pitch.sh` -->
 
-The script `steps/make_mfcc_pitch.sh` is used to compute MFCC (Mel Frequency Cepstral Coefficients) feature vectors. The data is divided into three groups: train, test, and dev.
+The script `steps/make_mfcc_pitch.sh` is used to compute MFCC (Mel Frequency Cepstral Coefficients) and pitch feature vectors. The data is divided into three groups: train, test, and dev.
 
-The script outputs `.scp` text files, which map utterance ids to positions in an archive `.ark` files.
+Here's an overview of the steps performed by the script:
+
+1. The `compute-mfcc-feats` command is used to compute MFCC features from the input audio data.
+2. The `compute-kaldi-pitch-feats` command is used to compute pitch features from the input audio data.
+3. The `paste-feats` command is used to combine the MFCC and pitch features into a single feature representation.
+4. The `copy-feats` command is used to save the combined features to the directory specified by the `$mfcc_pitch_dir` variable in binary format.
+
+The script generates `.scp` text files that map utterance IDs to positions in an archive `.ark` file. These files store the paths to the binary feature archives along with their associated utterance IDs.
 
 Sample from `data/train/feats.scp`:
 
@@ -86,7 +93,7 @@ BAC009S0002W0130 /home/vcm/project7/aishell/s5/mfcc/raw_mfcc_pitch_train.1.ark:5
 BAC009S0002W0131 /home/vcm/project7/aishell/s5/mfcc/raw_mfcc_pitch_train.1.ark:66151
 ```
 
-The following command generates the MFCC feature vector associated with the `feat.scp` file a human-readable format:
+To generate a human-readable format of the MFCC and pitch feature vectors associated with the feats.scp file, we use the `copy-feats` command with the `ark,t:-` option. This command reads the feature archives specified in the `feats.sc`p file and outputs the features in plain text format.
 
 ```sh
 $ copy-feats scp:data/train/feats.scp ark,t:- | head       
