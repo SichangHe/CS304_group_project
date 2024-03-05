@@ -90,11 +90,13 @@ current training step. -->
 
 <!-- TODO: `steps/train_sat.sh` -->
 
-<!-- TODO: `steps/align_*.sh` -->
-
-<!-- TODO: `utils/mkgraph.sh` -->
-
 ## Model Testing
 
 <!-- TODO:
 you need to describe in detail the evaluation criteria for the test section. -->
+
+<!-- TODO: `utils/mkgraph.sh` -->
+
+<!-- TODO: `steps/align_si.sh` -->
+
+<!-- TODO: `steps/align_fmllr.sh` -->
