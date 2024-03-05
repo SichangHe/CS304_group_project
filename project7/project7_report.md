@@ -18,19 +18,23 @@ local/score.sh: line 5: steps/score_kaldi.sh: No such file or directory
 ```
 
 This was because we did not copy the symbolic links in `kaldi/egs/wsj/s5`.
-The problem is solved after we did that.
+The problem was solved after we did that.
 
 ## Data Preparation
 
 <!-- TODO: local folder contains the code related to data preparation,
 and you need to explain the codes in details. -->
 
-`local/aishell_prepare_dict.sh` extracts the non-silence phones from
-`lexicon.txt`, grouped by the same phones with different indexes.
-It also prepares the (optional) silence phones and the extra questions that are
-simply all the phones.
+Reference: <https://www.kaldi-asr.org/doc/data_prep.html>.
+
+`local/aishell_prepare_dict.sh` produces the dictionary in `data/local/dict`,
+an intermediate artifact later used to generate the language data.
+It extracts the non-silence phones from `lexicon.txt` into
+`nonsilence_phones.txt`, grouped by the same phones with different indexes.
+It also prepares the (optional) silence phones in (`optional_silence.txt` and)
+`silence_phones.txt`. The extra questions, simply all the phones,
+are extracted into `extra_questions.txt`.
 <!-- TODO: What is this extra questions? -->
-The resulting files are in `data/local/dict`.
 
 Output:
 
