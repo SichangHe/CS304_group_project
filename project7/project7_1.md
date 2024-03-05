@@ -56,8 +56,8 @@ Appendix:
 
 ….
 
-local/aishell_data_prep.sh $data/data_aishell/wav
-$data/data_aishell/transcript || exit 1;
+local/aishell_data_prep.sh \$data/data_aishell/wav
+\$data/data_aishell/transcript || exit 1;
 
 Generate wav.scp,text,utt2spk,spk2utt for describing data information.
 ….

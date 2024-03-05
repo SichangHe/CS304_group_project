@@ -1,11 +1,29 @@
+# Project 7 Report
+
+## Errors Encountered
+
 We got an error:
 
 ```sh
 steps/make_mfcc_pitch.sh: line 157: run.pl: command not found
 ```
 
-This is because `run.pl` is not in the present directory or `$PATH`.
+This was because `run.pl` is not in the present directory or `$PATH`.
 We solved this by replace it with `utils/parallel/run.pl` in `cmd.sh`.
+
+We got another error:
+
+```sh
+local/score.sh: line 5: steps/score_kaldi.sh: No such file or directory
+```
+
+This was because we did not copy the symbolic links in `kaldi/egs/wsj/s5`.
+The problem is solved after we did that.
+
+## Data Preparation
+
+<!-- TODO: local folder contains the code related to data preparation,
+and you need to explain the codes in details. -->
 
 `local/aishell_prepare_dict.sh` extracts the non-silence phones from
 `lexicon.txt`, grouped by the same phones with different indexes.
@@ -188,6 +206,45 @@ Checking data/lang/oov.{txt, int} ...
 --> data/lang/L_disambig.fst is olabel sorted
 --> SUCCESS [validating lang directory data/lang]
 ```
+
+## Feature Extraction
+
+<!-- TODO: -->
+
+<!-- TODO: `steps/make_mfcc_pitch.sh` -->
+
+<!-- TODO: `steps/compute_cmvn_stats.sh` -->
+
+## Acoustic Model Training
+
+<!-- TODO:
+the introduction to the model training script does not need to go into
+specifics,
+whereas you need to pay efforts in explaining the concepts related to the
+current training step. -->
+
+<!-- TODO: `utils/format_lm.sh` -->
+
+<!-- TODO: `local/aishell_train_lms.sh` -->
+
+<!-- TODO: `steps/train_mono.sh` -->
+
+<!-- TODO: `steps/train_deltas.sh` -->
+
+<!-- TODO: `steps/train_lda_mllt.sh` -->
+
+<!-- TODO: `steps/train_lda_mllt.sh` -->
+
+<!-- TODO: `steps/train_sat.sh` -->
+
+<!-- TODO: `steps/align_*.sh` -->
+
+<!-- TODO: `utils/mkgraph.sh` -->
+
+## Model Testing
+
+<!-- TODO:
+you need to describe in detail the evaluation criteria for the test section. -->
 
 Rest of the output:
 
