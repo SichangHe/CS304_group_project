@@ -1,0 +1,128 @@
+(base) vcm@dku-vcm-3314:~/project7/aishell/s5$ ./run.sh > 1.log
+fstaddselfloops data/lang/phones/wdisambig_phones.int data/lang/phones/wdisambig_words.int 
+interpolate_ngrams: 137074 words in wordslist
+interpolate_ngrams: 137074 words in wordslist
+arpa2fst --disambig-symbol=#0 --read-symbol-table=data/lang_test/words.txt - data/lang_test/G.fst 
+LOG (arpa2fst[5.5.1126~1-8c451]:Read():arpa-file-parser.cc:94) Reading \data\ section.
+LOG (arpa2fst[5.5.1126~1-8c451]:Read():arpa-file-parser.cc:149) Reading \1-grams: section.
+LOG (arpa2fst[5.5.1126~1-8c451]:Read():arpa-file-parser.cc:149) Reading \2-grams: section.
+LOG (arpa2fst[5.5.1126~1-8c451]:Read():arpa-file-parser.cc:149) Reading \3-grams: section.
+LOG (arpa2fst[5.5.1126~1-8c451]:RemoveRedundantStates():arpa-lm-compiler.cc:359) Reduced num-states from 561655 to 102646
+fstisstochastic data/lang_test/G.fst 
+tree-info exp/mono/tree 
+tree-info exp/mono/tree 
+fstminimizeencoded 
+fsttablecompose data/lang_test/L_disambig.fst data/lang_test/G.fst 
+fstdeterminizestar --use-log=true 
+fstpushspecial 
+fstisstochastic data/lang_test/tmp/LG.fst 
+fstcomposecontext --context-size=1 --central-position=0 --read-disambig-syms=data/lang_test/phones/disambig.int --write-disambig-syms=data/lang_test/tmp/disambig_ilabels_1_0.int data/lang_test/tmp/ilabels_1_0.258416 data/lang_test/tmp/LG.fst 
+fstisstochastic data/lang_test/tmp/CLG_1_0.fst 
+make-h-transducer --disambig-syms-out=exp/mono/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_1_0 exp/mono/tree exp/mono/final.mdl 
+fstrmepslocal 
+fstrmsymbols exp/mono/graph/disambig_tid.int 
+fstdeterminizestar --use-log=true 
+fsttablecompose exp/mono/graph/Ha.fst data/lang_test/tmp/CLG_1_0.fst 
+fstminimizeencoded 
+fstisstochastic exp/mono/graph/HCLGa.fst 
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/mono/final.mdl exp/mono/graph/HCLGa.fst 
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/mono/graph exp/mono/decode_dev
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/mono/graph exp/mono/decode_dev
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/mono/graph exp/mono/decode_test
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/mono/graph exp/mono/decode_test
++ echo 'local/score.sh: Done'
+tree-info exp/tri1/tree 
+tree-info exp/tri1/tree 
+fstcomposecontext --context-size=3 --central-position=1 --read-disambig-syms=data/lang_test/phones/disambig.int --write-disambig-syms=data/lang_test/tmp/disambig_ilabels_3_1.int data/lang_test/tmp/ilabels_3_1.276072 data/lang_test/tmp/LG.fst 
+fstisstochastic data/lang_test/tmp/CLG_3_1.fst 
+make-h-transducer --disambig-syms-out=exp/tri1/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_3_1 exp/tri1/tree exp/tri1/final.mdl 
+fstrmsymbols exp/tri1/graph/disambig_tid.int 
+fstrmepslocal 
+fstminimizeencoded 
+fsttablecompose exp/tri1/graph/Ha.fst data/lang_test/tmp/CLG_3_1.fst 
+fstdeterminizestar --use-log=true 
+fstisstochastic exp/tri1/graph/HCLGa.fst 
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri1/final.mdl exp/tri1/graph/HCLGa.fst 
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri1/graph exp/tri1/decode_dev
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri1/graph exp/tri1/decode_dev
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri1/graph exp/tri1/decode_test
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri1/graph exp/tri1/decode_test
++ echo 'local/score.sh: Done'
+tree-info exp/tri2/tree 
+tree-info exp/tri2/tree 
+make-h-transducer --disambig-syms-out=exp/tri2/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_3_1 exp/tri2/tree exp/tri2/final.mdl 
+fstrmepslocal 
+fsttablecompose exp/tri2/graph/Ha.fst data/lang_test/tmp/CLG_3_1.fst 
+fstdeterminizestar --use-log=true 
+fstminimizeencoded 
+fstrmsymbols exp/tri2/graph/disambig_tid.int 
+fstisstochastic exp/tri2/graph/HCLGa.fst 
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri2/final.mdl exp/tri2/graph/HCLGa.fst 
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri2/graph exp/tri2/decode_dev
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri2/graph exp/tri2/decode_dev
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri2/graph exp/tri2/decode_test
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri2/graph exp/tri2/decode_test
++ echo 'local/score.sh: Done'
+tree-info exp/tri3a/tree 
+tree-info exp/tri3a/tree 
+make-h-transducer --disambig-syms-out=exp/tri3a/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_3_1 exp/tri3a/tree exp/tri3a/final.mdl 
+fstrmepslocal 
+fstdeterminizestar --use-log=true 
+fstminimizeencoded 
+fstrmsymbols exp/tri3a/graph/disambig_tid.int 
+fsttablecompose exp/tri3a/graph/Ha.fst data/lang_test/tmp/CLG_3_1.fst 
+fstisstochastic exp/tri3a/graph/HCLGa.fst 
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri3a/final.mdl exp/tri3a/graph/HCLGa.fst 
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri3a/graph exp/tri3a/decode_dev
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri3a/graph exp/tri3a/decode_dev
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri3a/graph exp/tri3a/decode_test
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri3a/graph exp/tri3a/decode_test
++ echo 'local/score.sh: Done'
+tree-info exp/tri4a/tree 
+tree-info exp/tri4a/tree 
+make-h-transducer --disambig-syms-out=exp/tri4a/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_3_1 exp/tri4a/tree exp/tri4a/final.mdl 
+fstrmsymbols exp/tri4a/graph/disambig_tid.int 
+fstdeterminizestar --use-log=true 
+fsttablecompose exp/tri4a/graph/Ha.fst data/lang_test/tmp/CLG_3_1.fst 
+fstrmepslocal 
+fstminimizeencoded 
+fstisstochastic exp/tri4a/graph/HCLGa.fst 
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri4a/final.mdl exp/tri4a/graph/HCLGa.fst 
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri4a/graph exp/tri4a/decode_dev.si
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri4a/graph exp/tri4a/decode_dev.si
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri4a/graph exp/tri4a/decode_dev
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri4a/graph exp/tri4a/decode_dev
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri4a/graph exp/tri4a/decode_test.si
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri4a/graph exp/tri4a/decode_test.si
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri4a/graph exp/tri4a/decode_test
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri4a/graph exp/tri4a/decode_test
++ echo 'local/score.sh: Done'
+tree-info exp/tri5a/tree 
+tree-info exp/tri5a/tree 
+make-h-transducer --disambig-syms-out=exp/tri5a/graph/disambig_tid.int --transition-scale=1.0 data/lang_test/tmp/ilabels_3_1 exp/tri5a/tree exp/tri5a/final.mdl 
+fstrmsymbols exp/tri5a/graph/disambig_tid.int 
+fstrmepslocal 
+fstminimizeencoded 
+fsttablecompose exp/tri5a/graph/Ha.fst data/lang_test/tmp/CLG_3_1.fst 
+fstdeterminizestar --use-log=true 
+fstisstochastic exp/tri5a/graph/HCLGa.fst 
+add-self-loops --self-loop-scale=0.1 --reorder=true exp/tri5a/final.mdl exp/tri5a/graph/HCLGa.fst 
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri5a/graph exp/tri5a/decode_dev.si
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri5a/graph exp/tri5a/decode_dev.si
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/dev exp/tri5a/graph exp/tri5a/decode_dev
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/dev exp/tri5a/graph exp/tri5a/decode_dev
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri5a/graph exp/tri5a/decode_test.si
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri5a/graph exp/tri5a/decode_test.si
++ echo 'local/score.sh: Done'
++ steps/score_kaldi.sh --cmd run.pl data/test exp/tri5a/graph exp/tri5a/decode_test
++ steps/scoring/score_kaldi_cer.sh --stage 2 --cmd run.pl data/test exp/tri5a/graph exp/tri5a/decode_test
++ echo 'local/score.sh: Done'
