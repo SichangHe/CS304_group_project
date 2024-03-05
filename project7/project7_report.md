@@ -150,12 +150,13 @@ into a WFST in the OpenFst format at `data/lang_test/G.fst`.
 This is the language model WFST ($G$).
 
 `steps/train_mono.sh` trains a monophone acoustic model in `exp/mono/` from the
-training data set. It initializes GMMs based on the topology, the $L$ WFST,
+training data set to bootstrap the HMM WFST model ($H$).
+It initializes GMMs based on the topology, the $L$ WFST,
 and other phone information in `data/lang/`.
 It then trains the GMMs iteratively by aligning the training data against the
 model and increasing the number of Gaussians gradually,
 and repeats this process for a fixed number (40) of rounds.
-The resulting HMM WFST model ($H$) is at `exp/mono/final.mdl`.
+The resulting bootstrap HMM WFST model ($H$) is at `exp/mono/final.mdl`.
 
 <!-- TODO: `steps/train_deltas.sh` -->
 
