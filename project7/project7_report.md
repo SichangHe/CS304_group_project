@@ -159,6 +159,20 @@ you need to describe in detail the evaluation criteria for the test section. -->
 
 <!-- TODO: `utils/mkgraph.sh` -->
 
+The script `utils/mkgraph.sh` creates a fully expanded decoding graph (HCLG).
+
+Kaldi reference <https://kaldi-asr.org/doc/graph_recipe_test.html>
+
+1. Preparing $ LG $: $ L $ and $ G $ FSTs are generated in `utils/prepare_lang.sh`. $ LG $ is generated in the following command:
+
+```sh
+fsttablecompose data/L_disambig.fst data/G.fst | \
+fstdeterminizestar --use-log=true | \
+fstminimizeencoded | fstpushspecial > somedir/LG.fst
+```
+
+The command `fsttablecompose` is used to compose the FSTs `L_disambig.fst` and `G.fst`. Subsequently, `fstdeterminizestar` and `fstminimizeencoded` are employed for determinization and minimization respectively. The weight is then pushed using `fstpushspecial`, resulting in the final `LG.fst`.
+
 <!-- TODO: `steps/align_si.sh` -->
 
 <!-- TODO: `steps/align_fmllr.sh` -->
