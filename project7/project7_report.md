@@ -57,8 +57,10 @@ it lists the file names without the `.wav` extension (the utterance IDs)
 in `utt.list`,
 the map from utterance IDs to speaker IDs in `utt2spk` and the other way around
 in `spk2utt`, the map from utterance IDs to `.wav` file paths in `wav.scp`,
-and map from utterance IDs to transcriptions in <!-- `transcripts.txt` (and
-deduplicated in -->`text`<!-- ) -->.
+and map from utterance IDs to transcriptions in `transcripts.txt` (and
+deduplicated in `text`). It filters out any instances not included,
+and eventually produces the three sets containing `spk2utt`, `utt2spk`,
+`wav.scp` and `text` in `data/`.
 
 Output:
 
