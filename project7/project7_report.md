@@ -62,6 +62,17 @@ and eventually produces the three sets containing `spk2utt`, `utt2spk`,
 `utils/prepare_lang.sh` constructs the pronunciation lexicon WFST ($L$)
 and other information about the phone set in `data/lang/`,
 based on the dictionary in `data/local/dict/`.
+It first validates the files in `data/local/dict/` have correct encodings,
+format, and matching phones.
+It then converts the dictionary files from using phone names to using integers
+so that the data can be processed using OpenFST. It executes several
+intermediate steps, including adding position markers (`_B`, `_E`, `_I`, `_S`)
+for word-internal positions in the extra questions,
+adding disambiguation symbols, creating phone/word symbol table,
+adding word boundary information, and silence handling. Eventually,
+it produces the $L$ WFST at `L.fst`, the out-of-vocabulary (OOV)
+word at `oov.txt`, the HMM topology at `topo`,
+together with all the phone information at `phone/`.
 
 ## Feature Extraction
 
