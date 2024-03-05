@@ -136,7 +136,9 @@ specifics,
 whereas you need to pay efforts in explaining the concepts related to the
 current training step. -->
 
-<!-- TODO: `utils/format_lm.sh` -->
+`utils/format_lm.sh` converts `data/local/lm/3gram-mincount/lm_unpruned.gz`,
+a language model in the ARPA format,
+into a WFST in the OpenFst format at `data/lang_test/G.fst`.
 
 <!-- TODO: `local/aishell_train_lms.sh` -->
 
