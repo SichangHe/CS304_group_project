@@ -169,7 +169,7 @@ The script `utils/mkgraph.sh` creates a fully expanded decoding graph (HCLG).
 
 Kaldi reference <https://kaldi-asr.org/doc/graph_recipe_test.html>
 
-1. Preparing $ LG $: $ L $ and $ G $ FSTs are generated in `utils/prepare_lang.sh`. $ LG $ is generated in the following command:
+1. Preparing $ L \circ G $: $ L $ and $ G $ FSTs are generated in `utils/prepare_lang.sh` and `utils/format_lm.sh` respectively. $ L \circ G $ is generated in the following command:
 
 ```sh
 fsttablecompose data/L_disambig.fst data/G.fst | \
@@ -178,6 +178,24 @@ fstminimizeencoded | fstpushspecial > somedir/LG.fst
 ```
 
 The command `fsttablecompose` is used to compose the FSTs `L_disambig.fst` and `G.fst`. Subsequently, `fstdeterminizestar` and `fstminimizeencoded` are employed for determinization and minimization respectively. The weight is then pushed using `fstpushspecial`, resulting in the final `LG.fst`.
+
+2. To prepare the $ C \circ L \circ G $ (Context-Lexicon-Grammar), the context transducer $ C $ is constructed, which transduces a triphone sequence into a phone sequence. The following command is used to create $ C $:
+
+```sh
+fstmakecontextfst --read-disambig-syms=$dir/disambig_phones.list \
+--write-disambig-syms=$dir/disambig_ilabels.list data/phones.txt $subseq_sym \
+$dir/ilabels > $dir/C.fst
+```
+
+In this command, the command takes as input the list of disambiguation symbols for reading and writing, along with the phone symbol table. The command writes label information and generates `C.fst`.
+
+However, it's worth noting that the command `fstmakecontextfst` is inefficient. Instead, it is recommended to use `fstcomposecontext` for dynamic composition of $ C $. The following command performs the composition of $ C $ with the $ L \circ G $ from the previous step (`LG.fst`) to generate $ C \circ L \circ G $ without explicitly creating $ C $:
+
+```sh
+fstcomposecontext  --read-disambig-syms=$dir/disambig_phones.list \
+--write-disambig-syms=$dir/disambig_ilabels.list \
+$dir/ilabels < $dir/LG.fst >$dir/CLG.fst
+```
 
 <!-- TODO: `steps/align_si.sh` -->
 
