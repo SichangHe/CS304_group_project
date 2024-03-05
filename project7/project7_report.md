@@ -163,39 +163,81 @@ into a WFST in the OpenFst format at `data/lang_test/G.fst`.
 <!-- TODO:
 you need to describe in detail the evaluation criteria for the test section. -->
 
-<!-- TODO: `utils/mkgraph.sh` -->
-
-The script `utils/mkgraph.sh` creates a fully expanded decoding graph (HCLG).
+The script `utils/mkgraph.sh` creates a fully expanded decoding graph $ H \circ C \circ L \circ G $. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
 
 Kaldi reference <https://kaldi-asr.org/doc/graph_recipe_test.html>
 
-1. Preparing $ L \circ G $: $ L $ and $ G $ FSTs are generated in `utils/prepare_lang.sh` and `utils/format_lm.sh` respectively. $ L \circ G $ is generated in the following command:
+There are five steps invloved.
 
-```sh
-fsttablecompose data/L_disambig.fst data/G.fst | \
-fstdeterminizestar --use-log=true | \
-fstminimizeencoded | fstpushspecial > somedir/LG.fst
-```
+1. Preparing $ L \circ G $:
 
-The command `fsttablecompose` is used to compose the FSTs `L_disambig.fst` and `G.fst`. Subsequently, `fstdeterminizestar` and `fstminimizeencoded` are employed for determinization and minimization respectively. The weight is then pushed using `fstpushspecial`, resulting in the final `LG.fst`.
+    $ L $ and $ G $ FSTs are generated in `utils/prepare_lang.sh` and `utils/format_lm.sh` respectively. $ L \circ G $ is generated in the following command:
 
-2. To prepare the $ C \circ L \circ G $ (Context-Lexicon-Grammar), the context transducer $ C $ is constructed, which transduces a triphone sequence into a phone sequence. The following command is used to create $ C $:
+    ```sh
+    fsttablecompose data/L_disambig.fst data/G.fst | \
+    fstdeterminizestar --use-log=true | \
+    fstminimizeencoded | fstpushspecial > somedir/LG.fst
+    ```
 
-```sh
-fstmakecontextfst --read-disambig-syms=$dir/disambig_phones.list \
---write-disambig-syms=$dir/disambig_ilabels.list data/phones.txt $subseq_sym \
-$dir/ilabels > $dir/C.fst
-```
+    The command `fsttablecompose` is used to compose the FSTs `L_disambig.fst` and `G.fst`. Subsequently, `fstdeterminizestar` and `fstminimizeencoded` are employed for determinization and minimization respectively. The weight is then pushed using `fstpushspecial`, resulting in the final `LG.fst`.
 
-In this command, the command takes as input the list of disambiguation symbols for reading and writing, along with the phone symbol table. The command writes label information and generates `C.fst`.
+2. Prepare $ C \circ L \circ G $:
 
-However, it's worth noting that the command `fstmakecontextfst` is inefficient. Instead, it is recommended to use `fstcomposecontext` for dynamic composition of $ C $. The following command performs the composition of $ C $ with the $ L \circ G $ from the previous step (`LG.fst`) to generate $ C \circ L \circ G $ without explicitly creating $ C $:
+    The context transducer $ C $ is constructed to prepare $ C \circ L \circ G $. In the triphone case, the $ C $ transducer transduces a triphone sequence into a phone sequence. The following command is used to create $ C $:
 
-```sh
-fstcomposecontext  --read-disambig-syms=$dir/disambig_phones.list \
---write-disambig-syms=$dir/disambig_ilabels.list \
-$dir/ilabels < $dir/LG.fst >$dir/CLG.fst
-```
+    ```sh
+    fstmakecontextfst --read-disambig-syms=$dir/disambig_phones.list \
+    --write-disambig-syms=$dir/disambig_ilabels.list data/phones.txt $subseq_sym \
+    $dir/ilabels > $dir/C.fst
+    ```
+
+    In this command, the command takes as input the list of disambiguation symbols for reading and writing, along with the phone symbol table. The command writes label information and generates `C.fst`.
+
+    However, it's worth noting that the command `fstmakecontextfst` is inefficient. Instead, it is recommended to use `fstcomposecontext` for dynamic composition of $ C $. The following command performs the composition of $ C $ with the $ L \circ G $ from the previous step (`LG.fst`) to generate $ C \circ L \circ G $ without explicitly creating $ C $:
+
+    ```sh
+    fstcomposecontext  --read-disambig-syms=$dir/disambig_phones.list \
+    --write-disambig-syms=$dir/disambig_ilabels.list \
+    $dir/ilabels < $dir/LG.fst >$dir/CLG.fst
+    ```
+
+3. Making the $ H $ transducer:
+
+    $ H $ tranducer tranduces input speech features to context-dependent phones. In the Kaldi script, $ H $ is created without self-loops and represents context-dependent phones on its output and `transition-ids` on its input. The `transition-ids` encode information such as the `pdf-id` (acoustic state in Kaldi terminology) and phone. Each transition-id can be mapped to a `pdf-id`.
+
+    The transitions for context-dependent phones lead to structures representing the corresponding HMMs and then back to the start state. For the normal topology, the $ H $ transducer includes self-loops on the initial state for each disambiguation symbol.
+
+    The following script segment creates the $ H $ transducer without self-loops:
+
+    ```sh
+    make-h-transducer --disambig-syms-out=$dir/disambig_tstate.list \
+    --transition-scale=1.0  $dir/ilabels.remapped \
+    $tree $model  > $dir/Ha.fst
+    ```
+
+4. Making $ H \circ C \circ L \circ G $
+
+    In order to create the final graph $ H \circ C \circ L \circ G $, the first step involves constructing $ H \circ C \circ L \circ G $ without self-loops. The corresponding command in our script is:
+
+    ```sh
+    fsttablecompose $dir/Ha.fst $dir/CLG.fst | \
+    fstdeterminizestar --use-log=true | \
+    fstrmsymbols $dir/disambig_tstate.list | \
+    fstrmepslocal | fstminimizeencoded > $dir/HCLGa.fst
+    ```
+
+    The script removes the disambiguation symbols and any easy-to-remove epsilons, before minimizing.
+
+5. Adding self-loops to $ H \circ C \circ L \circ G $
+
+    The next step involves adding self-loops to $ H \circ C \circ L \circ G $ using the following command:
+
+    ```sh
+    add-self-loops --self-loop-scale=0.1 \
+    --reorder=true $model < $dir/HCLGa.fst > $dir/HCLG.fst
+    ```
+
+These 5 steps generates a fully expanded decoding graph $ H \circ C \circ L \circ G $.
 
 <!-- TODO: `steps/align_si.sh` -->
 
