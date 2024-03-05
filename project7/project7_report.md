@@ -27,10 +27,13 @@ and you need to explain the codes in details. -->
 
 Reference: <https://www.kaldi-asr.org/doc/data_prep.html>.
 
+Our data are downloaded into `~/AISHELL-1/` from <www.openslr.org/resources/33>.
+
 `local/aishell_prepare_dict.sh` produces the dictionary in `data/local/dict`,
 an intermediate artifact later used to generate the language data.
 It extracts the non-silence phones from `lexicon.txt` into
-`nonsilence_phones.txt`, grouped by the same phones with different indexes.
+`nonsilence_phones.txt`,
+grouped by the same phones with different indexes and sorted alphabetically.
 It also prepares the (optional) silence phones in (`optional_silence.txt` and)
 `silence_phones.txt`. The extra questions, simply all the phones,
 are extracted into `extra_questions.txt`.
@@ -42,12 +45,18 @@ Output:
 local/aishell_prepare_dict.sh: AISHELL dict preparation succeeded
 ```
 
-`aishell_data_prep.sh` extracts the audio file names,
-and split them into training, development, and testing sets. For each set,
-it lists <!-- the file names without the `.wav` extension in `utt.list`,
---> the map from utterance IDs to speaker IDs in `utt2spk` and the other way
-around in `spk2utt`,
-the map from utterance IDs to `.wav` file paths in `wav.scp`,
+`aishell_data_prep.sh` extracts the audio file names and other related
+information from `data_aishell/wav/` and `data_aishell/transcript` in
+`~/AISHELL-1/`, and splits them into training (`train/`), development (`dev/`),
+and testing (`test/`) sets under `data/local/`.
+It first dumps all `.wav` file names and dump them into
+`data/local/tmp/wav.flist` and validates the count.
+It then splits the file names into the three sets based on the file names and
+creates separate `wav.flist` for each set. For each set,
+it lists the file names without the `.wav` extension (the utterance IDs)
+in `utt.list`,
+the map from utterance IDs to speaker IDs in `utt2spk` and the other way around
+in `spk2utt`, the map from utterance IDs to `.wav` file paths in `wav.scp`,
 and map from utterance IDs to transcriptions in <!-- `transcripts.txt` (and
 deduplicated in -->`text`<!-- ) -->.
 
