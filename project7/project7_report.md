@@ -136,11 +136,17 @@ specifics,
 whereas you need to pay efforts in explaining the concepts related to the
 current training step. -->
 
+`local/aishell_train_lms.sh` trains a 3-gram language model in the ARPA format
+in `data/local/lm/3gram-mincount/lm_unpruned.gz` using the transcript
+(`data/local/train/text`) and the lexicon (`data/local/dict/lexicon.txt`).
+After cleaning the transcript, it counts the occurrences of each word,
+use this information to construct a unigram, and construct a word map.
+It then calls `train_lm.sh` to train the language model with the output in the
+ARPA format.
+
 `utils/format_lm.sh` converts `data/local/lm/3gram-mincount/lm_unpruned.gz`,
 a language model in the ARPA format,
 into a WFST in the OpenFst format at `data/lang_test/G.fst`.
-
-<!-- TODO: `local/aishell_train_lms.sh` -->
 
 <!-- TODO: `steps/train_mono.sh` -->
 
