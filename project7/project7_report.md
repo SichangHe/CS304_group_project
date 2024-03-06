@@ -186,11 +186,11 @@ and iteratively increases the number of Gaussians in a fixed number of
 iterations, like what `steps/train_deltas.sh` does.
 The difference from `steps/train_deltas.sh` is that,
 on a few specific iterations,
-it uses MLLT to diagonalize the covariance matrix of the Gaussians so they adapt
-better to the various speakers. The resulting HMM WFST model ($H$)
-is also at `exp/triNa/final.mdl`.
-
-<!-- TODO: `steps/train_sat.sh` -->
+it estimates an MLLT to help diagonalize the covariance matrix of the Gaussians
+so they adapt better to the various speakers.
+All the transforms are composed on top of each other.
+The resulting HMM WFST model ($H$) is also at `exp/triNa/final.mdl`,
+and the composed LDA + MLLT transformation matrix is at `exp/triNa/final.mat`.
 
 <!-- TODO: `steps/align_si.sh` -->
 
@@ -199,6 +199,19 @@ is also at `exp/triNa/final.mdl`.
 `steps/align_fmllr.sh` first align training data using speaker-independent features as `steps/align_si.sh` does. Then, it estimates feature space Maximum Likelihood Linear Regression (fMLLR) transforms using `gmm-est-fmllr-gpost`, and after the fMLLR transformation it does a final alignment using command `gmm-align-compiled` which produces new alignments in `triN_ali/`.
 
 <!-- TODO: `steps/align_fmllr.sh` -->
+
+`steps/train_sat.sh` trains a triphone acoustic model with Speaker Adaptive
+Training (SAT)
+features on top of the LDA and MLLT features applied in
+`steps/train_lda_mllt.sh`.
+It reads the transformation matrix from `exp/triNa/final.mat` and uses them to
+initialize the fMLLR transforms.
+After the decision tree building and GMM graph initialization like what
+`steps/train_lda_mllt.sh` does,
+it additionally estimates an fMLLR transform on a few specific iterations.
+The resulting HMM WFST model ($H$) is also at `exp/triNa/final.mdl`,
+and the "alignment model", a model computed with speaker-independent features,
+is kept at `exp/triNa/final.alimdl`.
 
 ## Model Testing
 
