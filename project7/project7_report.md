@@ -87,7 +87,7 @@ Here's an overview of the steps performed by the script:
 1. The `compute-mfcc-feats` command is used to compute MFCC features from the input audio data.
 2. The `compute-kaldi-pitch-feats` command is used to compute pitch features from the input audio data.
 3. The `paste-feats` command is used to combine the MFCC and pitch features into a single feature representation.
-4. The `copy-feats` command is used to save the combined features to the directory specified by the `$mfcc_pitch_dir` variable in binary format.
+4. The `copy-feats` command is used to save the combined features to the directory specified by the `$mfcc_pitch_dir` (train, test, dev) variable in binary format.
 
 The script generates `.scp` text files that map utterance IDs to positions in an archive `.ark` file. These files store the paths to the binary feature archives along with their associated utterance IDs.
 
@@ -126,7 +126,9 @@ BAC009S0002W0122  [
 
 The utterance id `BAC009S0002W0122` in the output above matches the first id in `data/train/feats.scp`.
 
-<!-- TODO: `steps/compute_cmvn_stats.sh` -->
+`steps/compute_cmvn_stats.sh` compute cepstral mean and variance normalization per speaker. The generated CMVN statistics are later used for per-speaker fMLLR (feature-space Maximum Likelihood Linear Regression) adaptation.
+
+ The script uses the command `compute-cmvn-stats` with option `--spk2utt` option to generate CMVN per speaker. The resulting CMVN statistics, which include the normalized mean and variance values, are saved in the same directory as the MFCC features.
 
 ## Acoustic Model Training
 
@@ -189,8 +191,24 @@ iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 
 ## Model Testing
 
-<!-- TODO:
-you need to describe in detail the evaluation criteria for the test section. -->
+The `run.sh` script in the testing phase typically includes two main steps: constructing the decoding graph $ H \circ C \circ L \circ G $ and performing the decoding process using the constructed graph. The steps mentioned in the example are as follows:
+
+This `mkgrapg` script takes the test language model data and the HMM model generated in the previous step (exp/tri3a in this case) as input. It generates the $ H \circ C \circ L \circ G $ decoding graph.
+
+```sh
+utils/mkgraph.sh data/lang_test exp/tri3a exp/tri3a/graph
+```
+
+Then the `decode.sh` script runs the decoding algorithm on the test and dev data using the constructed graph.
+
+```sh
+steps/decode.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+exp/tri3a/graph data/dev exp/tri3a/decode_dev
+steps/decode.sh --cmd "$decode_cmd" --nj 10 --config conf/decode.config \
+exp/tri3a/graph data/test exp/tri3a/decode_test
+```
+
+Next, we will provide a detailed explanation of `mkgraph.sh` and `decode.sh` scripts.
 
 `utils/mkgraph.sh` creates a fully expanded decoding graph $ H \circ C \circ L \circ G $. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
 
