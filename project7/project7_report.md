@@ -84,10 +84,6 @@ together with all the phone information at `phone/`.
 
 ## Feature Extraction
 
-<!-- TODO: -->
-
-<!-- TODO: `steps/make_mfcc_pitch.sh` -->
-
 `steps/make_mfcc_pitch.sh` computes MFCC (Mel Frequency Cepstral Coefficients) and pitch feature vectors. The data is divided into three groups: train, test, and dev.
 
 Here's an overview of the steps performed by the script:
@@ -202,26 +198,25 @@ All the transforms are composed on top of each other.
 The resulting HMM WFST model ($H$) is also at `exp/triNa/final.mdl`,
 and the composed LDA + MLLT transformation matrix is at `exp/triNa/final.mat`.
 
-<!-- TODO: `steps/align_si.sh` -->
-
-`steps/align_si.sh` aligns input training audio frames with the model trained from last step using command `gmm-align-compiled`, and next training script uses the new alignment in `triN_ali/`.
-
-`steps/align_fmllr.sh` first align training data using speaker-independent features as `steps/align_si.sh` does. Then, it estimates feature space Maximum Likelihood Linear Regression (fMLLR) transforms using `gmm-est-fmllr-gpost`, and after the fMLLR transformation it does a final alignment using command `gmm-align-compiled` which produces new alignments in `triN_ali/`.
-
-<!-- TODO: `steps/align_fmllr.sh` -->
-
 `steps/train_sat.sh` trains a triphone acoustic model with Speaker Adaptive
 Training (SAT)
 features on top of the LDA and MLLT features applied in
 `steps/train_lda_mllt.sh`.
 It reads the transformation matrix from `exp/triNa/final.mat` and uses them to
-initialize the fMLLR transforms.
+initialize the feature space Maximum Likelihood Linear Regression (fMLLR) transforms.
+
+LDA and MLLT transforms are speaker-independent but fMLLR transforms are speaker- or utterance-specific. fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
+
 After the decision tree building and GMM graph initialization like what
 `steps/train_lda_mllt.sh` does,
 it additionally estimates an fMLLR transform on a few specific iterations.
 The resulting HMM WFST model ($H$) is also at `exp/triNa/final.mdl`,
 and the "alignment model", a model computed with speaker-independent features,
 is kept at `exp/triNa/final.alimdl`.
+
+`steps/align_si.sh` aligns input training audio frames with the model trained from last step using command `gmm-align-compiled`, and next training script uses the new alignment in `triN_ali/`.
+
+`steps/align_fmllr.sh` first align training data using speaker-independent features as `steps/align_si.sh` does. Then, it estimates fMLLR transforms using `gmm-est-fmllr-gpost`, and after the fMLLR transformation it does a final alignment using command `gmm-align-compiled` which produces new alignments in `triN_ali/`.
 
 ## Model Testing
 
@@ -320,8 +315,6 @@ There are five steps invloved.
 
 These 5 steps generates a fully expanded decoding graph $ H \circ C \circ L \circ G $.
 
-<!-- TODO: `steps/decode.sh` -->
-
 `steps/decode.sh` is used for decoding and generate lattices of word sequences for the given data using a GMM-based model and decoding graph after the $ H \circ C \circ L \circ G $ graph is constructed.
 It uses `gmm-latgen-faster` to generate lattices using GMM-based model. Below is the command used to generate the lattice.
 
@@ -366,8 +359,6 @@ BAC009S0724W0123 相比 于 其他 一 线 城市
 ```
 
 `decode_fmllr.sh` does feature space Maximum Likelihood Linear Regression (fMLLR) in addition to normal decoding that `decode.sh` does.
-
-LDA and MLLT transforms are speaker-independent but fMLLR transforms are speaker- or utterance-specific. fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
 
 It estimates fMLLR transforms using `gmm-est-fmllr-gpost`, as in the following command:
 
