@@ -150,7 +150,10 @@ into a WFST in the OpenFst format at `data/lang_test/G.fst`.
 This is the language model WFST ($G$).
 
 `steps/train_mono.sh` trains a monophone acoustic model in `exp/mono/` from the
-training data set to bootstrap the HMM WFST model ($H$).
+training data set in `data/train/` to bootstrap the HMM WFST model ($H$).
+It uses the delta features of the MFCC features to encapsulate time derivatives,
+and normalizes the features to have zero mean and unit variance per speaker to
+remove the influence of specific recording environment.
 It initializes GMMs based on the topology, the $L$ WFST,
 and other phone information in `data/lang/`.
 It then trains the GMMs iteratively by aligning the training data against the
