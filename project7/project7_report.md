@@ -164,18 +164,31 @@ and repeats this process for a fixed number (40) of rounds.
 The resulting bootstrap HMM WFST model ($H$) is at `exp/mono/final.mdl`.
 
 `steps/train_deltas.sh` trains a triphone acoustic model in `exp/triN/` from the
-model and alignment produced in the last round.
+model and alignment produced in the previous round.
 It uses the delta features and the delta-delta feature of the MFCC features to
 encapsulate time derivatives.
 It builds the decision tree for the acoustic model at `exp/triN/tree` after
 collecting questions by phone clustering.
-It then initializes the training graphs,
+It then initializes the training GMM graphs,
 and iteratively increases the number of Gaussians in a fixed number of
 iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 
-<!-- TODO: `steps/train_lda_mllt.sh` -->
-
-<!-- TODO: `steps/train_lda_mllt.sh` -->
+`steps/train_lda_mllt.sh` trains a triphone acoustic model with Linear
+Discriminant Analysis (LDA) and Maximum Likelihood Linear Transform (MLLT)
+features ([reference](https://kaldi-asr.org/doc/transform.html)).
+After validating and splitting input data,
+it accumulates the statistics for LDA using `acc-lda`,
+and conducts LDA estimation using `est-lda`. Applying LDA,
+the speaker-independent transform,
+reduces the features to 40 dimensions to have unit variance.
+The script then builds the decision tree, initializes the training GMM graphs,
+and iteratively increases the number of Gaussians in a fixed number of
+iterations, like what `steps/train_deltas.sh` does.
+The difference from `steps/train_deltas.sh` is that,
+on a few specific iterations,
+it uses MLLT to diagonalize the covariance matrix of the Gaussians so they adapt
+better to the various speakers. The resulting HMM WFST model ($H$)
+is also at `exp/triNa/final.mdl`.
 
 <!-- TODO: `steps/train_sat.sh` -->
 
