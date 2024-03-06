@@ -154,6 +154,8 @@ training data set in `data/train/` to bootstrap the HMM WFST model ($H$).
 It uses the delta features of the MFCC features to encapsulate time derivatives,
 and normalizes the features to have zero mean and unit variance per speaker to
 remove the influence of specific recording environment.
+It creates a trivial decision tree
+([reference](https://www.kaldi-asr.org/doc/tree_externals.html)).
 It initializes GMMs based on the topology, the $L$ WFST,
 and other phone information in `data/lang/`.
 It then trains the GMMs iteratively by aligning the training data against the
@@ -161,7 +163,13 @@ model and increasing the number of Gaussians gradually,
 and repeats this process for a fixed number (40) of rounds.
 The resulting bootstrap HMM WFST model ($H$) is at `exp/mono/final.mdl`.
 
-<!-- TODO: `steps/train_deltas.sh` -->
+`steps/train_deltas.sh` trains a triphone acoustic model in `exp/triN/` from the
+model and alignment produced in the last round.
+It builds the decision tree for the acoustic model at `exp/triN/tree` after
+collecting questions by phone clustering.
+It then initializes the training graphs,
+and iteratively increases the number of Gaussians in a fixed number of
+iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 
 <!-- TODO: `steps/train_lda_mllt.sh` -->
 
