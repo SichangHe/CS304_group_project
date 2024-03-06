@@ -1,5 +1,13 @@
 # Project 7 Report
 
+## Custom Changes
+
+We changed the number of jobs `nj` to 16 throughout `run.sh` such that it could
+leverage all 16 cores on the VM. The script finished in 4h31m55s.
+
+We formatted the Bash scripts using `shfmt` so they are more consistent and
+easier to read.
+
 ## Errors Encountered
 
 We got an error:
@@ -22,7 +30,7 @@ The problem was solved after we did that.
 
 ## Data Preparation
 
-<!-- TODO: local folder contains the code related to data preparation,
+<!-- Instruction: local folder contains the code related to data preparation,
 and you need to explain the codes in details. -->
 
 Reference: <https://www.kaldi-asr.org/doc/data_prep.html>.
@@ -132,7 +140,7 @@ The utterance id `BAC009S0002W0122` in the output above matches the first id in 
 
 ## Acoustic Model Training
 
-<!-- TODO:
+<!-- Instruction:
 the introduction to the model training script does not need to go into
 specifics,
 whereas you need to pay efforts in explaining the concepts related to the
@@ -166,20 +174,33 @@ and repeats this process for a fixed number (40) of rounds.
 The resulting bootstrap HMM WFST model ($H$) is at `exp/mono/final.mdl`.
 
 `steps/train_deltas.sh` trains a triphone acoustic model in `exp/triN/` from the
-model and alignment produced in the last round.
+model and alignment produced in the previous round.
 It uses the delta features and the delta-delta feature of the MFCC features to
 encapsulate time derivatives.
 It builds the decision tree for the acoustic model at `exp/triN/tree` after
 collecting questions by phone clustering.
-It then initializes the training graphs,
+It then initializes the training GMM graphs,
 and iteratively increases the number of Gaussians in a fixed number of
 iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 
-<!-- TODO: `steps/train_lda_mllt.sh` -->
-
-<!-- TODO: `steps/train_lda_mllt.sh` -->
-
-<!-- TODO: `steps/train_sat.sh` -->
+`steps/train_lda_mllt.sh` trains a triphone acoustic model with Linear
+Discriminant Analysis (LDA) and Maximum Likelihood Linear Transform (MLLT)
+features ([reference](https://kaldi-asr.org/doc/transform.html)).
+After validating and splitting input data,
+it accumulates the statistics for LDA using `acc-lda`,
+and conducts LDA estimation using `est-lda`. Applying LDA,
+the speaker-independent transform,
+reduces the features to 40 dimensions to have unit variance.
+The script then builds the decision tree, initializes the training GMM graphs,
+and iteratively increases the number of Gaussians in a fixed number of
+iterations, like what `steps/train_deltas.sh` does.
+The difference from `steps/train_deltas.sh` is that,
+on a few specific iterations,
+it estimates an MLLT to help diagonalize the covariance matrix of the Gaussians
+so they adapt better to the various speakers.
+All the transforms are composed on top of each other.
+The resulting HMM WFST model ($H$) is also at `exp/triNa/final.mdl`,
+and the composed LDA + MLLT transformation matrix is at `exp/triNa/final.mat`.
 
 <!-- TODO: `steps/align_si.sh` -->
 
@@ -189,11 +210,24 @@ iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 
 <!-- TODO: `steps/align_fmllr.sh` -->
 
+`steps/train_sat.sh` trains a triphone acoustic model with Speaker Adaptive
+Training (SAT)
+features on top of the LDA and MLLT features applied in
+`steps/train_lda_mllt.sh`.
+It reads the transformation matrix from `exp/triNa/final.mat` and uses them to
+initialize the fMLLR transforms.
+After the decision tree building and GMM graph initialization like what
+`steps/train_lda_mllt.sh` does,
+it additionally estimates an fMLLR transform on a few specific iterations.
+The resulting HMM WFST model ($H$) is also at `exp/triNa/final.mdl`,
+and the "alignment model", a model computed with speaker-independent features,
+is kept at `exp/triNa/final.alimdl`.
+
 ## Model Testing
 
 The `run.sh` script in the testing phase typically includes two main steps: constructing the decoding graph $ H \circ C \circ L \circ G $ and performing the decoding process using the constructed graph. The steps mentioned in the example are as follows:
 
-This `mkgrapg` script takes the test language model data and the HMM model generated in the previous step (exp/tri3a in this case) as input. It generates the $ H \circ C \circ L \circ G $ decoding graph.
+This `mkgraph` script takes the test language model data and the HMM model generated in the previous step (exp/tri3a in this case) as input. It generates the $ H \circ C \circ L \circ G $ decoding graph.
 
 ```sh
 utils/mkgraph.sh data/lang_test exp/tri3a exp/tri3a/graph
