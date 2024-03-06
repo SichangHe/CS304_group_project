@@ -179,6 +179,14 @@ iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 
 <!-- TODO: `steps/train_sat.sh` -->
 
+<!-- TODO: `steps/align_si.sh` -->
+
+`steps/align_si.sh` aligns input training audio frames with the model trained from last step using command `gmm-align-compiled`, and next training script uses the new alignment in `triN_ali/`.
+
+`steps/align_fmllr.sh` first align training data using speaker-independent features as `steps/align_si.sh` does. Then, it estimates feature space Maximum Likelihood Linear Regression (fMLLR) transforms using `gmm-est-fmllr-gpost`, and after the fMLLR transformation it does a final alignment using command `gmm-align-compiled` which produces new alignments in `triN_ali/`.
+
+<!-- TODO: `steps/align_fmllr.sh` -->
+
 ## Model Testing
 
 <!-- TODO:
@@ -318,7 +326,3 @@ ark:$dir/pre_trans.JOB
 ```
 
 The command uses the speaker to utterance-list map specified in the `--spk2utt` option to generate fMLLR for the supplied set of speakers.
-
-<!-- TODO: `steps/align_si.sh` -->
-
-<!-- TODO: `steps/align_fmllr.sh` -->
