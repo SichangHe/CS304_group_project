@@ -80,7 +80,7 @@ together with all the phone information at `phone/`.
 
 <!-- TODO: `steps/make_mfcc_pitch.sh` -->
 
-The script `steps/make_mfcc_pitch.sh` is used to compute MFCC (Mel Frequency Cepstral Coefficients) and pitch feature vectors. The data is divided into three groups: train, test, and dev.
+`steps/make_mfcc_pitch.sh` computes MFCC (Mel Frequency Cepstral Coefficients) and pitch feature vectors. The data is divided into three groups: train, test, and dev.
 
 Here's an overview of the steps performed by the script:
 
@@ -107,7 +107,7 @@ BAC009S0002W0130 /home/vcm/project7/aishell/s5/mfcc/raw_mfcc_pitch_train.1.ark:5
 BAC009S0002W0131 /home/vcm/project7/aishell/s5/mfcc/raw_mfcc_pitch_train.1.ark:66151
 ```
 
-To generate a human-readable format of the MFCC and pitch feature vectors associated with the feats.scp file, we use the `copy-feats` command with the `ark,t:-` option. This command reads the feature archives specified in the `feats.sc`p file and outputs the features in plain text format.
+To generate a human-readable format of the MFCC and pitch feature vectors associated with the feats.scp file, we use the `copy-feats` command with the `ark,t:-` option. This command reads the feature archives specified in the `feats.scp` file and outputs the features in plain text format.
 
 ```sh
 $ copy-feats scp:data/train/feats.scp ark,t:- | head       
@@ -184,9 +184,9 @@ iterations. The resulting HMM WFST model ($H$) is at `exp/triN/final.mdl`.
 <!-- TODO:
 you need to describe in detail the evaluation criteria for the test section. -->
 
-The script `utils/mkgraph.sh` creates a fully expanded decoding graph $ H \circ C \circ L \circ G $. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
+`utils/mkgraph.sh` creates a fully expanded decoding graph $ H \circ C \circ L \circ G $. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
 
-Kaldi reference <https://kaldi-asr.org/doc/graph_recipe_test.html>
+Kaldi reference: <https://kaldi-asr.org/doc/graph_recipe_test.html>
 
 There are five steps invloved.
 
@@ -262,11 +262,15 @@ These 5 steps generates a fully expanded decoding graph $ H \circ C \circ L \cir
 
 <!-- TODO: `steps/decode.sh` -->
 
-After the $ H \circ C \circ L \circ G $ graph is constructed, `steps/decode.sh` is used for decoding and generate lattices of word sequences for the given data using a GMM-based model and decoding graph.
-`steps/decode.sh` uses `gmm-latgen-faster` to generate lattices using GMM-based model. Below is the command used to generate the lattice.
+`steps/decode.sh` is used for decoding and generate lattices of word sequences for the given data using a GMM-based model and decoding graph after the $ H \circ C \circ L \circ G $ graph is constructed.
+It uses `gmm-latgen-faster` to generate lattices using GMM-based model. Below is the command used to generate the lattice.
 
 ```sh
-gmm-latgen-faster --max-active=7000 --beam=11.0 --lattice-beam=6.0 --acoustic-scale=0.083333 --allow-partial=true --word-symbol-table=exp/mono/graph/words.txt exp/mono/final.mdl exp/mono/graph/HCLG.fst "ark,s,cs:apply-cmvn  --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas  ark:- ark:- |" "ark:|gzip -c > exp/mono/decode_dev/lat.1.gz"
+gmm-latgen-faster --max-active=7000 --beam=11.0 --lattice-beam=6.0 --acoustic-scale=0.083333 --allow-partial=true \
+--word-symbol-table=exp/mono/graph/words.txt exp/mono/final.mdl \
+exp/mono/graph/HCLG.fst "ark,s,cs:apply-cmvn  --utt2spk=ark:data/dev/split10/1/utt2spk \
+scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas  ark:- ark:- |" \
+"ark:|gzip -c > exp/mono/decode_dev/lat.1.gz"
 ```
 
 Options:
@@ -283,6 +287,37 @@ Arguments:
 - exp/mono/graph/HCLG.fst: HCLG graph file
 - `ark,s,cs:apply-cmvn --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas ark:- ark:- |`: Specifies the input features used for decoding. This command processes the input features by applying CMVN normalization, adding delta and delta-delta coefficients, and providing the processed features in Kaldi's ark format.
 - `ark:|gzip -c > exp/mono/decode_dev/lat.1.gz`: Specifies the output location for the resulting lattices compressed in gzip.
+
+The log files provide the decoding output for each sentence, including the utterance ID and the log likelihood per frame. Here is an example of the decoding output shown in the log files:
+
+```
+# exp/mono/decode_dev/log/decode.1.log
+# gmm-latgen-faster --max-active=7000 --beam=11.0 --lattice-beam=6.0 --acoustic-scale=0.083333 --allow-partial=true --word-symbol-table=exp/mono/graph/words.txt exp/mono/final.mdl exp/mono/graph/HCLG.fst "ark,s,cs:apply-cmvn  --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas  ark:- ark:- |" "ark:|gzip -c > exp/mono/decode_dev/lat.1.gz" 
+# Started at Wed Mar  6 02:52:05 EST 2024
+#
+gmm-latgen-faster --max-active=7000 --beam=11.0 --lattice-beam=6.0 --acoustic-scale=0.083333 --allow-partial=true --word-symbol-table=exp/mono/graph/words.txt exp/mono/final.mdl exp/mono/graph/HCLG.fst 'ark,s,cs:apply-cmvn  --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas  ark:- ark:- |' 'ark:|gzip -c > exp/mono/decode_dev/lat.1.gz' 
+add-deltas ark:- ark:- 
+apply-cmvn --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- 
+BAC009S0724W0121 广州 市 房地 产中 介 协会 惊喜 
+LOG (gmm-latgen-faster[5.5.1126~1-8c451]:DecodeUtteranceLatticeFaster():decoder-wrappers.cc:375) Log-like per frame for utterance BAC009S0724W0121 is -7.0903 over 426 frames.
+BAC009S0724W0122 广州 市 房地 产中 介 协会 还 表示 
+LOG (gmm-latgen-faster[5.5.1126~1-8c451]:DecodeUtteranceLatticeFaster():decoder-wrappers.cc:375) Log-like per frame for utterance BAC009S0724W0122 is -7.4025 over 432 frames.
+BAC009S0724W0123 相比 于 其他 一 线 城市 
+```
+
+`decode_fmllr.sh` does feature space Maximum Likelihood Linear Regression (fMLLR) in addition to normal decoding that `decode.sh` does.
+
+LDA and MLLT transforms are speaker-independent but fMLLR transforms are speaker- or utterance-specific. fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
+
+It estimates fMLLR transforms using `gmm-est-fmllr-gpost`, as in the following command:
+
+```sh
+gmm-est-fmllr-gpost --fmllr-update-type=$fmllr_update_type \
+--spk2utt=ark:$sdata/JOB/spk2utt $adapt_model "$sifeats" ark,s,cs:- \
+ark:$dir/pre_trans.JOB
+```
+
+The command uses the speaker to utterance-list map specified in the `--spk2utt` option to generate fMLLR for the supplied set of speakers.
 
 <!-- TODO: `steps/align_si.sh` -->
 
