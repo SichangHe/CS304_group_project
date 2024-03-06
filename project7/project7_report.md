@@ -258,6 +258,10 @@ There are five steps invloved.
 
 These 5 steps generates a fully expanded decoding graph $ H \circ C \circ L \circ G $.
 
+<!-- TODO: `steps/decode.sh` -->
+
+After the $ H \circ C \circ L \circ G $ graph is constructed, `steps/decode.sh` is used for decoding, which generates lattices of word sequences for the data given the model.
+
 <!-- TODO: `steps/align_si.sh` -->
 
 <!-- TODO: `steps/align_fmllr.sh` -->
