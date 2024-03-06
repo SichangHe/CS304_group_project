@@ -165,6 +165,8 @@ The resulting bootstrap HMM WFST model ($H$) is at `exp/mono/final.mdl`.
 
 `steps/train_deltas.sh` trains a triphone acoustic model in `exp/triN/` from the
 model and alignment produced in the last round.
+It uses the delta features and the delta-delta feature of the MFCC features to
+encapsulate time derivatives.
 It builds the decision tree for the acoustic model at `exp/triN/tree` after
 collecting questions by phone clustering.
 It then initializes the training graphs,
