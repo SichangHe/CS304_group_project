@@ -1,5 +1,13 @@
 # Project 7 Report
 
+## Custom Changes
+
+We changed the number of jobs `nj` to 16 throughout `run.sh` such that it could
+leverage all 16 cores on the VM. The script finished in 4h31m55s.
+
+We formatted the Bash scripts using `shfmt` so they are more consistent and
+easier to read.
+
 ## Errors Encountered
 
 We got an error:
