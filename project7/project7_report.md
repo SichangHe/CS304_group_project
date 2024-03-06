@@ -205,7 +205,9 @@ features on top of the LDA and MLLT features applied in
 It reads the transformation matrix from `exp/triNa/final.mat` and uses them to
 initialize the feature space Maximum Likelihood Linear Regression (fMLLR) transforms.
 
-LDA and MLLT transforms are speaker-independent but fMLLR transforms are speaker- or utterance-specific. fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
+LDA (Linear Discriminant Analysis) and MLLT (Maximum Likelihood Linear Transform) are transformations that are not specific to individual speakers. They are applied generally to improve the performance of automatic speech recognition (ASR) models. On the other hand, fMLLR (Feature Maximum Likelihood Linear Regression) is a speaker- or utterance-specific transformation.
+
+fMLLR is a technique used to adapt ASR models to the characteristics of a particular speaker. It adjusts the GMM-based acoustic models to better match the speech characteristics of that specific speaker. By estimating a linear transformation of the form $ x \rightarrow Ax + b $, fMLLR maps speaker independent (SI) acoustic features of the speaker to speaker specific feautures (speaker adaptive, SA). fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
 
 After the decision tree building and GMM graph initialization like what
 `steps/train_lda_mllt.sh` does,
