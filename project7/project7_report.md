@@ -30,7 +30,7 @@ The problem was solved after we did that.
 
 ## Data Preparation
 
-<!-- TODO: local folder contains the code related to data preparation,
+<!-- Instruction: local folder contains the code related to data preparation,
 and you need to explain the codes in details. -->
 
 Reference: <https://www.kaldi-asr.org/doc/data_prep.html>.
@@ -138,7 +138,7 @@ The utterance id `BAC009S0002W0122` in the output above matches the first id in 
 
 ## Acoustic Model Training
 
-<!-- TODO:
+<!-- Instruction:
 the introduction to the model training script does not need to go into
 specifics,
 whereas you need to pay efforts in explaining the concepts related to the
@@ -223,7 +223,7 @@ is kept at `exp/triNa/final.alimdl`.
 
 ## Model Testing
 
-<!-- TODO:
+<!-- Instruction:
 you need to describe in detail the evaluation criteria for the test section. -->
 
 `utils/mkgraph.sh` creates a fully expanded decoding graph $ H \circ C \circ L \circ G $. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
