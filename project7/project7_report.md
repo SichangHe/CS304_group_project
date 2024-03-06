@@ -260,7 +260,27 @@ These 5 steps generates a fully expanded decoding graph $ H \circ C \circ L \cir
 
 <!-- TODO: `steps/decode.sh` -->
 
-After the $ H \circ C \circ L \circ G $ graph is constructed, `steps/decode.sh` is used for decoding, which generates lattices of word sequences for the data given the model.
+After the $ H \circ C \circ L \circ G $ graph is constructed, `steps/decode.sh` is used for decoding and generate lattices of word sequences for the given data using a GMM-based model and decoding graph.
+`steps/decode.sh` uses `gmm-latgen-faster` to generate lattices using GMM-based model. Below is the command used to generate the lattice.
+
+```sh
+gmm-latgen-faster --max-active=7000 --beam=11.0 --lattice-beam=6.0 --acoustic-scale=0.083333 --allow-partial=true --word-symbol-table=exp/mono/graph/words.txt exp/mono/final.mdl exp/mono/graph/HCLG.fst "ark,s,cs:apply-cmvn  --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas  ark:- ark:- |" "ark:|gzip -c > exp/mono/decode_dev/lat.1.gz"
+```
+
+Options:
+
+- --max-active=7000: Sets the maximum number of active HMMs during decoding to 7000. It limits the number of active HMMs at any given time during the decoding process.
+- --beam=11.0: Sets the beam width to 11.0. The beam width determines the number of active hypotheses kept at each frame during decoding.
+- --lattice-beam=6.0: Sets the lattice beam width to 6.0. It prunes the search space when generating lattices, producing more compact representations of the decoding results.
+- --acoustic-scale=0.083333: Sets the acoustic scale to 0.083333. It determines the relative weight of the acoustic model probabilities compared to the language model probabilities.
+
+Arguments:
+
+- --word-symbol-table=exp/mono/graph/words.txt: word symbol table
+- exp/mono/final.mdl: GMM-based acoustic model file
+- exp/mono/graph/HCLG.fst: HCLG graph file
+- `ark,s,cs:apply-cmvn --utt2spk=ark:data/dev/split10/1/utt2spk scp:data/dev/split10/1/cmvn.scp scp:data/dev/split10/1/feats.scp ark:- | add-deltas ark:- ark:- |`: Specifies the input features used for decoding. This command processes the input features by applying CMVN normalization, adding delta and delta-delta coefficients, and providing the processed features in Kaldi's ark format.
+- `ark:|gzip -c > exp/mono/decode_dev/lat.1.gz`: Specifies the output location for the resulting lattices compressed in gzip.
 
 <!-- TODO: `steps/align_si.sh` -->
 
