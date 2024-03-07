@@ -371,3 +371,18 @@ ark:$dir/pre_trans.JOB
 ```
 
 The command uses the speaker to utterance-list map specified in the `--spk2utt` option to generate fMLLR for the supplied set of speakers.
+
+## Experiment Results
+
+```
+%WER 36.41 [ 38146 / 104765, 837 ins, 3114 del, 34195 sub ] exp/mono/decode_test/cer_10_0.0
+%WER 18.76 [ 19654 / 104765, 949 ins, 1152 del, 17553 sub ] exp/tri1/decode_test/cer_13_0.5
+%WER 18.64 [ 19531 / 104765, 941 ins, 1159 del, 17431 sub ] exp/tri2/decode_test/cer_14_0.5
+%WER 17.04 [ 17849 / 104765, 810 ins, 1021 del, 16018 sub ] exp/tri3a/decode_test/cer_14_0.5
+%WER 13.82 [ 14482 / 104765, 764 ins, 670 del, 13048 sub ] exp/tri4a/decode_test/cer_13_0.5
+%WER 12.12 [ 12694 / 104765, 751 ins, 523 del, 11420 sub ] exp/tri5a/decode_test/cer_13_0.5
+```
+
+The word error rate (WER) decreased as more rounds of models are built. Notably,
+replacing the monophone model with the triphone model and adding SAT
+dramatically reduced the WER.
