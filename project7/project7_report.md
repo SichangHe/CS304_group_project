@@ -207,7 +207,7 @@ initialize the feature space Maximum Likelihood Linear Regression (fMLLR) transf
 
 LDA (Linear Discriminant Analysis) and MLLT (Maximum Likelihood Linear Transform) are transformations that are not specific to individual speakers. They are applied generally to improve the performance of automatic speech recognition (ASR) models. On the other hand, fMLLR (Feature Maximum Likelihood Linear Regression) is a speaker- or utterance-specific transformation.
 
-fMLLR is a technique used to adapt ASR models to the characteristics of a particular speaker. It adjusts the GMM-based acoustic models to better match the speech characteristics of that specific speaker. By estimating a linear transformation of the form $ x \rightarrow Ax + b $, fMLLR maps speaker independent (SI) acoustic features of the speaker to speaker specific feautures (speaker adaptive, SA). fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
+fMLLR is a technique used to adapt ASR models to the characteristics of a particular speaker. It adjusts the GMM-based acoustic models to better match the speech characteristics of that specific speaker. By estimating a linear transformation of the form $x \rightarrow Ax + b$, fMLLR maps speaker independent (SI) acoustic features of the speaker to speaker specific feautures (speaker adaptive, SA). fMLLR's speaker adaptation process leads to a significant performance boost for ASR models.
 
 After the decision tree building and GMM graph initialization like what
 `steps/train_lda_mllt.sh` does,
@@ -222,9 +222,9 @@ is kept at `exp/triNa/final.alimdl`.
 
 ## Model Testing
 
-The `run.sh` script in the testing phase typically includes two main steps: constructing the decoding graph $ H \circ C \circ L \circ G $ and performing the decoding process using the constructed graph. The steps mentioned in the example are as follows:
+The `run.sh` script in the testing phase typically includes two main steps: constructing the decoding graph $H \circ C \circ L \circ G$ and performing the decoding process using the constructed graph. The steps mentioned in the example are as follows:
 
-This `mkgraph` script takes the test language model data and the HMM model generated in the previous step (exp/tri3a in this case) as input. It generates the $ H \circ C \circ L \circ G $ decoding graph.
+This `mkgraph` script takes the test language model data and the HMM model generated in the previous step (exp/tri3a in this case) as input. It generates the $H \circ C \circ L \circ G$ decoding graph.
 
 ```sh
 utils/mkgraph.sh data/lang_test exp/tri3a exp/tri3a/graph
@@ -241,15 +241,15 @@ exp/tri3a/graph data/test exp/tri3a/decode_test
 
 Next, we will provide a detailed explanation of `mkgraph.sh` and `decode.sh` scripts.
 
-`utils/mkgraph.sh` creates a fully expanded decoding graph $ H \circ C \circ L \circ G $. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
+`utils/mkgraph.sh` creates a fully expanded decoding graph $H \circ C \circ L \circ G$. The output is a Finite State Transducer that has `word-ids` on the output, and `transition-ids` on the input that resolve to pdf-ids.
 
 Kaldi reference: <https://kaldi-asr.org/doc/graph_recipe_test.html>
 
 There are five steps invloved.
 
-1. Preparing $ L \circ G $:
+1. Preparing $L \circ G$:
 
-    $ L $ and $ G $ FSTs are generated in `utils/prepare_lang.sh` and `utils/format_lm.sh` respectively. $ L \circ G $ is generated in the following command:
+    $L$ and $G$ FSTs are generated in `utils/prepare_lang.sh` and `utils/format_lm.sh` respectively. $L \circ G$ is generated in the following command:
 
     ```sh
     fsttablecompose data/L_disambig.fst data/G.fst | \
@@ -259,9 +259,9 @@ There are five steps invloved.
 
     The command `fsttablecompose` is used to compose the FSTs `L_disambig.fst` and `G.fst`. Subsequently, `fstdeterminizestar` and `fstminimizeencoded` are employed for determinization and minimization respectively. The weight is then pushed using `fstpushspecial`, resulting in the final `LG.fst`.
 
-2. Prepare $ C \circ L \circ G $:
+2. Prepare $C \circ L \circ G$:
 
-    The context transducer $ C $ is constructed to prepare $ C \circ L \circ G $. In the triphone case, the $ C $ transducer transduces a triphone sequence into a phone sequence. The following command is used to create $ C $:
+    The context transducer $C$ is constructed to prepare $C \circ L \circ G$. In the triphone case, the $C$ transducer transduces a triphone sequence into a phone sequence. The following command is used to create $C$:
 
     ```sh
     fstmakecontextfst --read-disambig-syms=$dir/disambig_phones.list \
@@ -271,7 +271,7 @@ There are five steps invloved.
 
     In this command, the command takes as input the list of disambiguation symbols for reading and writing, along with the phone symbol table. The command writes label information and generates `C.fst`.
 
-    However, it's worth noting that the command `fstmakecontextfst` is inefficient. Instead, it is recommended to use `fstcomposecontext` for dynamic composition of $ C $. The following command performs the composition of $ C $ with the $ L \circ G $ from the previous step (`LG.fst`) to generate $ C \circ L \circ G $ without explicitly creating $ C $:
+    However, it's worth noting that the command `fstmakecontextfst` is inefficient. Instead, it is recommended to use `fstcomposecontext` for dynamic composition of $C$. The following command performs the composition of $C$ with the $L \circ G$ from the previous step (`LG.fst`) to generate $C \circ L \circ G$ without explicitly creating $C$:
 
     ```sh
     fstcomposecontext  --read-disambig-syms=$dir/disambig_phones.list \
@@ -279,13 +279,13 @@ There are five steps invloved.
     $dir/ilabels < $dir/LG.fst >$dir/CLG.fst
     ```
 
-3. Making the $ H $ transducer:
+3. Making the $H$ transducer:
 
-    $ H $ tranducer tranduces input speech features to context-dependent phones. In the Kaldi script, $ H $ is created without self-loops and represents context-dependent phones on its output and `transition-ids` on its input. The `transition-ids` encode information such as the `pdf-id` (acoustic state in Kaldi terminology) and phone. Each transition-id can be mapped to a `pdf-id`.
+    $H$ tranducer tranduces input speech features to context-dependent phones. In the Kaldi script, $H$ is created without self-loops and represents context-dependent phones on its output and `transition-ids` on its input. The `transition-ids` encode information such as the `pdf-id` (acoustic state in Kaldi terminology) and phone. Each transition-id can be mapped to a `pdf-id`.
 
-    The transitions for context-dependent phones lead to structures representing the corresponding HMMs and then back to the start state. For the normal topology, the $ H $ transducer includes self-loops on the initial state for each disambiguation symbol.
+    The transitions for context-dependent phones lead to structures representing the corresponding HMMs and then back to the start state. For the normal topology, the $H$ transducer includes self-loops on the initial state for each disambiguation symbol.
 
-    It takes two inputs: `$tree`, which contains the mapping from the phone-in-context and HMM state to `pdf-id`, and the `$model` file that contains the HMM parameters generated in steps such as `train_mono.sh` or `train_deltas.sh`. The following command produces `Ha.fst`, which represents $ H $ without self-loops.
+    It takes two inputs: `$tree`, which contains the mapping from the phone-in-context and HMM state to `pdf-id`, and the `$model` file that contains the HMM parameters generated in steps such as `train_mono.sh` or `train_deltas.sh`. The following command produces `Ha.fst`, which represents $H$ without self-loops.
 
     ```sh
     make-h-transducer --disambig-syms-out=$dir/disambig_tstate.list \
@@ -293,9 +293,9 @@ There are five steps invloved.
     $tree $model  > $dir/Ha.fst
     ```
 
-4. Making $ H \circ C \circ L \circ G $
+4. Making $H \circ C \circ L \circ G$
 
-    In order to create the final graph $ H \circ C \circ L \circ G $, the first step involves constructing $ H \circ C \circ L \circ G $ without self-loops. The corresponding command in our script is:
+    In order to create the final graph $H \circ C \circ L \circ G$, the first step involves constructing $H \circ C \circ L \circ G$ without self-loops. The corresponding command in our script is:
 
     ```sh
     fsttablecompose $dir/Ha.fst $dir/CLG.fst | \
@@ -306,18 +306,18 @@ There are five steps invloved.
 
     The script removes the disambiguation symbols and any easy-to-remove epsilons, before minimizing.
 
-5. Adding self-loops to $ H \circ C \circ L \circ G $
+5. Adding self-loops to $H \circ C \circ L \circ G$
 
-    The next step involves adding self-loops to $ H \circ C \circ L \circ G $ using the following command:
+    The next step involves adding self-loops to $H \circ C \circ L \circ G$ using the following command:
 
     ```sh
     add-self-loops --self-loop-scale=0.1 \
     --reorder=true $model < $dir/HCLGa.fst > $dir/HCLG.fst
     ```
 
-These 5 steps generates a fully expanded decoding graph $ H \circ C \circ L \circ G $.
+These 5 steps generates a fully expanded decoding graph $H \circ C \circ L \circ G$.
 
-`steps/decode.sh` is used for decoding and generate lattices of word sequences for the given data using a GMM-based model and decoding graph after the $ H \circ C \circ L \circ G $ graph is constructed.
+`steps/decode.sh` is used for decoding and generate lattices of word sequences for the given data using a GMM-based model and decoding graph after the $H \circ C \circ L \circ G$ graph is constructed.
 It uses `gmm-latgen-faster` to generate lattices using GMM-based model. Below is the command used to generate the lattice.
 
 ```sh
